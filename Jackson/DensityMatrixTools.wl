@@ -2,8 +2,7 @@
 
 (* ::Text:: *)
 (*TODO*)
-(*define equality that takes order in to account*)
-(*define multiplication taht can do both tensor and dot porducts.*)
+(*define equality that takes order in to account.*)
 
 
 (* ::Section:: *)
@@ -16,7 +15,7 @@ qBitvalue::mismatch="`1` must only refrence values in 1...n";
 dimensionMismatch::value="\!\(\*SuperscriptBox[\(2\), \(nqbits\)]\) must be equal to the size of the matrix instead of nqbits = `1` and matrixdim = `2`";
 
 
-(* ::Subsection:: *)
+(* ::Subsection::Closed:: *)
 (*Define the DensityMatrix (DM) object*)
 
 
@@ -44,7 +43,7 @@ MakeDM[matrix_, qIDs_] :=
 MakeDM[matrix_]:=MakeDM[matrix,Association[Table[Subscript[\[ScriptCapitalQ], i]-> i,{i,Log2[Length[matrix]]}]]]
 
 
-(* ::Subsection:: *)
+(* ::Subsection::Closed:: *)
 (*Utility functions*)
 
 
@@ -58,7 +57,7 @@ Simplify[DM[\[Rho]_]]^:=MakeDM[\[Rho][data]//Simplify, \[Rho][qbitIDs]]
 Inc[a_,n_:1]:=Association[Table[i-> a[i]+n,{i,Keys[a]}]]
 
 
-(* ::Subsection:: *)
+(* ::Subsection::Closed:: *)
 (*Initialize thermal density matrices*)
 
 
@@ -72,7 +71,7 @@ NThermalQBit[probs_,indices_] :=
     ]
 
 
-(* ::Subsection:: *)
+(* ::Subsection::Closed:: *)
 (*Random Energy preserving Hamiltonian*)
 
 
@@ -87,7 +86,7 @@ Plus@@Flatten[Table[Table[A[i+1,j+1]MakeHamiltonian[indeces[[i]],indeces[[j]],nq
 ]
 
 
-(* ::Subsection:: *)
+(* ::Subsection::Closed:: *)
 (*Basic Operations*)
 
 
@@ -165,7 +164,7 @@ PTR = PartialTrace;
 
 
 (* ::Subsection:: *)
-(*Vizualization*)
+(*Visualization*)
 
 
 Show[DM[a_]]^:=MatrixPlot[a[data],Frame->False]
