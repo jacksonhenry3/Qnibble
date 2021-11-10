@@ -121,6 +121,11 @@ Tr[DM[a_]] ^:= Tr[a[data]]
 Transpose[DM[a_]]^:=MakeDM[Transpose[a[data]], a[qbitIDs]]
 
 
+(* ::Text:: *)
+(*TODO: add ReOrder with no order to go back to "Canonical Order"*)
+(*TODO: add ReOrder with list arg mapping each to the ith canonical arg.*)
+
+
 ReOrder[DM[\[Rho]_], newOrder_] :=
 	Module[{n = \[Rho][nqbit], ids = Keys[\[Rho][qbitIDs]], map, V, L1, L2, rules, newRules},
 		If[Sort[Keys[newOrder]] =!= Sort[ids] || Sort[Values[newOrder]] =!= Sort[Values[\[Rho][qbitIDs]]],
