@@ -5,13 +5,13 @@
 (*define equality that takes order in to account.*)
 
 
-(* ::Section:: *)
+(* ::Subsection:: *)
 (*Error Codes*)
 
 
 qBitMissmatch::oob="`1` and `2` must be the same.";
 qBitduplicate::oob="`1` must have unique names and unique values";
-qBitvalue::mismatch="`1` must only refrence values in 1...n";
+qBitvalue::mismatch="`1` must refrence values in 1...n exactly once each.";
 dimensionMismatch::value="\!\(\*SuperscriptBox[\(2\), \(nqbits\)]\) must be equal to the size of the matrix instead of nqbits = `1` and matrixdim = `2`";
 
 
@@ -71,7 +71,7 @@ NThermalQBit[probs_,indices_] :=
     ]
 
 
-(* ::Subsection:: *)
+(* ::Subsection::Closed:: *)
 (*Random Energy preserving Hamiltonian*)
 
 
@@ -168,7 +168,7 @@ PartialTrace[DM[\[Rho]_], lst_] :=
 PTR = PartialTrace;
 
 
-(* ::Subsection:: *)
+(* ::Subsection::Closed:: *)
 (*Visualization*)
 
 
@@ -178,5 +178,5 @@ Show[DM[a_]]^:=MatrixPlot[a[data],Frame->False]
 Inspect[DM[a_]]:=Module[{n = a[nqbit],labels },
 labels = Table[StringJoin[ToString /@IntegerDigits[i-1,2,n]],{i,2^n}];
 
-TableForm[a[data]//Simplify,TableHeadings->{labels,labels}]
+TableForm[a[data]//Simplify,TableHeadings->{labels,labels},TableAlignments->Center]
 ]
