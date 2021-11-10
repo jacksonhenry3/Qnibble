@@ -33,8 +33,8 @@ MakeDM[matrix_, qIDs_] :=
     If[Sort[Values[qIDs]]=!=Table[i,{i,Length[qIDs]}],
     Message[qBitvalue::mismatch,qIDs];Return[]];
     
-    If[Length[matrix]=!=2^Length[qIDs],
-    Message[dimensionMismatch::value,Length[qIDs],Length[matrix]];Return[]];
+    If[Dimensions[matrix][[1]]=!=2^Length[qIDs],
+    Message[dimensionMismatch::value,Length[qIDs],Dimensions[matrix]];Return[]];
     
     
     
@@ -134,7 +134,7 @@ ReOrder[DM[\[Rho]_], newOrder_] :=
 		rules = ArrayRules[\[Rho][data]];
 		(*The "Dua Lipa" step*)
 		newRules = Table[(rules[[i, 1]] /. map) -> (rules[[i, 2]]), {i, Length[rules]}];
-		MakeDM[SparseArray[newRules], newOrder]
+		MakeDM[SparseArray[newRules,Dimensions[\[Rho][data]]], newOrder]
 	]
 
 
