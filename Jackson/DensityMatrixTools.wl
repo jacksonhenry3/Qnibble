@@ -71,18 +71,18 @@ NThermalQBit[probs_,indices_] :=
     ]
 
 
-(* ::Subsection::Closed:: *)
+(* ::Subsection:: *)
 (*Random Energy preserving Hamiltonian*)
 
 
-MakeHamiltonian[i1_,i2_,n_]:=MakeDM[SparseArray[{{i1,i2}-> I,{i2,i1}->-I},2^n]]
+MakeHamiltonian[i1_,i2_,n_]:=SparseArray[{{i1,i2}-> I,{i2,i1}->-I},2^n]
 
 
 RandomHamiltonian[Energy_,nqbits_]:=Module[{protoState,perms,indeces},
 protoState = Table[If[i<Energy+1,1,0],{i,nqbits}];
 perms = Permutations[protoState];
 indeces = FromDigits[#,2]&/@perms;
-Plus@@Flatten[Table[Table[A[i+1,j+1]MakeHamiltonian[indeces[[i]]+1,indeces[[j]]+1,nqbits],{j,i-1}],{i,Length[perms]}],1]
+Plus@@Flatten[Table[Table[Random[]MakeHamiltonian[indeces[[i]]+1,indeces[[j]]+1,nqbits],{j,i-1}],{i,Length[perms]}],1]
 ]
 
 
@@ -168,11 +168,14 @@ PartialTrace[DM[\[Rho]_], lst_] :=
 PTR = PartialTrace;
 
 
-(* ::Subsection::Closed:: *)
+(* ::Subsection:: *)
 (*Visualization*)
 
 
 Show[DM[a_]]^:=MatrixPlot[a[data],Frame->False]
+
+
+ArrayShow[DM[a_]]^:=ArrayPlot[Re[a[data]],Frame->False, PlotRange -> {-10^-5,10^-5}]  
 
 
 Inspect[DM[a_]]:=Module[{n = a[nqbit],labels },
