@@ -15,7 +15,7 @@ qBitvalue::mismatch="`1` must only refrence values in 1...n";
 dimensionMismatch::value="\!\(\*SuperscriptBox[\(2\), \(nqbits\)]\) must be equal to the size of the matrix instead of nqbits = `1` and matrixdim = `2`";
 
 
-(* ::Subsection::Closed:: *)
+(* ::Subsection:: *)
 (*Define the DensityMatrix (DM) object*)
 
 
@@ -71,7 +71,7 @@ NThermalQBit[probs_,indices_] :=
     ]
 
 
-(* ::Subsection::Closed:: *)
+(* ::Subsection:: *)
 (*Random Energy preserving Hamiltonian*)
 
 
@@ -86,7 +86,7 @@ Plus@@Flatten[Table[Table[A[i+1,j+1]MakeHamiltonian[indeces[[i]],indeces[[j]],nq
 ]
 
 
-(* ::Subsection::Closed:: *)
+(* ::Subsection:: *)
 (*Basic Operations*)
 
 
