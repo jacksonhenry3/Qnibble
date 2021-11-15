@@ -12,10 +12,11 @@
 qBitMissmatch::oob="`1` and `2` must be the same.";
 qBitduplicate::oob="`1` must have unique names and unique values";
 qBitvalue::mismatch="`1` must refrence values in 1...n exactly once each.";
+NotEnoughWater::mismatch="Please drink some water, it's good for you. (also this is too big, must be one qubit)";
 dimensionMismatch::value="\!\(\*SuperscriptBox[\(2\), \(nqbits\)]\) must be equal to the size of the matrix instead of nqbits = `1` and matrixdim = `2`";
 
 
-(* ::Subsection::Closed:: *)
+(* ::Subsection:: *)
 (*Define the DensityMatrix (DM) object*)
 
 
@@ -86,7 +87,7 @@ Plus@@Flatten[Table[Table[Random[]MakeHamiltonian[indeces[[i]]+1,indeces[[j]]+1,
 ]
 
 
-(* ::Subsection::Closed:: *)
+(* ::Subsection:: *)
 (*Basic Operations*)
 
 
@@ -97,7 +98,6 @@ DM[\[Rho]_][qbitIDs] ^:= \[Rho][qbitIDs];
 DM[a_] \[TensorProduct] DM[b_] ^:= MakeDM[KroneckerProduct[a[data], b[data]], Merge[{a[qbitIDs], Inc[b[qbitIDs], Length[a[qbitIDs]]]}, #[[1]]&]]
 Prod[a_, b__] :=
 	a \[TensorProduct] b
-
 DM[a_] . DM[b_] ^:= Module[{},
 	If[a[qbitIDs] != b[qbitIDs],
 		Message[qBitMissmatch::oob, a[qbitIDs], b[qbitIDs]];
@@ -148,6 +148,7 @@ PartialTrace[DM[\[Rho]_], lst_] :=
 		If[lst == {},
 			Return[DM[\[Rho]]]
 		];
+		(*lst = Flatten[{lst}];*)
 		n = \[Rho][qbitIDs][Last[lst]];
 		newlst = Drop[lst, -1];
 		l = d[[1]];
@@ -164,11 +165,12 @@ PartialTrace[DM[\[Rho]_], lst_] :=
 		];
 		res = MakeDM[(M[[h1, h1]] + M[[h2, h2]]), newQBitIds];
 		PartialTrace[res, newlst]
-	]
+	];
+	
 PTR = PartialTrace;
 
 
-(* ::Subsection:: *)
+(* ::Subsection::Closed:: *)
 (*Visualization*)
 
 
@@ -183,3 +185,47 @@ labels = Table[StringJoin[ToString /@IntegerDigits[i-1,2,n]],{i,2^n}];
 
 TableForm[a[data]//Simplify,TableHeadings->{labels,labels},TableAlignments->Center]
 ]
+
+
+(* ::Subsection:: *)
+(*Thermal properties*)
+
+
+(* ::Text:: *)
+(*TODO: Check for id in qbit ids*)
+
+
+Temp[DM[\[Rho]_],qbitID_]^:=Module[{p},
+p = PartialTrace[DM[\[Rho]],DeleteCases[Keys[\[Rho][qbitIDs]],qbitID]][data][[2,2]];
+1/Log[(1-p)/p]//Simplify
+]
+Temp[DM[\[Rho]_]]^:=Module[{p},If[\[Rho][nqbit]==1,p = \[Rho][data][[2,2]];1/Log[(1-p)/p],Message[NotEnoughWater::mismatch];Return[];]]
+
+
+AvgTemp[DM[\[Rho]_],qbitIDs_]:=Mean[Table[Temp[DM[\[Rho]],qbit],{qbit,qbitIDs}]]
+
+
+(* ::Text:: *)
+(*TODO: Test for same dimensionality*)
+(*TODO: Check that *)
+
+
+Distance[DM[\[Rho]1_],DM[\[Rho]2_]]^:= Module[{d1,d2},
+d1 = \[Rho]1[data];
+d2 = \[Rho]2[data];
+Tr[d1(MatrixLog[d1]-MatrixLog[d2])]//Quiet
+]
+
+
+(* ::Text:: *)
+(*TODO make cute simple version of distance*)
+
+
+(*D[DM[\[Rho]1_]||DM[\[Rho]2_]]^:=Distance[DM[\[Rho]1],DM[\[Rho]2]]*)
+
+
+(* ::Text:: *)
+(*Add trace distance*)
+
+
+ExtractableWork[DM[\[Rho]1i_],DM[\[Rho]2i_],DM[\[Rho]1f_],DM[\[Rho]2f_]] ^:= Temp[DM[\[Rho]2f]] Distance[DM[\[Rho]1f],DM[\[Rho]2f]]-Temp[DM[\[Rho]2i]] Distance[DM[\[Rho]1i],DM[\[Rho]2i]]
