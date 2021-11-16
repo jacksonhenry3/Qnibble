@@ -72,7 +72,7 @@ NThermalQBit[probs_,indices_] :=
     ]
 
 
-(* ::Subsection:: *)
+(* ::Subsection::Closed:: *)
 (*Random Energy preserving Hamiltonian*)
 
 
@@ -87,11 +87,12 @@ Plus@@Flatten[Table[Table[Random[]MakeHamiltonian[indeces[[i]]+1,indeces[[j]]+1,
 ]
 
 
-(* ::Subsection:: *)
+(* ::Subsection::Closed:: *)
 (*Basic Operations*)
 
 
 DM[\[Rho]_][data] ^:= \[Rho][data];
+DM[\[Rho]_][[n_,m_]]^:=DM[\[Rho]][data][[n,m]];
 DM[\[Rho]_][qbitIDs] ^:= \[Rho][qbitIDs];
 
 
@@ -187,7 +188,7 @@ TableForm[a[data]//Simplify,TableHeadings->{labels,labels},TableAlignments->Cent
 ]
 
 
-(* ::Subsection:: *)
+(* ::Subsection::Closed:: *)
 (*Thermal properties*)
 
 
