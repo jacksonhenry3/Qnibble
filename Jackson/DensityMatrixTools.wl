@@ -185,7 +185,7 @@ TableForm[a[data]//Simplify,TableHeadings->{labels,labels},TableAlignments->Cent
 ]
 
 
-(* ::Subsection::Closed:: *)
+(* ::Subsection:: *)
 (*Thermal properties*)
 
 
@@ -206,10 +206,11 @@ If[
 	p = \[Rho][data][[2,2]];1/Log[(1-p)/p],
 	Message[NotEnoughWater::mismatch];Return[];]
 ]
-T:= Temp;
+T:= AvgTemp;
 
 
-AvgTemp[DM[\[Rho]_],qbitIDs_]:=Mean[Table[Temp[DM[\[Rho]],qbit],{qbit,qbitIDs}]]
+AvgTemp[DM[\[Rho]_],qbitIDs_]:=Mean[Table[Temp[DM[\[Rho]],qbit],{qbit,Flatten[{qbitIDs}]}]]
+AvgTemp[DM[\[Rho]_]]:=Mean[Table[Temp[DM[\[Rho]],qbit],{qbit,Keys[\[Rho][qbitIDs]]}]]
 
 
 Distance[DM[\[Rho]1_],DM[\[Rho]2_]]:= Module[{d1 = \[Rho]1[data],d2 = \[Rho]2[data]},
@@ -230,3 +231,4 @@ Protect[Or];
 
 
 ExtractableWork[\[Rho]1i_,\[Rho]2i_,\[Rho]1f_,\[Rho]2f_] := T[\[Rho]2f] D[\[Rho]1f||\[Rho]2f]-T[\[Rho]2i] D[\[Rho]1i||\[Rho]2i]
+
