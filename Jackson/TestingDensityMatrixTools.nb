@@ -10,10 +10,10 @@
 NotebookFileLineBreakTest
 NotebookFileLineBreakTest
 NotebookDataPosition[       158,          7]
-NotebookDataLength[    147359,       3388]
+NotebookDataLength[    147367,       3388]
 NotebookOptionsPosition[    139142,       3247]
-NotebookOutlinePosition[    139669,       3266]
-CellTagsIndexPosition[    139626,       3263]
+NotebookOutlinePosition[    139677,       3266]
+CellTagsIndexPosition[    139634,       3263]
 WindowFrame->Normal*)
 
 (* Beginning of Notebook Content *)
@@ -3245,8 +3245,8 @@ ZJX2D6PuC3KUD8kq7R9GzQNJkpP9C/U8fYw=
 }, Closed]]
 }, Open  ]]
 },
-WindowSize->{1010.25, 687.375},
-WindowMargins->{{0, Automatic}, {Automatic, 0}},
+WindowSize->{1020., 697.125},
+WindowMargins->{{-4.875, Automatic}, {Automatic, -4.875}},
 TaggingRules->{
  "WelcomeScreenSettings" -> {"FEStarting" -> False}, "TryRealOnly" -> False},
 Magnification:>1.9 Inherited,

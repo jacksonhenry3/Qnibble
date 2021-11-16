@@ -5,7 +5,7 @@
 (*define equality that takes order in to account.*)
 
 
-(* ::Subsection:: *)
+(* ::Subsection::Closed:: *)
 (*Error Codes*)
 
 
@@ -18,11 +18,6 @@ dimensionMismatch::value="\!\(\*SuperscriptBox[\(2\), \(nqbits\)]\) must be equa
 
 (* ::Subsection:: *)
 (*Define the DensityMatrix (DM) object*)
-
-
-(* ::Text:: *)
-(*TODO*)
-(*Check that qids is unique in both key and value!*)
 
 
 SetAttributes[MakeDM, HoldRest]
