@@ -10,13 +10,15 @@
 
 
 qBitMissmatch::oob="`1` and `2` must be the same.";
+qBitInvalid::oob="`1` must be in `2`";
 qBitduplicate::oob="`1` must have unique names and unique values";
 qBitvalue::mismatch="`1` must refrence values in 1...n exactly once each.";
 NotEnoughWater::mismatch="Please drink some water, it's good for you. (also this is too big, must be one qubit)";
 dimensionMismatch::value="\!\(\*SuperscriptBox[\(2\), \(nqbits\)]\) must be equal to the size of the matrix instead of nqbits = `1` and matrixdim = `2`";
+dimensionMismatch::mismatch="the dimensions of both matrices must be equal, instead got `1` and `2`";
 
 
-(* ::Subsection:: *)
+(* ::Subsection::Closed:: *)
 (*Define the DensityMatrix (DM) object*)
 
 
@@ -187,41 +189,44 @@ TableForm[a[data]//Simplify,TableHeadings->{labels,labels},TableAlignments->Cent
 (*Thermal properties*)
 
 
-(* ::Text:: *)
-(*TODO: Check for id in qbit ids*)
+Temp[DM[\[Rho]_],qbitID_]:=Module[{p},
 
-
-Temp[DM[\[Rho]_],qbitID_]^:=Module[{p},
+If[ (*qbitID is not in the qbitids of \[Rho] throw an error*)
+	Not[MemberQ[Keys[\[Rho][qbitIDs]],qbitID]],
+	Message[qBitInvalid::oob, qbitID, Keys[\[Rho][qbitIDs]]];
+		Return[];];
+		
 p = PartialTrace[DM[\[Rho]],DeleteCases[Keys[\[Rho][qbitIDs]],qbitID]][data][[2,2]];
 1/Log[(1-p)/p]//Simplify
 ]
-Temp[DM[\[Rho]_]]^:=Module[{p},If[\[Rho][nqbit]==1,p = \[Rho][data][[2,2]];1/Log[(1-p)/p],Message[NotEnoughWater::mismatch];Return[];]]
+
+Temp[DM[\[Rho]_]]:=Module[{p},
+If[
+	\[Rho][nqbit]==1,
+	p = \[Rho][data][[2,2]];1/Log[(1-p)/p],
+	Message[NotEnoughWater::mismatch];Return[];]
+]
+T:= Temp;
 
 
 AvgTemp[DM[\[Rho]_],qbitIDs_]:=Mean[Table[Temp[DM[\[Rho]],qbit],{qbit,qbitIDs}]]
 
 
-(* ::Text:: *)
-(*TODO: Test for same dimensionality*)
-(*TODO: Check that *)
-
-
-Distance[DM[\[Rho]1_],DM[\[Rho]2_]]^:= Module[{d1,d2},
-d1 = \[Rho]1[data];
-d2 = \[Rho]2[data];
-Tr[d1(MatrixLog[d1]-MatrixLog[d2])]//Quiet
+Distance[DM[\[Rho]1_],DM[\[Rho]2_]]:= Module[{d1 = \[Rho]1[data],d2 = \[Rho]2[data]},
+If[Dimensions[d1]!=Dimensions[d2],Message[dimensionMismatch::mismatch,Dimensions[d1],Dimensions[d2]];Return[];];
+Tr[d1(MatrixLog[d1]-MatrixLog[d2])]//Quiet//Simplify
 ]
 
 
-(* ::Text:: *)
-(*TODO make cute simple version of distance*)
-
-
-(*D[DM[\[Rho]1_]||DM[\[Rho]2_]]^:=Distance[DM[\[Rho]1],DM[\[Rho]2]]*)
+Unprotect[D];
+Unprotect[Or];
+D[DM[\[Rho]1_]||DM[\[Rho]2_]]:=Distance[DM[\[Rho]1],DM[\[Rho]2]]
+Protect[D];
+Protect[Or];
 
 
 (* ::Text:: *)
 (*Add trace distance*)
 
 
-ExtractableWork[DM[\[Rho]1i_],DM[\[Rho]2i_],DM[\[Rho]1f_],DM[\[Rho]2f_]] ^:= Temp[DM[\[Rho]2f]] Distance[DM[\[Rho]1f],DM[\[Rho]2f]]-Temp[DM[\[Rho]2i]] Distance[DM[\[Rho]1i],DM[\[Rho]2i]]
+ExtractableWork[\[Rho]1i_,\[Rho]2i_,\[Rho]1f_,\[Rho]2f_] := T[\[Rho]2f] D[\[Rho]1f||\[Rho]2f]-T[\[Rho]2i] D[\[Rho]1i||\[Rho]2i]
