@@ -1,0 +1,274 @@
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Mathematica 12.1' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       158,          7]
+NotebookDataLength[     10510,        266]
+NotebookOptionsPosition[      7432,        207]
+NotebookOutlinePosition[      7826,        223]
+CellTagsIndexPosition[      7783,        220]
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+
+Cell[CellGroupData[{
+Cell["Lattice Models ", "Title",
+ CellChangeTimes->{{3.847180739400824*^9, 
+  3.8471807441952333`*^9}},ExpressionUUID->"3bf0df5a-6462-4246-b6ca-\
+5023b63b4c00"],
+
+Cell["8-Qubit gas model with one qubit temperature variation ", "Chapter",
+ CellChangeTimes->{{3.847180739400824*^9, 
+  3.847180789924385*^9}},ExpressionUUID->"47840fce-71ca-44da-88ee-\
+74d7272cbdd5"],
+
+Cell["8-Qubit gas model with multiple qubit temperature variation ", "Chapter",
+ CellChangeTimes->{{3.847180739400824*^9, 
+  3.847180807028893*^9}},ExpressionUUID->"175ee63a-c487-41e4-b9c4-\
+5db9ebe1f774"],
+
+Cell["12-Qubit gas model with one qubit temperature variation ", "Chapter",
+ CellChangeTimes->{{3.847180739400824*^9, 
+  3.847180814588656*^9}},ExpressionUUID->"6aabbb65-279f-43f2-ba83-\
+d07d7788cfb7"],
+
+Cell["\<\
+16-Qubit gas model with one qubit tempera\\03frv4ture variation \
+\>", "Chapter",
+ CellChangeTimes->{{3.847180739400824*^9, 3.847180834269747*^9}, 
+   3.84718149469088*^9, {3.847181543211193*^9, 
+   3.847181547959016*^9}},ExpressionUUID->"e675235c-46d5-4848-9369-\
+da924da18cff"],
+
+Cell[CellGroupData[{
+
+Cell["8-Qubits on a lattice", "Chapter",
+ CellChangeTimes->{{3.847180739400824*^9, 3.847180852406398*^9}, 
+   3.847181008347563*^9},ExpressionUUID->"14d708da-385b-4b65-a111-\
+4cf36fc12bf5"],
+
+Cell[CellGroupData[{
+
+Cell["\<\
+Unitary translationally invariant (same everywhere at every time step)\
+\>", "Section",
+ CellChangeTimes->{{3.847180739400824*^9, 3.847180852406398*^9}, {
+   3.847181021371438*^9, 3.847181022828012*^9}, 
+   3.8471810726927757`*^9},ExpressionUUID->"a06af202-5799-4f50-94e8-\
+ad03ea11b082"],
+
+Cell["Two qubit pocket ", "Subsection",
+ CellChangeTimes->{{3.847180739400824*^9, 3.847180852406398*^9}, {
+   3.847181021371438*^9, 3.847181022828012*^9}, {3.847181080060615*^9, 
+   3.8471810845493727`*^9}, 
+   3.8471811169343348`*^9},ExpressionUUID->"32d35c8a-857c-4f28-939a-\
+75209ae69ef5"],
+
+Cell["Four qubit pocket ", "Subsection",
+ CellChangeTimes->{{3.847180739400824*^9, 3.847180852406398*^9}, {
+  3.847181021371438*^9, 3.847181022828012*^9}, {3.847181080060615*^9, 
+  3.847181127190761*^9}},ExpressionUUID->"3c421d66-bd8a-47ee-ab61-\
+2a07bd81c150"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["Random unitary in each pocket ", "Section",
+ CellChangeTimes->{{3.847180739400824*^9, 3.847180852406398*^9}, {
+   3.847181021371438*^9, 3.847181047675531*^9}, 
+   3.847181094637672*^9},ExpressionUUID->"36e93a19-c5fa-4315-b95b-\
+fb91d88fbff5"],
+
+Cell["Two qubit pocket ", "Subsection",
+ CellChangeTimes->{{3.847180739400824*^9, 3.847180852406398*^9}, {
+  3.847181021371438*^9, 3.847181047675531*^9}, {3.847181101661241*^9, 
+  3.8471811254386*^9}},ExpressionUUID->"48b0a035-cf5d-479e-8522-f27562c6a613"],
+
+Cell["Four qubit pocket ", "Subsection",
+ CellChangeTimes->{{3.847180739400824*^9, 3.847180852406398*^9}, {
+  3.847181021371438*^9, 3.847181047675531*^9}, {3.847181101661241*^9, 
+  3.847181131190786*^9}},ExpressionUUID->"61cef2cf-d855-486e-94db-\
+0aad207b46b2"]
+}, Open  ]]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["12 Qubits on a lattice", "Chapter",
+ CellChangeTimes->{{3.847180739400824*^9, 3.8471808589585667`*^9}, 
+   3.847180989082404*^9},ExpressionUUID->"c4f08ef3-3d8c-4825-9242-\
+ea234aad80ed"],
+
+Cell[CellGroupData[{
+
+Cell["\<\
+Unitary translationally invariant (same everywhere at every time step)\
+\>", "Section",
+ CellChangeTimes->{{3.847180739400824*^9, 3.8471808589585667`*^9}, {
+   3.847180998154914*^9, 3.847180999907237*^9}, 
+   3.8471811362152157`*^9},ExpressionUUID->"b5b115fc-69f4-40c2-bb50-\
+0428d647514c"],
+
+Cell["Two qubit pocket ", "Subsection",
+ CellChangeTimes->{{3.847180739400824*^9, 3.8471808589585667`*^9}, {
+  3.847180998154914*^9, 3.847180999907237*^9}, {3.847181144134777*^9, 
+  3.847181149079309*^9}},ExpressionUUID->"6d2afbb8-64d2-46b8-b2e7-\
+3c4e1f0ef445"],
+
+Cell["Four qubit pocket ", "Subsection",
+ CellChangeTimes->{{3.847180739400824*^9, 3.8471808589585667`*^9}, {
+  3.847180998154914*^9, 3.847180999907237*^9}, {3.847181144134777*^9, 
+  3.847181152606653*^9}},ExpressionUUID->"e4ccbfd0-5d2f-41d3-bad5-\
+f7c0e0cbde61"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["Random unitary in each pocket ", "Section",
+ CellChangeTimes->{{3.847180739400824*^9, 3.8471808589585667`*^9}, {
+   3.847180998154914*^9, 3.847181005578965*^9}, 
+   3.847181164784194*^9},ExpressionUUID->"eed43636-5fe5-4eba-a0ca-\
+354b6b516e1d"],
+
+Cell["Two qubit pocket", "Subsection",
+ CellChangeTimes->{{3.847180739400824*^9, 3.8471808589585667`*^9}, {
+  3.847180998154914*^9, 3.847181005578965*^9}, {3.8471811795196*^9, 
+  3.8471811847764482`*^9}},ExpressionUUID->"485ac657-5762-418c-a824-\
+96f0f76dc91c"],
+
+Cell["Four qubit pocket ", "Subsection",
+ CellChangeTimes->{{3.847180739400824*^9, 3.8471808589585667`*^9}, {
+  3.847180998154914*^9, 3.847181005578965*^9}, {3.8471811795196*^9, 
+  3.8471811895597363`*^9}},ExpressionUUID->"38c801af-1d7f-44df-8c4c-\
+a571f7a0049e"]
+}, Open  ]]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["16-Qubits on a lattice ", "Chapter",
+ CellChangeTimes->{{3.847180739400824*^9, 3.847180866334145*^9}, 
+   3.847180922352446*^9},ExpressionUUID->"b0e93a01-8878-4b6d-939b-\
+b542aca9aa4c"],
+
+Cell[CellGroupData[{
+
+Cell["\<\
+Unitary translationally invariant (same everywhere at every time step)\
+\>", "Section",
+ CellChangeTimes->{{3.847180739400824*^9, 3.847180866334145*^9}, {
+   3.8471809341201973`*^9, 3.84718097204185*^9}, 
+   3.847181200512632*^9},ExpressionUUID->"ca50ef8f-2b28-42fe-8cc9-\
+4342ab19ee85"],
+
+Cell["Two qubit pocket", "Subsection",
+ CellChangeTimes->{{3.847180739400824*^9, 3.847180866334145*^9}, {
+  3.8471809341201973`*^9, 3.84718097204185*^9}, {3.84718120573641*^9, 
+  3.847181210465646*^9}},ExpressionUUID->"b968d9f4-0bb5-4b2f-9a82-\
+ded0099dcf00"],
+
+Cell["Four qubit pocket ", "Subsection",
+ CellChangeTimes->{{3.847180739400824*^9, 3.847180866334145*^9}, {
+  3.8471809341201973`*^9, 3.84718097204185*^9}, {3.84718120573641*^9, 
+  3.847181214600658*^9}},ExpressionUUID->"64711698-0ea6-446e-8765-\
+a7eba88a7f66"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["Random unitary in each pocket ", "Section",
+ CellChangeTimes->{{3.847180739400824*^9, 3.847180866334145*^9}, {
+  3.8471809341201973`*^9, 3.847180980001437*^9}, {3.847181218456729*^9, 
+  3.84718122001742*^9}},ExpressionUUID->"9ead2c0f-d0fd-43aa-9702-\
+28771f30c11b"],
+
+Cell["Two qubit pocket", "Subsection",
+ CellChangeTimes->{{3.847180739400824*^9, 3.847180866334145*^9}, {
+  3.8471809341201973`*^9, 3.847180980001437*^9}, {3.847181218456729*^9, 
+  3.8471812298737097`*^9}},ExpressionUUID->"b94a3b81-f51d-402f-9c56-\
+02801f1fd966"],
+
+Cell["Four qubit pocket ", "Subsection",
+ CellChangeTimes->{{3.847180739400824*^9, 3.847180866334145*^9}, {
+  3.8471809341201973`*^9, 3.847180980001437*^9}, {3.847181218456729*^9, 
+  3.84718123394518*^9}},ExpressionUUID->"9862dbe9-c7ec-4f78-84f2-\
+6dbf46e19af1"]
+}, Open  ]]
+}, Open  ]]
+}, Open  ]]
+},
+WindowSize->{808, 911},
+WindowMargins->{{620, Automatic}, {Automatic, 98}},
+FrontEndVersion->"12.1 for Mac OS X x86 (64-bit) (June 19, 2020)",
+StyleDefinitions->"Default.nb",
+ExpressionUUID->"e80a4c6a-2025-44d3-88f6-9923683218ac"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[CellGroupData[{
+Cell[580, 22, 160, 3, 98, "Title",ExpressionUUID->"3bf0df5a-6462-4246-b6ca-5023b63b4c00"],
+Cell[743, 27, 200, 3, 117, "Chapter",ExpressionUUID->"47840fce-71ca-44da-88ee-74d7272cbdd5"],
+Cell[946, 32, 205, 3, 106, "Chapter",ExpressionUUID->"175ee63a-c487-41e4-b9c4-5db9ebe1f774"],
+Cell[1154, 37, 201, 3, 106, "Chapter",ExpressionUUID->"6aabbb65-279f-43f2-ba83-d07d7788cfb7"],
+Cell[1358, 42, 289, 6, 106, "Chapter",ExpressionUUID->"e675235c-46d5-4848-9369-da924da18cff"],
+Cell[CellGroupData[{
+Cell[1672, 52, 189, 3, 58, "Chapter",ExpressionUUID->"14d708da-385b-4b65-a111-4cf36fc12bf5"],
+Cell[CellGroupData[{
+Cell[1886, 59, 298, 6, 105, "Section",ExpressionUUID->"a06af202-5799-4f50-94e8-ad03ea11b082"],
+Cell[2187, 67, 292, 5, 54, "Subsection",ExpressionUUID->"32d35c8a-857c-4f28-939a-75209ae69ef5"],
+Cell[2482, 74, 261, 4, 38, "Subsection",ExpressionUUID->"3c421d66-bd8a-47ee-ab61-2a07bd81c150"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[2780, 83, 248, 4, 67, "Section",ExpressionUUID->"36e93a19-c5fa-4315-b95b-fb91d88fbff5"],
+Cell[3031, 89, 256, 3, 54, "Subsection",ExpressionUUID->"48b0a035-cf5d-479e-8522-f27562c6a613"],
+Cell[3290, 94, 261, 4, 38, "Subsection",ExpressionUUID->"61cef2cf-d855-486e-94db-0aad207b46b2"]
+}, Open  ]]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[3600, 104, 192, 3, 69, "Chapter",ExpressionUUID->"c4f08ef3-3d8c-4825-9242-ea234aad80ed"],
+Cell[CellGroupData[{
+Cell[3817, 111, 300, 6, 105, "Section",ExpressionUUID->"b5b115fc-69f4-40c2-bb50-0428d647514c"],
+Cell[4120, 119, 262, 4, 54, "Subsection",ExpressionUUID->"6d2afbb8-64d2-46b8-b2e7-3c4e1f0ef445"],
+Cell[4385, 125, 263, 4, 38, "Subsection",ExpressionUUID->"e4ccbfd0-5d2f-41d3-bad5-f7c0e0cbde61"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[4685, 134, 250, 4, 67, "Section",ExpressionUUID->"eed43636-5fe5-4eba-a0ca-354b6b516e1d"],
+Cell[4938, 140, 261, 4, 54, "Subsection",ExpressionUUID->"485ac657-5762-418c-a824-96f0f76dc91c"],
+Cell[5202, 146, 263, 4, 38, "Subsection",ExpressionUUID->"38c801af-1d7f-44df-8c4c-a571f7a0049e"]
+}, Open  ]]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[5514, 156, 191, 3, 69, "Chapter",ExpressionUUID->"b0e93a01-8878-4b6d-939b-b542aca9aa4c"],
+Cell[CellGroupData[{
+Cell[5730, 163, 297, 6, 67, "Section",ExpressionUUID->"ca50ef8f-2b28-42fe-8cc9-4342ab19ee85"],
+Cell[6030, 171, 259, 4, 54, "Subsection",ExpressionUUID->"b968d9f4-0bb5-4b2f-9a82-ded0099dcf00"],
+Cell[6292, 177, 261, 4, 38, "Subsection",ExpressionUUID->"64711698-0ea6-446e-8765-a7eba88a7f66"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[6590, 186, 271, 4, 67, "Section",ExpressionUUID->"9ead2c0f-d0fd-43aa-9702-28771f30c11b"],
+Cell[6864, 192, 263, 4, 54, "Subsection",ExpressionUUID->"b94a3b81-f51d-402f-9c56-02801f1fd966"],
+Cell[7130, 198, 262, 4, 38, "Subsection",ExpressionUUID->"9862dbe9-c7ec-4f78-84f2-6dbf46e19af1"]
+}, Open  ]]
+}, Open  ]]
+}, Open  ]]
+}
+]
+*)
+
