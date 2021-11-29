@@ -19,7 +19,7 @@ dimensionMismatch::mismatch="the dimensions of both matrices must be equal, inst
 
 
 (* ::Subsection::Closed:: *)
-(*Define the DensityMatrix (DM) object*)
+(*qbitDefine the DensityMatrix (DM) object*)
 
 
 SetAttributes[MakeDM, HoldRest]
@@ -80,11 +80,11 @@ RandomHamiltonian[Energy_,nqbits_]:=Module[{protoState,perms,indeces},
 protoState = Table[If[i<Energy+1,1,0],{i,nqbits}];
 perms = Permutations[protoState];
 indeces = FromDigits[#,2]&/@perms;
-Plus@@Flatten[Table[Table[Random[]MakeHamiltonian[indeces[[i]]+1,indeces[[j]]+1,nqbits],{j,i-1}],{i,Length[perms]}],1]
+Plus@@Flatten[Table[Table[Random[] MakeHamiltonian[indeces[[i]]+1,indeces[[j]]+1,nqbits],{j,i-1}],{i,Length[perms]}],1]
 ]
 
 
-(* ::Subsection::Closed:: *)
+(* ::Subsection:: *)
 (*Basic Operations*)
 
 
@@ -116,7 +116,12 @@ DM[a_] + DM[b_] ^:= Module[{},
 
 
 Tr[DM[a_]] ^:= Tr[a[data]]
-Transpose[DM[a_]]^:=MakeDM[Transpose[a[data]], a[qbitIDs]]
+Transpose[DM[a_]]^:=MakeDM[ConjugateTranspose[a[data]], a[qbitIDs]]
+
+
+Unprotect[Round]
+Round[DM[a_],b_]:=MakeDM[Round[a[data],b], a[qbitIDs]]
+Protect[Round]
 
 
 (* ::Text:: *)
@@ -189,6 +194,9 @@ TableForm[a[data]//Simplify,TableHeadings->{labels,labels},TableAlignments->Cent
 (*Thermal properties*)
 
 
+PopFromTemp[T_]:=1/(E^(1/T)+1)
+
+
 Temp[DM[\[Rho]_],qbitID_]:=Module[{p},
 
 If[ (*qbitID is not in the qbitids of \[Rho] throw an error*)
@@ -231,4 +239,3 @@ Protect[Or];
 
 
 ExtractableWork[\[Rho]1i_,\[Rho]2i_,\[Rho]1f_,\[Rho]2f_] := T[\[Rho]2f] D[\[Rho]1f||\[Rho]2f]-T[\[Rho]2i] D[\[Rho]1i||\[Rho]2i]
-

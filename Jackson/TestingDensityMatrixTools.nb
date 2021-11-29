@@ -10,10 +10,10 @@
 NotebookFileLineBreakTest
 NotebookFileLineBreakTest
 NotebookDataPosition[       158,          7]
-NotebookDataLength[    384833,       7451]
+NotebookDataLength[    384839,       7451]
 NotebookOptionsPosition[    373601,       7261]
-NotebookOutlinePosition[    374123,       7280]
-CellTagsIndexPosition[    374080,       7277]
+NotebookOutlinePosition[    374128,       7280]
+CellTagsIndexPosition[    374085,       7277]
 WindowFrame->Normal*)
 
 (* Beginning of Notebook Content *)
@@ -6644,7 +6644,7 @@ C/x3Pf/f8P8Hk6jtyA==
   "Out[143]=",ExpressionUUID->"3b10b862-c895-4824-86a4-69586a19bb88"]
 }, Open  ]]
 }, Closed]]
-}, Closed]],
+}, Open  ]],
 
 Cell[CellGroupData[{
 
@@ -7256,11 +7256,11 @@ ZJX2D6PuC3KUD8kq7R9GzQNJkpP9C/U8fYw=
  CellLabel->
   "Out[394]=",ExpressionUUID->"fc1aadac-f550-4f09-8d1c-0ca817178703"]
 }, Open  ]]
-}, Closed]]
-}, Closed]]
+}, Open  ]]
+}, Open  ]]
 },
-WindowSize->{1278, 1340},
-WindowMargins->{{Automatic, -7}, {Automatic, 0}},
+WindowSize->{958.5, 1005.},
+WindowMargins->{{-5.25, Automatic}, {Automatic, 0}},
 TaggingRules->{
  "WelcomeScreenSettings" -> {"FEStarting" -> False}, "TryRealOnly" -> False},
 Magnification:>1.9 Inherited,
@@ -7279,7 +7279,7 @@ CellTagsIndex->{}
 *)
 (*NotebookFileOutline
 Notebook[{
-Cell[558, 20, 937, 16, 92, "Input",ExpressionUUID->"34f72dbd-b288-40be-a274-b86aad0b83b4"],
+Cell[558, 20, 937, 16, 90, "Input",ExpressionUUID->"34f72dbd-b288-40be-a274-b86aad0b83b4"],
 Cell[CellGroupData[{
 Cell[1520, 40, 186, 3, 121, "Subsection",ExpressionUUID->"7da04dfa-8ef7-43e6-8d2f-da1cfb59d674"],
 Cell[CellGroupData[{
@@ -7427,9 +7427,9 @@ Cell[124372, 2993, 1208, 31, 240, "Input",ExpressionUUID->"d2094697-1a02-4a8b-8b
 Cell[125583, 3026, 220067, 3617, 573, "Output",ExpressionUUID->"3b10b862-c895-4824-86a4-69586a19bb88"]
 }, Open  ]]
 }, Closed]]
-}, Closed]],
+}, Open  ]],
 Cell[CellGroupData[{
-Cell[345711, 6650, 209, 4, 68, "Subsection",ExpressionUUID->"856013da-672c-4451-b26d-8c02d88c6d45"],
+Cell[345711, 6650, 209, 4, 102, "Subsection",ExpressionUUID->"856013da-672c-4451-b26d-8c02d88c6d45"],
 Cell[CellGroupData[{
 Cell[345945, 6658, 178, 3, 84, "Subsubsection",ExpressionUUID->"e5eb36d6-d667-446b-b051-df9d934306db"],
 Cell[346126, 6663, 1747, 41, 126, "Input",ExpressionUUID->"1a265015-a5ac-4292-99dc-215e3632ac3e"],
@@ -7441,18 +7441,18 @@ Cell[348521, 6719, 15965, 319, 178, "Output",ExpressionUUID->"0597c31c-57cb-4390
 Cell[CellGroupData[{
 Cell[364535, 7044, 230, 4, 65, "Subsubsection",ExpressionUUID->"b51b4ba2-0d9b-41c5-8ad7-1287ad2bfabd"],
 Cell[364768, 7050, 179, 3, 65, "Text",ExpressionUUID->"934a3a13-9e1d-48a6-b0a5-4206b70fbb92"],
-Cell[364950, 7055, 1417, 41, 178, "Input",ExpressionUUID->"729bd7d8-4aae-4441-a676-ce02446496a9"],
+Cell[364950, 7055, 1417, 41, 292, "Input",ExpressionUUID->"729bd7d8-4aae-4441-a676-ce02446496a9"],
 Cell[366370, 7098, 208, 4, 65, "Text",ExpressionUUID->"87b87bcb-1a5e-4243-9916-0e20aa98381f"],
-Cell[366581, 7104, 1777, 32, 94, "Input",ExpressionUUID->"d41e40c3-c9c2-4a20-935c-89cebd9167e4"],
+Cell[366581, 7104, 1777, 32, 92, "Input",ExpressionUUID->"d41e40c3-c9c2-4a20-935c-89cebd9167e4"],
 Cell[368361, 7138, 158, 3, 65, "Text",ExpressionUUID->"801cc514-3542-41dc-aef2-5acae338328c"],
-Cell[368522, 7143, 1760, 41, 166, "Input",ExpressionUUID->"6e116f2e-57f5-4900-9ad6-664a7472d8da"],
-Cell[370285, 7186, 243, 6, 58, "Input",ExpressionUUID->"131a279d-51ef-4974-8d02-e02ee565627f"],
+Cell[368522, 7143, 1760, 41, 235, "Input",ExpressionUUID->"6e116f2e-57f5-4900-9ad6-664a7472d8da"],
+Cell[370285, 7186, 243, 6, 55, "Input",ExpressionUUID->"131a279d-51ef-4974-8d02-e02ee565627f"],
 Cell[CellGroupData[{
-Cell[370553, 7196, 211, 4, 54, "Input",ExpressionUUID->"f3723117-6bd6-4b89-8b66-0d69eb32f433"],
-Cell[370767, 7202, 2794, 54, 716, "Output",ExpressionUUID->"fc1aadac-f550-4f09-8d1c-0ca817178703"]
+Cell[370553, 7196, 211, 4, 53, "Input",ExpressionUUID->"f3723117-6bd6-4b89-8b66-0d69eb32f433"],
+Cell[370767, 7202, 2794, 54, 715, "Output",ExpressionUUID->"fc1aadac-f550-4f09-8d1c-0ca817178703"]
 }, Open  ]]
-}, Closed]]
-}, Closed]]
+}, Open  ]]
+}, Open  ]]
 }
 ]
 *)
