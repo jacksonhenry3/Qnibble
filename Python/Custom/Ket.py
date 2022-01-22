@@ -33,7 +33,8 @@ class Ket:
 
 
 class Basis(tuple[Ket]):
-    pass
+    def __repr__(self):
+        return "["+' '.join([str(b.num) for b in self])+"]"
 
 
 def canonical_basis(n):
