@@ -13,6 +13,9 @@ class DensityMatrix:
     def __repr__(self):
         return 'DM' + str(self._data)
 
+    def __eq__(self, other):
+        return (self.data == other.data).all() and self.basis == other.basis
+
     def __add__(self, other):
         assert isinstance(other, DensityMatrix), f"multiplication is only defined between two DensityMatrix objects, not {other}, of type {type(other)} and DensityMatrix"
         return DensityMatrix(self._data + other._data, self._basis)
