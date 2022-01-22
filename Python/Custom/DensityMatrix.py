@@ -1,5 +1,5 @@
 import numpy as np
-from Ket import energy_basis, canonical_basis
+from Ket import energy_basis, canonical_basis, Basis
 import matplotlib.pyplot as plt
 from matplotlib import colors
 import scipy.linalg as sp
@@ -20,9 +20,9 @@ class DensityMatrix:
     def tensor(self, other):
         if isinstance(other, DensityMatrix):
             new_data = sp.kron(self._data, other._data)
-            new_basis = [i + j for i in self.basis for j in other._basis]
+            new_basis = Basis((i + j for i in self.basis for j in other._basis))
             res = DensityMatrix(new_data, new_basis)
-
+            res.change_to_energy_basis()
             return res
         raise TypeError(f"tensor product between {self} and {other} (type {type(other)} is not defined")
 
@@ -67,20 +67,26 @@ class DensityMatrix:
     # ==== in place modification ====
 
     def change_to_energy_basis(self):
-        idx = np.argsort(self._basis, axis=0)
+        energy = [b.energy for b in self.basis]
+        nums = [b.num for b in self.basis]
+        idx = np.lexsort((nums, energy))
         self._data[:, ] = self._data[:, idx]
         self._data = self._data[idx, :]
-        self._basis = sorted(self._basis)
+        self._basis = Basis(tuple(np.array(self._basis)[idx]))
 
     def change_to_canonical_basis(self):
-        canonical_order = canonical_basis(int(np.log2(len(self.basis))))
-        assert False, "NOT IMPLIMENTED"
+        nums = [b.num for b in self.basis]
+        energy = [b.energy for b in self.basis]
+        idx = np.lexsort((energy, nums))
+        self._data[:, ] = self._data[:, idx]
+        self._data = self._data[idx, :]
+        self._basis = Basis(tuple(np.array(self._basis)[idx]))
 
     # ==== visualization ====
 
     def plot(self):
         fig, ax = plt.subplots(1, 1)
-        img = ax.imshow(.0001+np.abs(self._data), interpolation='none', cmap="hot", norm=colors.LogNorm())
+        img = ax.imshow(.0001 + np.abs(self._data), interpolation='none', cmap="hot", norm=colors.LogNorm())
         label_list = [str(b) for b in self._basis]
         ax.set_xticks(list(range(self.size)))
         ax.set_yticks(list(range(self.size)))
@@ -107,8 +113,9 @@ class DensityMatrix:
                 labelleft=False,
                 labeltop=False)  # ticks along the top edge are off
 
-
         plt.show()
+
+
 # labelbottom, labeltop, labelleft, labelright
 
 class Identity(DensityMatrix):
@@ -131,4 +138,7 @@ def nqbit(temps: list):
 
 
 def exp(dm: DensityMatrix):
-    return DensityMatrix(sp.expm(dm.data), dm.basis)
+    print(dm.basis == energy_basis(6))
+    new_dm = DensityMatrix(sp.expm(dm.data), dm.basis)
+    print(new_dm.basis == energy_basis(6))
+    return new_dm
