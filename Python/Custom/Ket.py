@@ -1,0 +1,36 @@
+class Ket:
+    def __init__(self, data: iter):
+        self.data = data
+
+    def __iter__(self):
+        ''' Returns the Iterator object '''
+        return iter(self.data)
+
+    def __eq__(self, other):
+        return self.data == other.data
+
+    def __repr__(self) -> str:
+        return f"|{self.energy}:{''.join([['↓','↑'][int(e)] for e in self])}⟩"
+
+    def __lt__(self, other):
+        assert isinstance(other, Ket)
+        return self.energy < other.energy
+
+    def __add__(self, other):
+        return Ket(list(self) + list(other))  # THIS IS INELEGANT
+
+    @property
+    def energy(self) -> int:
+        return sum([int(d) for d in self])
+
+
+class Basis(tuple[Ket]):
+    pass
+
+
+def canonical_basis(n):
+    return Basis([Ket(list(f"{i:b}".zfill(n))) for i in range(2 ** n)])
+
+
+def energy_basis(n):
+    return sorted(canonical_basis(n))
