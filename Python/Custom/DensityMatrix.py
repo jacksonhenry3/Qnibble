@@ -25,7 +25,7 @@ class DensityMatrix:
             new_data = sp.kron(self._data, other._data)
             new_basis = Basis((i + j for i in self.basis for j in other._basis))
             res = DensityMatrix(new_data, new_basis)
-            res.change_to_energy_basis()
+            # res.change_to_energy_basis()
             return res
         raise TypeError(f"tensor product between {self} and {other} (type {type(other)} is not defined")
 
@@ -128,11 +128,11 @@ class Identity(DensityMatrix):
         super().__init__(np.identity(2 ** n_qbits), energy_basis(n_qbits))
 
 
-def qbit(temp: float):
+def qbit(temp: float) -> DensityMatrix:
     return DensityMatrix(np.array([[1 - temp, 0], [0, temp]]), energy_basis(1))
 
 
-def nqbit(temps: list):
+def nqbit(temps: list) -> DensityMatrix:
     sys = qbit(temps[0])
     for temp in temps[1:]:
         sys = sys.tensor(qbit(temp))
@@ -140,7 +140,7 @@ def nqbit(temps: list):
     return sys
 
 
-def exp(dm: DensityMatrix):
+def exp(dm: DensityMatrix)-> DensityMatrix:
     print(dm.basis == energy_basis(6))
     new_dm = DensityMatrix(sp.expm(dm.data), dm.basis)
     print(new_dm.basis == energy_basis(6))
