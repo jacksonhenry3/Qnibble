@@ -1,6 +1,6 @@
-import DensityMatrix as DM
+import density_matrix as DM
 from math import comb
-from Ket import energy_basis
+from ket import energy_basis
 import numpy as np
 from scipy.linalg import block_diag
 

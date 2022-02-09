@@ -1,5 +1,5 @@
 import numpy as np
-from Ket import energy_basis, canonical_basis, Basis
+from ket import energy_basis, canonical_basis, Basis
 import matplotlib.pyplot as plt
 from matplotlib import colors
 import scipy.linalg as sp
@@ -65,6 +65,7 @@ class DensityMatrix:
 
     @property
     def H(self):
+        """Return the conjugate transpose of self"""
         return DensityMatrix(np.transpose(self._data).conjugate(), self._basis)
 
     # ==== in place modification ====
@@ -119,8 +120,6 @@ class DensityMatrix:
         plt.show()
 
 
-# labelbottom, labeltop, labelleft, labelright
-
 class Identity(DensityMatrix):
     """ Creates the identity density matrix for n qubits in the energy basis"""
 
@@ -140,8 +139,5 @@ def nqbit(temps: list) -> DensityMatrix:
     return sys
 
 
-def exp(dm: DensityMatrix)-> DensityMatrix:
-    print(dm.basis == energy_basis(6))
-    new_dm = DensityMatrix(sp.expm(dm.data), dm.basis)
-    print(new_dm.basis == energy_basis(6))
-    return new_dm
+def exp(dm: DensityMatrix) -> DensityMatrix:
+    return DensityMatrix(sp.expm(dm.data), dm.basis)
