@@ -1,12 +1,13 @@
 import numpy as np
-from ket import energy_basis, canonical_basis, Basis
+from Python.ket import energy_basis, canonical_basis, Basis
 import matplotlib.pyplot as plt
 from matplotlib import colors
 import scipy.linalg as sp
 
 
 class DensityMatrix:
-    def __init__(self, matrix, basis):
+    def __init__(self, matrix: np.ndarray, basis: Basis):
+        """This doesnt validate inputs, eg. the basis is allowed to be wrong the dimension """
         self._data = matrix
         self._basis = basis
 
@@ -14,10 +15,11 @@ class DensityMatrix:
         return 'DM' + str(self._data)
 
     def __eq__(self, other):
-        return (self.data == other.data).all() and self.basis == other.basis
+        return np.array_equal(self.data, other.data) and self.basis == other.basis
 
     def __add__(self, other):
-        assert isinstance(other, DensityMatrix), f"multiplication is only defined between two DensityMatrix objects, not {other}, of type {type(other)} and DensityMatrix"
+        assert isinstance(other, DensityMatrix), f"Addition is only defined between two DensityMatrix objects, not {other}, of type {type(other)} and DensityMatrix"
+        assert self.basis == other.basis
         return DensityMatrix(self._data + other._data, self._basis)
 
     def tensor(self, other):
@@ -25,7 +27,6 @@ class DensityMatrix:
             new_data = sp.kron(self._data, other._data)
             new_basis = Basis((i + j for i in self.basis for j in other._basis))
             res = DensityMatrix(new_data, new_basis)
-            # res.change_to_energy_basis()
             return res
         raise TypeError(f"tensor product between {self} and {other} (type {type(other)} is not defined")
 
@@ -45,7 +46,7 @@ class DensityMatrix:
         raise TypeError(f"multiplication between {self} and {other} (type {type(other)} is not defined")
 
     def __pow__(self, pow: int):
-        result = self
+        result = Identity(self.basis)
         for _ in range(pow):
             result *= self
         return result
@@ -123,8 +124,8 @@ class DensityMatrix:
 class Identity(DensityMatrix):
     """ Creates the identity density matrix for n qubits in the energy basis"""
 
-    def __init__(self, n_qbits):
-        super().__init__(np.identity(2 ** n_qbits), energy_basis(n_qbits))
+    def __init__(self, basis):
+        super().__init__(np.identity(len(basis)),basis)
 
 
 def qbit(temp: float) -> DensityMatrix:
