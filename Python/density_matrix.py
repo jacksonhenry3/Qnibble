@@ -125,16 +125,16 @@ class Identity(DensityMatrix):
     """ Creates the identity density matrix for n qubits in the energy basis"""
 
     def __init__(self, basis):
-        super().__init__(np.identity(len(basis)),basis)
+        super().__init__(np.identity(len(basis)), basis)
 
 
-def qbit(temp: float) -> DensityMatrix:
-    return DensityMatrix(np.array([[1 - temp, 0], [0, temp]]), energy_basis(1))
+def qbit(pop: float) -> DensityMatrix:
+    return DensityMatrix(np.array([[1 - pop, 0], [0, pop]]), energy_basis(1))
 
 
-def nqbit(temps: list) -> DensityMatrix:
-    sys = qbit(temps[0])
-    for temp in temps[1:]:
+def nqbit(pops: list) -> DensityMatrix:
+    sys = qbit(pops[0])
+    for temp in pops[1:]:
         sys = sys.tensor(qbit(temp))
     sys.change_to_energy_basis()
     return sys
