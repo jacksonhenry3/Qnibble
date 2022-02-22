@@ -1,5 +1,5 @@
 import numpy as np
-from Python.ket import energy_basis, canonical_basis, Basis
+from ket import energy_basis, canonical_basis, Basis
 import matplotlib.pyplot as plt
 from matplotlib import colors
 import scipy.linalg as sp
