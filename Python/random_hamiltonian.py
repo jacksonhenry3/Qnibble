@@ -1,10 +1,9 @@
-import density_matrix as DM
+import Python.density_matrix as DM
 from math import comb
-from ket import energy_basis
+from Python.ket import energy_basis
 import numpy as np
 from scipy.linalg import block_diag
 
-import density_matrix
 
 def random_hamiltonian(nqbits: int):
     blocks = [.1 * np.random.random([comb(nqbits, i), comb(nqbits, i)]) for i in range(nqbits + 1)]
