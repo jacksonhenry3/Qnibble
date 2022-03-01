@@ -1,5 +1,5 @@
 import numpy as np
-from Python.ket import energy_basis, canonical_basis, Basis
+from Python.ket import energy_basis, canonical_basis, Basis, Ket
 import matplotlib.pyplot as plt
 from matplotlib import colors
 import scipy.linalg as sp
@@ -22,14 +22,6 @@ class DensityMatrix:
         assert self.basis == other.basis
         return DensityMatrix(self._data + other._data, self._basis)
 
-    def tensor(self, other):
-        if isinstance(other, DensityMatrix):
-            new_data = sp.kron(self._data, other._data)
-            new_basis = Basis((i + j for i in self.basis for j in other._basis))
-            res = DensityMatrix(new_data, new_basis)
-            return res
-        raise TypeError(f"tensor product between {self} and {other} (type {type(other)} is not defined")
-
     def __mul__(self, other):
         """Multiplication with a scalar"""
         if type(other) in [float, int, complex]:
@@ -49,6 +41,58 @@ class DensityMatrix:
         result = Identity(self.basis)
         for _ in range(pow):
             result *= self
+        return result
+
+    def tensor(self, other):
+        if isinstance(other, DensityMatrix):
+            new_data = sp.kron(self._data, other._data)
+            new_basis = Basis((i + j for i in self.basis for j in other._basis))
+            res = DensityMatrix(new_data, new_basis)
+            return res
+        raise TypeError(f"tensor product between {self} and {other} (type {type(other)} is not defined")
+
+    def _ptrace(self, qbit):
+        """
+
+
+        Args:
+            qbit:
+
+        Returns:
+
+        """
+        num_qbits = int(np.log2(len(self.basis)))
+        new_basis = energy_basis(num_qbits - 1)
+        new_matrix = np.zeros((2 ** (num_qbits - 1), 2 ** (num_qbits - 1)), dtype=np.float)
+        for x, b1 in enumerate(new_basis):
+            for y, b2 in enumerate(new_basis):
+
+                first_X = Ket(list(b1.data)[:qbit] + ['0'] + list(b1.data)[qbit:])
+                first_Y = Ket(list(b2.data)[:qbit] + ['0'] + list(b2.data)[qbit:])
+
+                second_X = Ket(list(b1.data)[:qbit] + ['1'] + list(b1.data)[qbit:])
+                second_Y = Ket(list(b2.data)[:qbit] + ['1'] + list(b2.data)[qbit:])
+
+                for i, b in enumerate(self.basis):
+                    if first_X == b:
+                        first_X_i = i
+                    if first_Y == b:
+                        first_Y_i = i
+                    if second_X == b:
+                        second_X_i = i
+                    if second_Y == b:
+                        second_Y_i = i
+
+                new_matrix[x, y] = self.data[first_X_i, first_Y_i] + self.data[second_X_i, second_Y_i]
+
+        return DensityMatrix(new_matrix, new_basis)
+
+    def ptrace(self, qbits):
+
+        result = self
+        print(sorted(qbits)[::-1])
+        for qbit_index in sorted(qbits)[::-1]:
+            result = result._ptrace(qbit_index)
         return result
 
     # ==== static properties ====
@@ -100,7 +144,7 @@ class DensityMatrix:
         ax.set_xticklabels(label_list)
         ax.set_yticklabels(label_list)
         ax.xaxis.tick_top()
-        fig.colorbar(img)
+        # fig.colorbar(img)
         plt.xticks(rotation=75)
         plt.tick_params(
             which='major',  # Just major  ticks are affected

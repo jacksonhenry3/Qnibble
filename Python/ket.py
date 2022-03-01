@@ -10,8 +10,14 @@ class Ket:
         ''' Returns the Iterator object '''
         return iter(self.data)
 
+    def __len__(self):
+        return len(self.data)
+
     def __eq__(self, other):
         return self.data == other.data
+
+    # def __getitem__(self, item):
+    #     return self.data[item]
 
     def __repr__(self) -> str:
         return f"|{self.energy}:{''.join([['↓', '↑'][int(e)] for e in self])}⟩"
@@ -22,6 +28,8 @@ class Ket:
 
     def __add__(self, other):
         return Ket(list(self) + list(other))  # THIS IS INELEGANT
+
+
 
     @property
     def energy(self) -> int:
@@ -42,7 +50,7 @@ def canonical_basis(n):
     return Basis([Ket(list(f"{i:b}".zfill(n))) for i in range(2 ** n)])
 
 
-def energy_basis(n):
+def energy_basis(n): #somethings wrong
     basis = canonical_basis(n)
     energy = [b.energy for b in basis]
     nums = [b.num for b in basis]
