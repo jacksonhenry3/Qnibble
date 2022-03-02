@@ -53,8 +53,6 @@ class DensityMatrix:
 
     def _ptrace(self, n):
         """
-
-
         Args:
             n: the index of the qbit to be traced out
 
@@ -62,7 +60,7 @@ class DensityMatrix:
             A new density matrix which the nth qbit traced out (in the energy basis)
         """
 
-        num_qbits = self.basis.num_qubit
+        num_qbits = self.basis.num_qubits
 
         new_num_qubits = num_qbits - 1
         new_num_states = 2 ** new_num_qubits
@@ -85,7 +83,19 @@ class DensityMatrix:
 
         return DensityMatrix(new_matrix, new_basis)
 
-    def ptrace(self, qbits):
+    def ptrace(self, qbits: list):
+        """
+
+        Args:
+            qbits: a list of indices of the qubits to trace out
+
+        Returns: a new density matrix with the requested qubits traced out
+
+        """
+        assert len(qbits) < self.basis.num_qubits, "cant completly contract"
+
+        for q in qbits:
+            assert q < self.basis.num_qubits, "qbit index out of range"
 
         result = self
         print(sorted(qbits)[::-1])

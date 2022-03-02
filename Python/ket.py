@@ -40,7 +40,7 @@ class Ket:
 
 class Basis(tuple):
     @functools.cached_property
-    def num_qubit(self):
+    def num_qubits(self):
         return int(np.log2(len(self)))
 
     def __repr__(self):
