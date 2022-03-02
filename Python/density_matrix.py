@@ -51,37 +51,35 @@ class DensityMatrix:
             return res
         raise TypeError(f"tensor product between {self} and {other} (type {type(other)} is not defined")
 
-    def _ptrace(self, qbit):
+    def _ptrace(self, n):
         """
 
 
         Args:
-            qbit:
+            n: the index of the qbit to be traced out
 
         Returns:
-
+            A new density matrix which the nth qbit traced out (in the energy basis)
         """
-        num_qbits = int(np.log2(len(self.basis)))
-        new_basis = energy_basis(num_qbits - 1)
-        new_matrix = np.zeros((2 ** (num_qbits - 1), 2 ** (num_qbits - 1)), dtype=np.float)
+
+        num_qbits = self.basis.num_qubit
+
+        new_num_qubits = num_qbits - 1
+        new_num_states = 2 ** new_num_qubits
+        new_basis = energy_basis(new_num_qubits)
+        new_matrix = np.zeros((new_num_states, new_num_states), dtype=np.float)
         for x, b1 in enumerate(new_basis):
             for y, b2 in enumerate(new_basis):
+                first_X = Ket(list(b1.data)[:n] + ['0'] + list(b1.data)[n:])
+                first_Y = Ket(list(b2.data)[:n] + ['0'] + list(b2.data)[n:])
 
-                first_X = Ket(list(b1.data)[:qbit] + ['0'] + list(b1.data)[qbit:])
-                first_Y = Ket(list(b2.data)[:qbit] + ['0'] + list(b2.data)[qbit:])
+                second_X = Ket(list(b1.data)[:n] + ['1'] + list(b1.data)[n:])
+                second_Y = Ket(list(b2.data)[:n] + ['1'] + list(b2.data)[n:])
 
-                second_X = Ket(list(b1.data)[:qbit] + ['1'] + list(b1.data)[qbit:])
-                second_Y = Ket(list(b2.data)[:qbit] + ['1'] + list(b2.data)[qbit:])
-
-                for i, b in enumerate(self.basis):
-                    if first_X == b:
-                        first_X_i = i
-                    if first_Y == b:
-                        first_Y_i = i
-                    if second_X == b:
-                        second_X_i = i
-                    if second_Y == b:
-                        second_Y_i = i
+                first_X_i = self.basis.index(first_X)
+                first_Y_i = self.basis.index(first_Y)
+                second_X_i = self.basis.index(second_X)
+                second_Y_i = self.basis.index(second_Y)
 
                 new_matrix[x, y] = self.data[first_X_i, first_Y_i] + self.data[second_X_i, second_Y_i]
 

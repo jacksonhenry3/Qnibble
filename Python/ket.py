@@ -1,5 +1,5 @@
 import numpy as np
-
+import functools
 
 class Ket:
     def __init__(self, data: iter):
@@ -29,8 +29,6 @@ class Ket:
     def __add__(self, other):
         return Ket(list(self) + list(other))  # THIS IS INELEGANT
 
-
-
     @property
     def energy(self) -> int:
         return sum([int(d) for d in self])
@@ -40,8 +38,11 @@ class Ket:
         return self._num
 
 
-# tuple[Ket]
 class Basis(tuple):
+    @functools.cached_property
+    def num_qubit(self):
+        return int(np.log2(len(self)))
+
     def __repr__(self):
         return "[" + ' '.join([str(b.num) for b in self]) + "]"
 
@@ -50,7 +51,7 @@ def canonical_basis(n):
     return Basis([Ket(list(f"{i:b}".zfill(n))) for i in range(2 ** n)])
 
 
-def energy_basis(n): #somethings wrong
+def energy_basis(n):  # somethings wrong
     basis = canonical_basis(n)
     energy = [b.energy for b in basis]
     nums = [b.num for b in basis]
