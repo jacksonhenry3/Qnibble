@@ -18,8 +18,8 @@ class DensityMatrix:
         return np.array_equal(self.data, other.data) and self.basis == other.basis
 
     def __add__(self, other):
-        assert isinstance(other, DensityMatrix), f"Addition is only defined between two DensityMatrix objects, not {other}, of type {type(other)} and DensityMatrix"
-        assert self.basis == other.basis
+        # assert isinstance(other, DensityMatrix), f"Addition is only defined between two DensityMatrix objects, not {other}, of type {type(other)} and DensityMatrix"
+        # assert self.basis == other.basis
         return DensityMatrix(self._data + other._data, self._basis)
 
     def __mul__(self, other):
@@ -27,9 +27,9 @@ class DensityMatrix:
         if type(other) in [float, int, complex]:
             return DensityMatrix(self._data * other, self._basis)
         elif isinstance(other, DensityMatrix):
-            if self.basis == other.basis:
-                return DensityMatrix(np.matmul(self.data, other.data), self.basis)
-            raise TypeError(f"both objects must have the same basis")
+            # if self.basis == other.basis:
+            return DensityMatrix(np.matmul(self.data, other.data), self.basis)
+            # raise TypeError(f"both objects must have the same basis")
         raise TypeError(f"multiplication between {self} and {other} (type {type(other)} is not defined")
 
     def __rmul__(self, other):
@@ -42,6 +42,9 @@ class DensityMatrix:
         for _ in range(pow):
             result *= self
         return result
+
+    def __neg__(self):
+        return DensityMatrix(-self.data, self.basis)
 
     def tensor(self, other):
         if isinstance(other, DensityMatrix):
@@ -65,7 +68,7 @@ class DensityMatrix:
         new_num_qubits = num_qbits - 1
         new_num_states = 2 ** new_num_qubits
         new_basis = energy_basis(new_num_qubits)
-        new_matrix = np.zeros((new_num_states, new_num_states), dtype=np.float)
+        new_matrix = np.zeros((new_num_states, new_num_states), dtype=np.complex)
         for x, b1 in enumerate(new_basis):
             for y, b2 in enumerate(new_basis):
                 first_X = Ket(list(b1.data)[:n] + ['0'] + list(b1.data)[n:])
@@ -98,12 +101,15 @@ class DensityMatrix:
             assert q < self.basis.num_qubits, "qbit index out of range"
 
         result = self
-        print(sorted(qbits)[::-1])
         for qbit_index in sorted(qbits)[::-1]:
             result = result._ptrace(qbit_index)
         return result
 
     # ==== static properties ====
+    @property
+    def trace(self):
+        return np.trace(self.data)
+
     @property
     def data(self):
         return self._data
@@ -115,6 +121,10 @@ class DensityMatrix:
     @property
     def size(self):
         return self._data.shape[0]
+
+    @property
+    def nqbits(self):
+        return int(np.log2(self.size))
 
     @property
     def H(self):
@@ -152,7 +162,7 @@ class DensityMatrix:
         ax.set_xticklabels(label_list)
         ax.set_yticklabels(label_list)
         ax.xaxis.tick_top()
-        # fig.colorbar(img)
+        fig.colorbar(img)
         plt.xticks(rotation=75)
         plt.tick_params(
             which='major',  # Just major  ticks are affected
@@ -181,6 +191,7 @@ class Identity(DensityMatrix):
 
 
 def qbit(pop: float) -> DensityMatrix:
+    assert 0 < pop < .5, f"population must be between 0 and .5 but you chose {pop}"
     return DensityMatrix(np.array([[1 - pop, 0], [0, pop]]), energy_basis(1))
 
 
@@ -194,3 +205,51 @@ def nqbit(pops: list) -> DensityMatrix:
 
 def exp(dm: DensityMatrix) -> DensityMatrix:
     return DensityMatrix(sp.expm(dm.data), dm.basis)
+
+
+def log(dm: DensityMatrix) -> DensityMatrix:
+    return DensityMatrix(sp.logm(dm.data), dm.basis)
+
+
+# measurements
+def temp(qbit: DensityMatrix):
+    assert qbit.size == 2, "density matrix must be for a single qubit"
+    p = qbit.data[1, 1]
+    return temp_from_pop(p)
+
+
+def temps(dm: DensityMatrix):
+    n = dm.nqbits
+    result = []
+    for i in range(n):
+        to_trace = list(range(n))
+        to_trace.remove(i)
+        result.append(temp(dm.ptrace(to_trace)))
+    return result
+
+
+def temp_from_pop(pop: float):
+    return 1 / (np.log((1 - pop) / pop))
+
+
+def pop_from_temp(T: float):
+    return 1 / (1 + np.exp(1 / T))
+
+
+def D(dm1: DensityMatrix, dm2: DensityMatrix):
+    assert dm1.size == dm2.size
+    return (dm1 * log(dm1)).trace - (dm1 * log(dm2)).trace
+
+
+def extractable_work(T: float, dm: DensityMatrix):
+    pop = pop_from_temp(T)
+    reference_dm = nqbit([pop for _ in range(dm.nqbits)])
+    return T * D(dm, reference_dm)
+
+
+def change_in_extractable_work(T_initial: float, dm_initial: DensityMatrix, T_final: float, dm_final: DensityMatrix):
+    return extractable_work(T_final, dm_final) - extractable_work(T_initial, dm_initial)
+
+
+def entropy(dm: DensityMatrix):
+    return (-dm * log(dm)).trace
