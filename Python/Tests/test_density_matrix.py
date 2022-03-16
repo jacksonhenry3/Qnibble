@@ -69,4 +69,25 @@ class TestKet:
         assert dm_1.H.H == dm_1
         assert np.array_equal(dm_2.H.data, np.conjugate(np.transpose(data_2)))
 
+    def test_dm_exp(self):
+        data_1, data_2 = np.identity(4), np.ones((4, 4))
+        basis_1 = ket.Basis([ket.Ket('00'), ket.Ket('01'), ket.Ket('10'), ket.Ket('11')])
+        dm_1, dm_2 = dm.DensityMatrix(data_1, basis_1), dm.DensityMatrix(data_2, basis_1)
+        assert np.array_equal(dm.dm_exp(dm_1).data, sp.linalg.expm(dm_1.data))
+        assert not np.array_equal(dm.dm_exp(dm_1).data, sp.linalg.expm(dm_2.data))
+
+    def test_dm_log(self):
+        data_1, data_2 = np.identity(4), np.ones((4, 4))
+        basis_1 = ket.Basis([ket.Ket('00'), ket.Ket('01'), ket.Ket('10'), ket.Ket('11')])
+        dm_1, dm_2 = dm.DensityMatrix(data_1, basis_1), dm.DensityMatrix(data_2, basis_1)
+        assert np.array_equal(dm.dm_log(dm_1).data, sp.linalg.logm(dm_1.data))
+        assert not np.array_equal(dm.dm_log(dm_1).data, sp.linalg.logm(dm_2.data))
+        assert dm.dm_log(dm.dm_exp(dm_1)) == dm_1
+
+    def test_dm_trace(self):
+        data_1, data_2 = np.identity(4), np.ones((4, 4))
+        basis_1 = ket.Basis([ket.Ket('00'), ket.Ket('01'), ket.Ket('10'), ket.Ket('11')])
+        dm_1, dm_2 = dm.DensityMatrix(data_1, basis_1), dm.DensityMatrix(data_2, basis_1)
+        assert dm.dm_trace(dm_1) == np.trace(data_1)
+        assert dm.dm_trace(dm_2) == np.trace(data_2)
 
