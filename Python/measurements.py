@@ -1,5 +1,5 @@
 import numpy as np
-from density_matrix import DensityMatrix, nqbit, dm_trace, dm_log
+from Python.density_matrix import DensityMatrix, nqbit, dm_trace, dm_log
 
 
 # measurements
