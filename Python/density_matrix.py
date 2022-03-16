@@ -61,6 +61,8 @@ class DensityMatrix:
 
         Returns:
             A new density matrix which the nth qbit traced out (in the energy basis)
+
+        This is incredibly slow.
         """
 
         num_qbits = self.basis.num_qubits
@@ -107,10 +109,6 @@ class DensityMatrix:
 
     # ==== static properties ====
     @property
-    def trace(self):
-        return np.trace(self.data)
-
-    @property
     def data(self):
         return self._data
 
@@ -123,7 +121,7 @@ class DensityMatrix:
         return self._data.shape[0]
 
     @property
-    def nqbits(self):
+    def number_of_qbits(self):
         return int(np.log2(self.size))
 
     @property
@@ -183,6 +181,7 @@ class DensityMatrix:
         plt.show()
 
 
+# Utilities to generate density matrices
 class Identity(DensityMatrix):
     """ Creates the identity density matrix for n qubits in the energy basis"""
 
@@ -203,53 +202,14 @@ def nqbit(pops: list) -> DensityMatrix:
     return sys
 
 
-def exp(dm: DensityMatrix) -> DensityMatrix:
+# functions that operate on density matrices
+def dm_exp(dm: DensityMatrix) -> DensityMatrix:
     return DensityMatrix(sp.expm(dm.data), dm.basis)
 
 
-def log(dm: DensityMatrix) -> DensityMatrix:
+def dm_log(dm: DensityMatrix) -> DensityMatrix:
     return DensityMatrix(sp.logm(dm.data), dm.basis)
 
 
-# measurements
-def temp(qbit: DensityMatrix):
-    assert qbit.size == 2, "density matrix must be for a single qubit"
-    p = qbit.data[1, 1]
-    return temp_from_pop(p)
-
-
-def temps(dm: DensityMatrix):
-    n = dm.nqbits
-    result = []
-    for i in range(n):
-        to_trace = list(range(n))
-        to_trace.remove(i)
-        result.append(temp(dm.ptrace(to_trace)))
-    return result
-
-
-def temp_from_pop(pop: float):
-    return 1 / (np.log((1 - pop) / pop))
-
-
-def pop_from_temp(T: float):
-    return 1 / (1 + np.exp(1 / T))
-
-
-def D(dm1: DensityMatrix, dm2: DensityMatrix):
-    assert dm1.size == dm2.size
-    return (dm1 * log(dm1)).trace - (dm1 * log(dm2)).trace
-
-
-def extractable_work(T: float, dm: DensityMatrix):
-    pop = pop_from_temp(T)
-    reference_dm = nqbit([pop for _ in range(dm.nqbits)])
-    return T * D(dm, reference_dm)
-
-
-def change_in_extractable_work(T_initial: float, dm_initial: DensityMatrix, T_final: float, dm_final: DensityMatrix):
-    return extractable_work(T_final, dm_final) - extractable_work(T_initial, dm_initial)
-
-
-def entropy(dm: DensityMatrix):
-    return (-dm * log(dm)).trace
+def dm_trace(dm: DensityMatrix) -> float:
+    return np.trace(dm.data)
