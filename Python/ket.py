@@ -1,9 +1,11 @@
 import numpy as np
 import functools
 
+
 class Ket:
     def __init__(self, data: iter):
         self.data = data
+        self._order = list(range(len(data)))
         self._num = int(''.join([str(e) for e in data]), 2)
 
     def __iter__(self):
@@ -14,28 +16,35 @@ class Ket:
         return len(self.data)
 
     def __eq__(self, other):
-        return self.data == other.data
+        return self.data == other.data and self._order == other._order
 
     # def __getitem__(self, item):
     #     return self.data[item]
 
     def __repr__(self) -> str:
-        return f"|{self.energy}:{''.join([['↓', '↑'][int(e)] for e in self])}⟩"
+        SUB = str.maketrans("0123456789", "₀₁₂₃₄₅₆₇₈₉")
+
+        return f"|{self.energy}:" + f"{''.join([['↓', '↑'][int(e)] + str(self._order[i]) for i, e in enumerate(self)])}⟩".translate(SUB)
 
     def __lt__(self, other):
         assert isinstance(other, Ket)
         return self.energy < other.energy
 
     def __add__(self, other):
-        return Ket(list(self) + list(other))  # THIS IS INELEGANT
+        return Ket(np.array(list(self) + list(other)))  # THIS IS INELEGANT
 
-    @property
+
+    @functools.cached_property
     def energy(self) -> int:
         return sum([int(d) for d in self])
 
     @property
     def num(self) -> int:
         return self._num
+
+    def reorder(self, order):
+        self._order = order
+        self._num = int(''.join([str(e) for e in self.data[self._order]]), 2)
 
 
 class Basis(tuple):
@@ -48,12 +57,12 @@ class Basis(tuple):
 
 
 def canonical_basis(n):
-    return Basis([Ket(list(f"{i:b}".zfill(n))) for i in range(2 ** n)])
+    return Basis([Ket(np.array(list(f"{i:b}".zfill(n)))) for i in range(2 ** n)])
 
 
-def energy_basis(n):  # somethings wrong
+def energy_basis(n):
     basis = canonical_basis(n)
     energy = [b.energy for b in basis]
     nums = [b.num for b in basis]
     idx = np.lexsort((nums, energy))
-    return Basis(tuple(np.array(basis)[idx]))
+    return Basis(np.array(basis)[idx])

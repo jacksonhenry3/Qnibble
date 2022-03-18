@@ -8,7 +8,7 @@ import scipy.linalg as sp
 class DensityMatrix:
     def __init__(self, matrix: np.ndarray, basis: Basis):
         """This doesnt validate inputs, eg. the basis is allowed to be wrong the dimension """
-        self._data = matrix
+        self._data: np.ndarray = matrix
         self._basis = basis
 
     def __repr__(self):
@@ -18,8 +18,7 @@ class DensityMatrix:
         return np.array_equal(self.data, other.data) and self.basis == other.basis
 
     def __add__(self, other):
-        # assert isinstance(other, DensityMatrix), f"Addition is only defined between two DensityMatrix objects, not {other}, of type {type(other)} and DensityMatrix"
-        # assert self.basis == other.basis
+        assert isinstance(other, DensityMatrix), f"Addition is only defined between two DensityMatrix objects, not {other}, of type {type(other)} and DensityMatrix"
         return DensityMatrix(self._data + other._data, self._basis)
 
     def __mul__(self, other):
@@ -88,7 +87,7 @@ class DensityMatrix:
 
         return DensityMatrix(new_matrix, new_basis)
 
-    def ptrace(self, qbits: list):
+    def ptrace_legacy(self, qbits: list):
         """
 
         Args:
@@ -107,9 +106,35 @@ class DensityMatrix:
             result = result._ptrace(qbit_index)
         return result
 
+    def ptrace(self, qbits: list):
+        """
+
+        Args:
+            qbits: a list of indices of the qubits to trace out
+
+        Returns: a new density matrix with the requested qubits traced out
+
+        """
+        assert len(qbits) < self.basis.num_qubits, "cant completly contract"
+
+        for q in qbits:
+            assert q < self.basis.num_qubits, "qbit index out of range"
+
+        n = self.number_of_qbits
+        data = self.qbit_basis()
+        axes = np.concatenate((np.array(qbits), np.array(qbits) + n))
+        new_data = np.sum(data, axis=tuple(axes))
+        return DensityMatrix(new_data, canonical_basis(n - len(qbits)))
+
+    def qbit_basis(self):
+        n = self.number_of_qbits
+        self.change_to_canonical_basis()
+        data = self.data.reshape(*[2 for _ in range(2 * n)])
+        return data
+
     # ==== static properties ====
     @property
-    def data(self):
+    def data(self) -> np.ndarray:
         return self._data
 
     @property
@@ -141,11 +166,21 @@ class DensityMatrix:
 
     def change_to_canonical_basis(self):
         nums = [b.num for b in self.basis]
-        energy = [b.energy for b in self.basis]
-        idx = np.lexsort((energy, nums))
+        # energy = [b.energy for b in self.basis]
+        idx = np.argsort(nums)
         self._data[:, ] = self._data[:, idx]
         self._data = self._data[idx, :]
         self._basis = Basis(tuple(np.array(self._basis)[idx]))
+
+    def relabel_basis(self, new_order):
+        """
+        changes basis by changing which is the "first" qbit.
+
+        """
+        for e in self.basis:
+            e.reorder(new_order)
+
+        self.change_to_canonical_basis()
 
     # ==== visualization ====
 
@@ -190,7 +225,7 @@ class Identity(DensityMatrix):
 
 
 def qbit(pop: float) -> DensityMatrix:
-    assert 0 < pop < .5, f"population must be between 0 and .5 but you chose {pop}"
+    assert 0 <= pop <= .5, f"population must be between 0 and .5 but you chose {pop}"
     return DensityMatrix(np.array([[1 - pop, 0], [0, pop]]), energy_basis(1))
 
 

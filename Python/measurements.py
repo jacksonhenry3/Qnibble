@@ -13,6 +13,7 @@ def temps(dm: DensityMatrix):
     n = dm.number_of_qbits
     result = []
     for i in range(n):
+        # this does extra work by redoing the same trace multiple times
         to_trace = list(range(n))
         to_trace.remove(i)
         result.append(temp(dm.ptrace(to_trace)))
