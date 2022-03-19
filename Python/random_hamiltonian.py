@@ -16,9 +16,7 @@ def random_hamiltonian(nqbits: int):
     return DM.DensityMatrix(m, energy_basis(nqbits))
 
 
-def random_unitary(nqbits: int,dt = .01):
-    blocks = [fractional_matrix_power(unitary_group.rvs(comb(nqbits, i)), dt) for i in range(1, nqbits)]
-    blocks = [np.array([[1]])] + blocks + [np.array([[1]])]
+def random_unitary(nqbits: int, dt=.01):
+    blocks = [np.array([[1]])] + [unitary_group.rvs(comb(nqbits, i)) for i in range(1, nqbits)] + [np.array([[1]])]
     m = block_diag(*blocks)
-    # np.fill_diagonal(m, 0)
     return DM.DensityMatrix(m, energy_basis(nqbits))

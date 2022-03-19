@@ -26,7 +26,7 @@ class DensityMatrix:
         if type(other) in [float, int, complex]:
             return DensityMatrix(self._data * other, self._basis)
         elif isinstance(other, DensityMatrix):
-            # if self.basis == other.basis:
+            assert self.basis == other.basis
             return DensityMatrix(np.matmul(self.data, other.data), self.basis)
             # raise TypeError(f"both objects must have the same basis")
         raise TypeError(f"multiplication between {self} and {other} (type {type(other)} is not defined")

@@ -16,7 +16,7 @@ class Ket:
         return len(self.data)
 
     def __eq__(self, other):
-        return self.data == other.data and self._order == other._order
+        return list(self.data) == list(other.data) and list(self._order) == list(other._order)
 
     # def __getitem__(self, item):
     #     return self.data[item]
@@ -32,7 +32,6 @@ class Ket:
 
     def __add__(self, other):
         return Ket(np.array(list(self) + list(other)))  # THIS IS INELEGANT
-
 
     @functools.cached_property
     def energy(self) -> int:
