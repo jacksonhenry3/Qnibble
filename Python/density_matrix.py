@@ -83,7 +83,7 @@ class DensityMatrix:
     def qbit_basis(self):
         n = self.number_of_qbits
         self.change_to_canonical_basis()
-        data = self.data.reshape(*[2 for _ in range(2 * n)])
+        data = self.data.toarray().reshape(*[2 for _ in range(2 * n)])
         return data
 
     # ==== static properties ====
