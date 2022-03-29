@@ -1,4 +1,6 @@
 import numpy as np
+from scipy import sparse
+
 from Python.ket import energy_basis, canonical_basis, Basis, Ket
 import matplotlib.pyplot as plt
 from matplotlib import colors
@@ -6,16 +8,16 @@ import scipy.linalg as sp
 
 
 class DensityMatrix:
-    def __init__(self, matrix: np.ndarray, basis: Basis):
+    def __init__(self, matrix: sparse.bsr_matrix, basis: Basis):
         """This doesnt validate inputs, eg. the basis is allowed to be wrong the dimension """
-        self._data: np.ndarray = matrix
+        self._data: sparse.bsr_matrix = matrix
         self._basis = basis
 
     def __repr__(self):
-        return 'DM' + str(self._data)
+        return 'DM' + str(self._data.to_array())
 
     def __eq__(self, other):
-        return np.array_equal(self.data, other.data) and self.basis == other.basis
+        return (self.data, other.data).to_array().all() and self.basis == other.basis
 
     def __add__(self, other):
         assert isinstance(other, DensityMatrix), f"Addition is only defined between two DensityMatrix objects, not {other}, of type {type(other)} and DensityMatrix"
@@ -27,8 +29,7 @@ class DensityMatrix:
             return DensityMatrix(self._data * other, self._basis)
         elif isinstance(other, DensityMatrix):
             assert self.basis == other.basis
-            return DensityMatrix(np.matmul(self.data, other.data), self.basis)
-            # raise TypeError(f"both objects must have the same basis")
+            return DensityMatrix(self.data @ other.data, self.basis)
         raise TypeError(f"multiplication between {self} and {other} (type {type(other)} is not defined")
 
     def __rmul__(self, other):
@@ -36,75 +37,26 @@ class DensityMatrix:
             return self.__mul__(other)
         raise TypeError(f"multiplication between {self} and {other} (type {type(other)} is not defined")
 
-    def __pow__(self, pow: int):
-        result = Identity(self.basis)
-        for _ in range(pow):
-            result *= self
-        return result
+    # def __pow__(self, power: int):
+    #     result = Identity(self.basis)
+    #     for _ in range(power):
+    #         result *= self
+    #     return result
 
     def __neg__(self):
         return DensityMatrix(-self.data, self.basis)
 
-    def tensor(self, other):
-        if isinstance(other, DensityMatrix):
-            new_data = sp.kron(self._data, other._data)
-            new_basis = Basis((i + j for i in self.basis for j in other._basis))
-            res = DensityMatrix(new_data, new_basis)
-            return res
-        raise TypeError(f"tensor product between {self} and {other} (type {type(other)} is not defined")
+    def tensor(self, *others):
+        res_data = self._data
+        res_basis = self._basis
+        for other in others:
+            if isinstance(other, DensityMatrix):
+                res_data = sparse.kron(res_data, other._data)
+                res_basis = Basis((i + j for i in res_basis for j in other._basis))
 
-    def _ptrace(self, n):
-        """
-        Args:
-            n: the index of the qbit to be traced out
-
-        Returns:
-            A new density matrix which the nth qbit traced out (in the energy basis)
-
-        This is incredibly slow.
-        """
-
-        num_qbits = self.basis.num_qubits
-
-        new_num_qubits = num_qbits - 1
-        new_num_states = 2 ** new_num_qubits
-        new_basis = energy_basis(new_num_qubits)
-        new_matrix = np.zeros((new_num_states, new_num_states), dtype=np.complex)
-        for x, b1 in enumerate(new_basis):
-            for y, b2 in enumerate(new_basis):
-                first_X = Ket(list(b1.data)[:n] + ['0'] + list(b1.data)[n:])
-                first_Y = Ket(list(b2.data)[:n] + ['0'] + list(b2.data)[n:])
-
-                second_X = Ket(list(b1.data)[:n] + ['1'] + list(b1.data)[n:])
-                second_Y = Ket(list(b2.data)[:n] + ['1'] + list(b2.data)[n:])
-
-                first_X_i = self.basis.index(first_X)
-                first_Y_i = self.basis.index(first_Y)
-                second_X_i = self.basis.index(second_X)
-                second_Y_i = self.basis.index(second_Y)
-
-                new_matrix[x, y] = self.data[first_X_i, first_Y_i] + self.data[second_X_i, second_Y_i]
-
-        return DensityMatrix(new_matrix, new_basis)
-
-    def ptrace_legacy(self, qbits: list):
-        """
-
-        Args:
-            qbits: a list of indices of the qubits to trace out
-
-        Returns: a new density matrix with the requested qubits traced out
-
-        """
-        assert len(qbits) < self.basis.num_qubits, "cant completly contract"
-
-        for q in qbits:
-            assert q < self.basis.num_qubits, "qbit index out of range"
-
-        result = self
-        for qbit_index in sorted(qbits)[::-1]:
-            result = result._ptrace(qbit_index)
-        return result
+            else:
+                raise TypeError(f"tensor product between {self} and {other} (type {type(other)} is not defined")
+        return DensityMatrix(res_data, res_basis)
 
     def ptrace(self, qbits: list):
         """
@@ -114,8 +66,10 @@ class DensityMatrix:
 
         Returns: a new density matrix with the requested qubits traced out
 
+        I don't see a way to do this sparsely? either slow calculations or reshape.
+
         """
-        assert len(qbits) < self.basis.num_qubits, "cant completly contract"
+        assert len(qbits) < self.basis.num_qubits, "cant completely contract"
 
         for q in qbits:
             assert q < self.basis.num_qubits, "qbit index out of range"
@@ -134,7 +88,7 @@ class DensityMatrix:
 
     # ==== static properties ====
     @property
-    def data(self) -> np.ndarray:
+    def data(self) -> sparse.bsr_matrix:
         return self._data
 
     @property
@@ -160,16 +114,14 @@ class DensityMatrix:
         energy = [b.energy for b in self.basis]
         nums = [b.num for b in self.basis]
         idx = np.lexsort((nums, energy))
-        self._data[:, ] = self._data[:, idx]
-        self._data = self._data[idx, :]
+        self._data = permute_sparse_matrix(self._data, idx, idx)
         self._basis = Basis(tuple(np.array(self._basis)[idx]))
 
     def change_to_canonical_basis(self):
         nums = [b.num for b in self.basis]
         # energy = [b.energy for b in self.basis]
         idx = np.argsort(nums)
-        self._data[:, ] = self._data[:, idx]
-        self._data = self._data[idx, :]
+        self._data = permute_sparse_matrix(self._data, idx, idx)
         self._basis = Basis(tuple(np.array(self._basis)[idx]))
 
     def relabel_basis(self, new_order):
@@ -186,7 +138,8 @@ class DensityMatrix:
 
     def plot(self):
         fig, ax = plt.subplots(1, 1)
-        img = ax.imshow(.0001 + np.abs(self._data), interpolation='none', cmap="hot", norm=colors.LogNorm())
+        dat = self._data.toarray()
+        img = ax.imshow(.0001 + np.abs(dat), interpolation='none', cmap="hot", norm=colors.LogNorm())
         label_list = [str(b) for b in self._basis]
         ax.set_xticks(list(range(self.size)))
         ax.set_yticks(list(range(self.size)))
@@ -221,12 +174,12 @@ class Identity(DensityMatrix):
     """ Creates the identity density matrix for n qubits in the energy basis"""
 
     def __init__(self, basis):
-        super().__init__(np.identity(len(basis)), basis)
+        super().__init__(sparse.bsr_matrix(np.identity(len(basis))), basis)
 
 
 def qbit(pop: float) -> DensityMatrix:
     assert 0 <= pop <= .5, f"population must be between 0 and .5 but you chose {pop}"
-    return DensityMatrix(np.array([[1 - pop, 0], [0, pop]]), energy_basis(1))
+    return DensityMatrix(sparse.bsr_matrix([[1 - pop, 0], [0, pop]]), energy_basis(1))
 
 
 def nqbit(pops: list) -> DensityMatrix:
@@ -248,3 +201,24 @@ def dm_log(dm: DensityMatrix) -> DensityMatrix:
 
 def dm_trace(dm: DensityMatrix) -> float:
     return np.trace(dm.data)
+
+
+def permute_sparse_matrix(M, new_row_order=None, new_col_order=None):
+    """
+    Reorders the rows and/or columns in a scipy sparse matrix
+        using the specified array(s) of indexes
+        e.g., [1,0,2,3,...] would swap the first and second row/col.
+    """
+    if new_row_order is None and new_col_order is None:
+        return M
+
+    new_M = M
+    if new_row_order is not None:
+        I = sparse.eye(M.shape[0]).tocoo()
+        I.row = I.row[new_row_order]
+        new_M = I.dot(new_M)
+    if new_col_order is not None:
+        I = sparse.eye(M.shape[1]).tocoo()
+        I.col = I.col[new_col_order]
+        new_M = new_M.dot(I)
+    return new_M

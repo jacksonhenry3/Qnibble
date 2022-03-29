@@ -55,10 +55,12 @@ class Basis(tuple):
         return "[" + ' '.join([str(b.num) for b in self]) + "]"
 
 
+@functools.lru_cache(maxsize=1000, typed=False)
 def canonical_basis(n):
     return Basis([Ket(np.array(list(f"{i:b}".zfill(n)))) for i in range(2 ** n)])
 
 
+@functools.lru_cache(maxsize=1000, typed=False)
 def energy_basis(n):
     basis = canonical_basis(n)
     energy = [b.energy for b in basis]
