@@ -3,8 +3,8 @@ import Python.density_matrix as DM
 import matplotlib.pyplot as plt
 import numpy as np
 
-N = 12
-chunks = 4
+N = 6
+chunks = 2
 
 assert N // chunks == N / chunks
 
@@ -26,7 +26,7 @@ for i in range(100):
         to_tensor = [I for _ in range(chunks)]
         to_tensor[chunk_index] = random_unitary(block_size)
         U = to_tensor[0].tensor(*to_tensor[1:])
-        U.change_to_energy_basis()
+        # U.change_to_energy_basis()
         Unitarys.append(U)
 
     for U in Unitarys:

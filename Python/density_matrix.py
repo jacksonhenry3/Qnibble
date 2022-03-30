@@ -8,13 +8,15 @@ import scipy.linalg as sp
 
 
 class DensityMatrix:
+    __slots__ = "_data", "_basis"
+
     def __init__(self, matrix: sparse.bsr_matrix, basis: Basis):
         """This doesnt validate inputs, eg. the basis is allowed to be wrong the dimension """
         self._data: sparse.bsr_matrix = matrix
         self._basis = basis
 
     def __repr__(self):
-        return 'DM' + str(self._data.to_array())
+        return 'DM' + str(self._data.toarray())
 
     def __eq__(self, other):
         return (self.data, other.data).to_array().all() and self.basis == other.basis
@@ -53,7 +55,6 @@ class DensityMatrix:
             if isinstance(other, DensityMatrix):
                 res_data = sparse.kron(res_data, other._data)
                 res_basis = Basis((i + j for i in res_basis for j in other._basis))
-
             else:
                 raise TypeError(f"tensor product between {self} and {other} (type {type(other)} is not defined")
         return DensityMatrix(res_data, res_basis)
