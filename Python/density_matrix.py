@@ -115,7 +115,7 @@ class DensityMatrix:
         energy = [b.energy for b in self.basis]
         nums = [b.num for b in self.basis]
         idx = np.lexsort((nums, energy))
-        self._data = permute_sparse_matrix(self._data, idx, idx)
+        self._data = permute_sparse_matrix(self._data, list(idx))
         self._basis = Basis(tuple(np.array(self._basis)[idx]))
 
     def change_to_canonical_basis(self):
@@ -149,7 +149,7 @@ class DensityMatrix:
         ax.set_xticklabels(label_list)
         ax.set_yticklabels(label_list)
         ax.xaxis.tick_top()
-        fig.colorbar(img)
+        # fig.colorbar(img)
         plt.xticks(rotation=75)
         plt.tick_params(
             which='major',  # Just major  ticks are affected
@@ -204,22 +204,24 @@ def dm_trace(dm: DensityMatrix) -> float:
     return np.trace(dm.data)
 
 
-def permute_sparse_matrix(M, new_row_order=None, new_col_order=None):
+def permute_sparse_matrix(M, new_order: list):
     """
     Reorders the rows and/or columns in a scipy sparse matrix
         using the specified array(s) of indexes
         e.g., [1,0,2,3,...] would swap the first and second row/col.
     """
-    if new_row_order is None and new_col_order is None:
-        return M
 
-    new_M = M
-    if new_row_order is not None:
-        I = sparse.eye(M.shape[0]).tocoo()
-        I.row = I.row[new_row_order]
-        new_M = I.dot(new_M)
-    if new_col_order is not None:
-        I = sparse.eye(M.shape[1]).tocoo()
-        I.col = I.col[new_col_order]
-        new_M = new_M.dot(I)
-    return new_M
+    I = np.identity(M.shape[0])
+    # I[:, ] = I[:, new_order]
+    I = I[new_order, :]
+    I = sparse.bsr_matrix(I)
+    return I @ M @ I.T
+
+
+def conserves_energy(dm: DensityMatrix) -> bool:
+    dat = dm.data.toarray()
+    for i in range(dm.data.shape[0]):
+        for j in range(dm.data.shape[1]):
+            if dat[i, j] != 0 and dm.basis[i].energy != dm.basis[j].energy:
+                return False
+    return True

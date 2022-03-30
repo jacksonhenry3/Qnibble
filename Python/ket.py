@@ -3,6 +3,8 @@ import functools
 
 
 class Ket:
+    __slots__ = "data", "_order", "_num", "__dict__"
+
     def __init__(self, data: iter):
         self.data = data
         self._order = list(range(len(data)))
@@ -24,7 +26,7 @@ class Ket:
     def __repr__(self) -> str:
         SUB = str.maketrans("0123456789", "₀₁₂₃₄₅₆₇₈₉")
 
-        return f"|{self.energy}:" + f"{''.join([['↓', '↑'][int(e)] + str(self._order[i]) for i, e in enumerate(self)])}⟩".translate(SUB)
+        return f"|{self.num},{self.energy}:" + f"{''.join([['↓', '↑'][int(e)] + str(self._order[i]) for i, e in enumerate(self)])}⟩".translate(SUB)
 
     def __lt__(self, other):
         assert isinstance(other, Ket)
