@@ -19,7 +19,7 @@ class DensityMatrix:
         return 'DM' + str(self._data.toarray())
 
     def __eq__(self, other):
-        return (self.data, other.data).to_array().all() and self.basis == other.basis
+        return (self.data != other.data).nnz == 0 and self.basis == other.basis
 
     def __add__(self, other):
         assert isinstance(other, DensityMatrix), f"Addition is only defined between two DensityMatrix objects, not {other}, of type {type(other)} and DensityMatrix"
@@ -183,12 +183,25 @@ def qbit(pop: float) -> DensityMatrix:
     return DensityMatrix(sparse.bsr_matrix([[1 - pop, 0], [0, pop]]), energy_basis(1))
 
 
-def nqbit(pops: list) -> DensityMatrix:
-    sys = qbit(pops[0])
-    for temp in pops[1:]:
-        sys = sys.tensor(qbit(temp))
-    sys.change_to_energy_basis()
-    return sys
+def n_thermal_qbits(pops: list) -> DensityMatrix:
+    """
+    Args:
+        pops: a list of population numbers between 0 and .5
+
+    Returns:
+        A density matrix for n thermal qbits with the specified populations
+    """
+    num_states = 2 ** len(pops)
+    data = np.zeros((num_states, num_states))
+    for i in range(num_states):
+        # f"{}"
+
+        state = list(format(i, f'0{len(pops)}b'))
+        value_list = [pops[j] if b == '1' else 1 - pops[j] for j, b in enumerate(state)]
+        value = np.product(value_list)
+        data[i, i] = value
+
+    return DensityMatrix(sparse.bsr_matrix(data), canonical_basis(len(pops)))
 
 
 # functions that operate on density matrices
