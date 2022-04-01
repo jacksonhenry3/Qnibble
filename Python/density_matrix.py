@@ -6,13 +6,14 @@ import matplotlib.pyplot as plt
 from matplotlib import colors
 import scipy.linalg as sp
 
+SPARSE_TYPE = sparse.csc_matrix
 
 class DensityMatrix:
     __slots__ = "_data", "_basis"
 
-    def __init__(self, matrix: sparse.bsr_matrix, basis: Basis):
+    def __init__(self, matrix: SPARSE_TYPE, basis: Basis):
         """This doesnt validate inputs, eg. the basis is allowed to be wrong the dimension """
-        self._data: sparse.bsr_matrix = matrix
+        self._data: SPARSE_TYPE = matrix
         self._basis = basis
 
     def __repr__(self):
@@ -59,6 +60,14 @@ class DensityMatrix:
                 raise TypeError(f"tensor product between {self} and {other} (type {type(other)} is not defined")
         return DensityMatrix(res_data, res_basis)
 
+    def ptrace_to_a_single_qbit(self, remaining_qbit):
+        tot = 0
+        diags = self.data.diagonal()
+        for i, b in enumerate(self.basis):
+            if b.data[remaining_qbit] == '1':
+                tot += diags[i]
+        return qbit(tot)
+
     def ptrace(self, qbits: list):
         """
 
@@ -71,6 +80,10 @@ class DensityMatrix:
 
         """
         assert len(qbits) < self.basis.num_qubits, "cant completely contract"
+
+        if len(qbits) == self.basis.num_qubits - 1:
+            remaining_qbit = list(set(range(self.basis.num_qubits)) - set(qbits))[0]
+            return self.ptrace_to_a_single_qbit(remaining_qbit)
 
         for q in qbits:
             assert q < self.basis.num_qubits, "qbit index out of range"
@@ -89,7 +102,7 @@ class DensityMatrix:
 
     # ==== static properties ====
     @property
-    def data(self) -> sparse.bsr_matrix:
+    def data(self) -> SPARSE_TYPE:
         return self._data
 
     @property
@@ -116,14 +129,14 @@ class DensityMatrix:
         nums = [b.num for b in self.basis]
         idx = np.lexsort((nums, energy))
         self._data = permute_sparse_matrix(self._data, list(idx))
-        self._basis = Basis(tuple(np.array(self._basis)[idx]))
+        self._basis = self.basis.reorder(idx)
 
     def change_to_canonical_basis(self):
         nums = [b.num for b in self.basis]
         # energy = [b.energy for b in self.basis]
         idx = np.argsort(nums)
-        self._data = permute_sparse_matrix(self._data, idx, idx)
-        self._basis = Basis(tuple(np.array(self._basis)[idx]))
+        self._data = permute_sparse_matrix(self._data, idx)
+        self._basis = self.basis.reorder(idx)
 
     def relabel_basis(self, new_order):
         """
@@ -175,12 +188,12 @@ class Identity(DensityMatrix):
     """ Creates the identity density matrix for n qubits in the energy basis"""
 
     def __init__(self, basis):
-        super().__init__(sparse.bsr_matrix(np.identity(len(basis))), basis)
+        super().__init__(SPARSE_TYPE(np.identity(len(basis))), basis)
 
 
 def qbit(pop: float) -> DensityMatrix:
     assert 0 <= pop <= .5, f"population must be between 0 and .5 but you chose {pop}"
-    return DensityMatrix(sparse.bsr_matrix([[1 - pop, 0], [0, pop]]), energy_basis(1))
+    return DensityMatrix(SPARSE_TYPE([[1 - pop, 0], [0, pop]]), energy_basis(1))
 
 
 def n_thermal_qbits(pops: list) -> DensityMatrix:
@@ -192,16 +205,14 @@ def n_thermal_qbits(pops: list) -> DensityMatrix:
         A density matrix for n thermal qbits with the specified populations
     """
     num_states = 2 ** len(pops)
-    data = np.zeros((num_states, num_states))
+    data = []
     for i in range(num_states):
-        # f"{}"
-
         state = list(format(i, f'0{len(pops)}b'))
         value_list = [pops[j] if b == '1' else 1 - pops[j] for j, b in enumerate(state)]
         value = np.product(value_list)
-        data[i, i] = value
+        data.append(value)
 
-    return DensityMatrix(sparse.bsr_matrix(data), canonical_basis(len(pops)))
+    return DensityMatrix(sparse.diags(data, format='csc'), canonical_basis(len(pops)))
 
 
 # functions that operate on density matrices
@@ -225,9 +236,8 @@ def permute_sparse_matrix(M, new_order: list):
     """
 
     I = np.identity(M.shape[0])
-    # I[:, ] = I[:, new_order]
     I = I[new_order, :]
-    I = sparse.bsr_matrix(I)
+    I = SPARSE_TYPE(I)
     return I @ M @ I.T
 
 

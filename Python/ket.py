@@ -20,6 +20,7 @@ class Ket:
     def __eq__(self, other):
         return list(self.data) == list(other.data) and list(self._order) == list(other._order)
 
+    #this breaks putting it inside a numpy array?!
     # def __getitem__(self, item):
     #     return self.data[item]
 
@@ -52,6 +53,11 @@ class Basis(tuple):
     @functools.cached_property
     def num_qubits(self):
         return int(np.log2(len(self)))
+
+    def reorder(self, order):
+        x = np.empty((len(self)), dtype=Ket)
+        x[:] = self
+        return Basis(tuple(x[order]))
 
     def __repr__(self):
         return "[" + ' '.join([str(b.num) for b in self]) + "]"

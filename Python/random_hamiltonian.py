@@ -14,7 +14,7 @@ def random_hamiltonian(nqbits: int):
     blocks = [block + np.conjugate(block.T) for block in blocks]
     m = block_diag(*blocks)
     np.fill_diagonal(m, 0)
-    return DM.DensityMatrix(sparse.bsr_matrix(m), energy_basis(nqbits))
+    return DM.DensityMatrix(DM.SPARSE_TYPE(m), energy_basis(nqbits))
 
 
 def random_unitary(nqbits: int, dt=.1):
