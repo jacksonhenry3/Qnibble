@@ -235,10 +235,13 @@ def permute_sparse_matrix(M, new_order: list):
         e.g., [1,0,2,3,...] would swap the first and second row/col.
     """
 
-    I = np.identity(M.shape[0])
-    I = I[new_order, :]
-    I = SPARSE_TYPE(I)
-    return I @ M @ I.T
+    # I = np.identity(M.shape[0])
+    # I = I[new_order, :]
+    # I = SPARSE_TYPE(I)
+
+    I = sparse.eye(M.shape[0]).tocoo()
+    I.row = I.row[new_order]
+    return I.T @ M @ I
 
 
 def conserves_energy(dm: DensityMatrix) -> bool:

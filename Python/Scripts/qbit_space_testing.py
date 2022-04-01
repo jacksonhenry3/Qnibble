@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import Python.measurements as measure
 
-N = 12
+N = 15
 chunks = 3
 
 assert N // chunks == N / chunks
@@ -60,8 +60,3 @@ img = plt.imshow(np.transpose(temps), interpolation="nearest", aspect = 'auto')
 img.set_cmap('hot')
 plt.axis('off')
 plt.show()
-
-"""
-after tensor product U seems fine  (conservs energy) after changing to energy basis, something is wrong. The basis itself seems correct, which means the data must be wrong. is something wrong with the way i am permuting rows/cols?
-
-"""
