@@ -49,23 +49,25 @@ class DensityMatrix:
     def __neg__(self):
         return DensityMatrix(-self.data, self.basis)
 
-    def tensor(self, *others):
+    def tensor(self, *others, resultant_basis = None):
         res_data = self._data
         res_basis = self._basis
         for other in others:
             if isinstance(other, DensityMatrix):
                 res_data = sparse.kron(res_data, other._data)
-                res_basis = Basis((i + j for i in res_basis for j in other._basis))
+                if resultant_basis is None:
+                    res_basis = Basis((i + j for i in res_basis for j in other._basis))
             else:
                 raise TypeError(f"tensor product between {self} and {other} (type {type(other)} is not defined")
+        res_basis = resultant_basis or res_basis
         return DensityMatrix(res_data, res_basis)
 
     def ptrace_to_a_single_qbit(self, remaining_qbit):
         tot = 0
         diags = self.data.diagonal()
         for i, b in enumerate(self.basis):
-            if b.data[remaining_qbit] == '1':
-                tot += diags[i]
+            tot += diags[i]*(b.data[remaining_qbit] == '1')
+
         return qbit(tot)
 
     def ptrace(self, qbits: list):

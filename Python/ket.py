@@ -18,9 +18,10 @@ class Ket:
         return len(self.data)
 
     def __eq__(self, other):
+        assert False
         return list(self.data) == list(other.data) and list(self._order) == list(other._order)
 
-    #this breaks putting it inside a numpy array?!
+    # this breaks putting it inside a numpy array?!
     # def __getitem__(self, item):
     #     return self.data[item]
 
@@ -35,6 +36,8 @@ class Ket:
 
     def __add__(self, other):
         return Ket(np.array(list(self) + list(other)))  # THIS IS INELEGANT
+
+
 
     @functools.cached_property
     def energy(self) -> int:
@@ -61,6 +64,12 @@ class Basis(tuple):
 
     def __repr__(self):
         return "[" + ' '.join([str(b.num) for b in self]) + "]"
+
+    def tensor(self, *others):
+        res = self
+        for other in others:
+            res = Basis((i + j for i in res for j in other))
+        return res
 
 
 @functools.lru_cache(maxsize=1000, typed=False)

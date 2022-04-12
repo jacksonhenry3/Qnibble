@@ -13,7 +13,8 @@ def temps(dm: DensityMatrix):
     n = dm.number_of_qbits
     result = []
     for i in range(n):
-        result.append(temp(dm.ptrace_to_a_single_qbit(i)))
+        index = dm.basis[0]._order[i]
+        result.append(temp(dm.ptrace_to_a_single_qbit(index)))
     return result
 
 
