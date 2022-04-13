@@ -25,8 +25,7 @@ def temps(dm: DensityMatrix):
     n = dm.number_of_qbits
     result = []
     for i in range(n):
-        index = dm.basis[0]._order[i]
-        result.append(temp(dm.ptrace_to_a_single_qbit(index)))
+        result.append(temp(dm.ptrace_to_a_single_qbit(i)))
     return result
 
 
@@ -58,11 +57,10 @@ def extractable_work_of_each_qubit(dm: DensityMatrix):
     n = dm.number_of_qbits
     result = []
     for i in range(n):
-        index = dm.basis[0]._order[i]
         temp_list = temps(dm)
         temp_list.pop(i)
         T = np.mean(temp_list)
-        result.append(extractable_work(T, dm.ptrace_to_a_single_qbit(index)))
+        result.append(extractable_work(T, dm.ptrace_to_a_single_qbit(i)))
     return result
 
 

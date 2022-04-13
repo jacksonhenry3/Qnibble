@@ -3,11 +3,10 @@ import functools
 
 
 class Ket:
-    __slots__ = "data", "_order", "_num", "__dict__"
+    __slots__ = "data", "_num", "__dict__"
 
     def __init__(self, data: iter):
-        self.data = data
-        self._order = list(range(len(data)))
+        self.data = np.array(data)
         self._num = int(''.join([str(e) for e in data]), 2)
 
     def __iter__(self):
@@ -18,16 +17,14 @@ class Ket:
         return len(self.data)
 
     def __eq__(self, other):
-        return list(self.data) == list(other.data) and list(self._order) == list(other._order)
+        return list(self.data) == list(other.data)
 
     # this breaks putting it inside a numpy array?!
     # def __getitem__(self, item):
     #     return self.data[item]
 
     def __repr__(self) -> str:
-        SUB = str.maketrans("0123456789", "₀₁₂₃₄₅₆₇₈₉")
-
-        return f"|{self.num},{self.energy}:" + f"{''.join([['↓', '↑'][int(e)] + str(self._order[i]) for i, e in enumerate(self)])}⟩".translate(SUB)
+        return f"|{self.num},{self.energy}:" + f"{''.join([['↓', '↑'][int(e)] for i, e in enumerate(self)])}⟩"
 
     def __lt__(self, other):
         assert isinstance(other, Ket)
@@ -36,7 +33,8 @@ class Ket:
     def __add__(self, other):
         return Ket(np.array(list(self) + list(other)))  # THIS IS INELEGANT
 
-    @functools.cached_property
+    # @functools.cached_property
+    @property
     def energy(self) -> int:
         return sum([int(d) for d in self])
 
@@ -44,13 +42,18 @@ class Ket:
     def num(self) -> int:
         return self._num
 
-    def reorder(self, order, baked=True):
-        self._order = order
-        self._num = int(''.join([str(e) for e in self.data[order]]), 2)
+    def update_num(self):
+        self._num = int(''.join([str(e) for e in self.data]), 2)
+        pass
+
+    def reorder(self, order):
+        self.data = self.data[order]
+        self.update_num()
 
 
 class Basis(tuple):
-    @functools.cached_property
+    # @functools.cached_property
+    @property
     def num_qubits(self):
         return int(np.log2(len(self)))
 

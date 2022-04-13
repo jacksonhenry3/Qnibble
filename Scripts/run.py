@@ -8,7 +8,7 @@ sys1 = DM.n_thermal_qbits(pops)
 sys2 = DM.n_thermal_qbits(pops)
 sys1.plot()
 sys1.relabel_basis([0, 1, 3, 2])
-sys1.change_to_canonical_basis()
+# sys1.change_to_canonical_basis()
 sys1.plot()
 
 sys1 * sys2
