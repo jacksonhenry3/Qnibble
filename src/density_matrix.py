@@ -57,7 +57,7 @@ class DensityMatrix:
             if isinstance(other, DensityMatrix):
                 res_data = sparse.kron(res_data, other._data)
                 if resultant_basis is None:
-                    res_basis = Basis((i + j for i in res_basis for j in other._basis))
+                    res_basis = res_basis.tensor(other._basis)
             else:
                 raise TypeError(f"tensor product between {self} and {other} (type {type(other)} is not defined")
         res_basis = resultant_basis or res_basis
@@ -191,7 +191,7 @@ class DensityMatrix:
 
 # Utilities to generate density matrices
 def Identity(basis: Basis) -> DensityMatrix:
-    """ Creates the identity density matrix for n qubits in the energy basis"""
+    """ Creates the identity density matrix for n qubits in basis"""
 
     return DensityMatrix(SPARSE_TYPE(np.identity(len(basis))), basis)
 

@@ -5,13 +5,13 @@ from src.density_matrix import DensityMatrix, n_thermal_qbits, dm_trace, dm_log
 # measurements
 def temp(qbit: DensityMatrix):
     assert qbit.size == 2, "density matrix must be for a single qubit"
-    p = qbit.data.diagonal()[1]
+    p = pop(qbit)
     return np.real(temp_from_pop(p))
 
 def pop(qbit: DensityMatrix):
     assert qbit.size == 2, "density matrix must be for a single qubit"
     p = qbit.data.diagonal()[1]
-    return p
+    return np.real(p)
 
 def pops(dm: DensityMatrix):
     n = dm.number_of_qbits
