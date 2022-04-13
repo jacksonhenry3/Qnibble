@@ -5,6 +5,7 @@ from src.ket import energy_basis, canonical_basis, Basis
 import matplotlib.pyplot as plt
 from matplotlib import colors
 import scipy.linalg as sp
+import copy
 SPARSE_TYPE = sparse.csc_matrix
 
 
@@ -32,7 +33,7 @@ class DensityMatrix:
             return DensityMatrix(self._data * other, self._basis)
         elif isinstance(other, DensityMatrix):
             assert self.basis == other.basis
-            return DensityMatrix(self.data @ other.data, self.basis)
+            return DensityMatrix(self.data @ other.data, copy.copy(self.basis))
         raise TypeError(f"multiplication between {self} and {other} (type {type(other)} is not defined")
 
     def __rmul__(self, other):
@@ -146,8 +147,10 @@ class DensityMatrix:
         changes basis by changing which is the "first" qbit.
 
         """
+        new_basis = []
         for e in self.basis:
-            e.reorder(new_order)
+            new_basis.append(e.reorder(new_order))
+        self._basis = Basis(new_basis)
 
 
 

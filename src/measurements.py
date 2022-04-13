@@ -17,8 +17,7 @@ def pops(dm: DensityMatrix):
     n = dm.number_of_qbits
     result = []
     for i in range(n):
-        index = dm.basis[0]._order[i]
-        result.append(pop(dm.ptrace_to_a_single_qbit(index)))
+        result.append(pop(dm.ptrace_to_a_single_qbit(i)))
     return result
 
 def temps(dm: DensityMatrix):

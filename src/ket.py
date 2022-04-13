@@ -42,13 +42,9 @@ class Ket:
     def num(self) -> int:
         return self._num
 
-    def update_num(self):
-        self._num = int(''.join([str(e) for e in self.data]), 2)
-        pass
 
     def reorder(self, order):
-        self.data = self.data[order]
-        self.update_num()
+        return Ket(self.data[order])
 
 
 class Basis(tuple):
