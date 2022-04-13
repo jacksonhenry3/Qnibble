@@ -1,23 +1,37 @@
 import numpy as np
-from Python.density_matrix import DensityMatrix, nqbit, dm_trace, dm_log
+from Python.density_matrix import DensityMatrix, n_thermal_qbits, dm_trace, dm_log
 
 
 # measurements
 def temp(qbit: DensityMatrix):
     assert qbit.size == 2, "density matrix must be for a single qubit"
-    p = qbit.data[1, 1]
-    return temp_from_pop(p)
+    p = qbit.data.diagonal()[1]
+    return np.real(temp_from_pop(p))
 
+def pop(qbit: DensityMatrix):
+    assert qbit.size == 2, "density matrix must be for a single qubit"
+    p = qbit.data.diagonal()[1]
+    return p
+
+def pops(dm: DensityMatrix):
+    n = dm.number_of_qbits
+    result = []
+    for i in range(n):
+        index = dm.basis[0]._order[i]
+        result.append(pop(dm.ptrace_to_a_single_qbit(index)))
+    return result
 
 def temps(dm: DensityMatrix):
     n = dm.number_of_qbits
     result = []
     for i in range(n):
-        # this does extra work by redoing the same trace multiple times
-        to_trace = list(range(n))
-        to_trace.remove(i)
-        result.append(temp(dm.ptrace(to_trace)))
+        index = dm.basis[0]._order[i]
+        result.append(temp(dm.ptrace_to_a_single_qbit(index)))
     return result
+
+
+def average_temp(dm: DensityMatrix) -> float:
+    return float(np.mean(temps(dm)))
 
 
 def temp_from_pop(pop: float):
@@ -35,8 +49,21 @@ def D(dm1: DensityMatrix, dm2: DensityMatrix):
 
 def extractable_work(T: float, dm: DensityMatrix):
     pop = pop_from_temp(T)
-    reference_dm = nqbit([pop for _ in range(dm.number_of_qbits)])
+    reference_dm = n_thermal_qbits([pop for _ in range(dm.number_of_qbits)])
     return T * D(dm, reference_dm)
+
+
+def extractable_work_of_each_qubit(dm: DensityMatrix):
+    # TODO this breaks when initial state is non-thermal
+    n = dm.number_of_qbits
+    result = []
+    for i in range(n):
+        index = dm.basis[0]._order[i]
+        temp_list = temps(dm)
+        temp_list.pop(i)
+        T = np.mean(temp_list)
+        result.append(extractable_work(T, dm.ptrace_to_a_single_qbit(index)))
+    return result
 
 
 def change_in_extractable_work(T_initial: float, dm_initial: DensityMatrix, T_final: float, dm_final: DensityMatrix):
