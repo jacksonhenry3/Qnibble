@@ -1,12 +1,13 @@
 import numpy as np
 from scipy import sparse
 
-from ket import energy_basis, canonical_basis, Basis
+from src.ket import energy_basis, canonical_basis, Basis
 import matplotlib.pyplot as plt
 from matplotlib import colors
 import scipy.linalg as sp
 
 SPARSE_TYPE = sparse.csc_matrix
+
 
 class DensityMatrix:
     __slots__ = "_data", "_basis"
@@ -17,7 +18,7 @@ class DensityMatrix:
         self._basis = basis
 
     def __repr__(self):
-        return 'DM' + str(self._data.toarray())
+        return f'DM {id(self)}'
 
     def __eq__(self, other):
         return (self.data != other.data).nnz == 0 and self.basis == other.basis
@@ -49,7 +50,7 @@ class DensityMatrix:
     def __neg__(self):
         return DensityMatrix(-self.data, self.basis)
 
-    def tensor(self, *others, resultant_basis = None):
+    def tensor(self, *others, resultant_basis=None):
         res_data = self._data
         res_basis = self._basis
         for other in others:
@@ -66,7 +67,7 @@ class DensityMatrix:
         tot = 0
         diags = self.data.diagonal()
         for i, b in enumerate(self.basis):
-            tot += diags[i]*(b.data[remaining_qbit] == '1')
+            tot += diags[i] * (b.data[remaining_qbit] == '1')
 
         return qbit(tot)
 
@@ -149,7 +150,7 @@ class DensityMatrix:
         for e in self.basis:
             e.reorder(new_order)
 
-        self.change_to_canonical_basis()
+
 
     # ==== visualization ====
 
@@ -187,11 +188,10 @@ class DensityMatrix:
 
 
 # Utilities to generate density matrices
-class Identity(DensityMatrix):
+def Identity(basis: Basis) -> DensityMatrix:
     """ Creates the identity density matrix for n qubits in the energy basis"""
 
-    def __init__(self, basis):
-        super().__init__(SPARSE_TYPE(np.identity(len(basis))), basis)
+    return DensityMatrix(SPARSE_TYPE(np.identity(len(basis))), basis)
 
 
 def qbit(pop: float) -> DensityMatrix:
@@ -229,8 +229,9 @@ def dm_log(dm: DensityMatrix) -> DensityMatrix:
 
 def dm_trace(dm: DensityMatrix) -> float:
     # return dm.data.trace()
-    #TODO FIND A GOOD WAY TO DO THE TRACE
+    # TODO FIND A GOOD WAY TO DO THE TRACE
     return np.sum(dm.data.data)
+
 
 def permute_sparse_matrix(M, new_order: list):
     """

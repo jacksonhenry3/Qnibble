@@ -1,6 +1,6 @@
-import density_matrix as DM
+import src.density_matrix as DM
 from math import comb
-from ket import energy_basis
+from src.ket import energy_basis
 import numpy as np
 from scipy.linalg import block_diag
 
@@ -16,8 +16,8 @@ def random_hamiltonian(nqbits: int):
 
 
 def random_hamiltonian_in_subspace(nqbits: int, energy_subspace: int):
-    blocks_real = [np.random.random([comb(nqbits, i), comb(nqbits, i)]) if i == energy_subspace else np.identity( comb(nqbits, i)) for i in range(nqbits + 1)]
-    blocks_complex = [1j * np.random.random([comb(nqbits, i), comb(nqbits, i)]) if i == energy_subspace else np.identity( comb(nqbits, i)) for i in range(nqbits + 1)]
+    blocks_real = [np.random.random([comb(nqbits, i), comb(nqbits, i)]) if i == energy_subspace else np.identity(comb(nqbits, i)) for i in range(nqbits + 1)]
+    blocks_complex = [1j * np.random.random([comb(nqbits, i), comb(nqbits, i)]) if i == energy_subspace else np.identity(comb(nqbits, i)) for i in range(nqbits + 1)]
     blocks = [blocks_real[i] + blocks_complex[i] for i in range(nqbits + 1)]
     blocks = [block + np.conjugate(block.T) for block in blocks]
     m = block_diag(*blocks)
@@ -28,6 +28,7 @@ def random_hamiltonian_in_subspace(nqbits: int, energy_subspace: int):
 def random_unitary(nqbits: int, dt=.1):
     H = random_hamiltonian(nqbits)
     return DM.dm_exp(-dt * 1j * H)
+
 
 def random_unitary_in_subspace(nqbits: int, energy_subspace: int, dt=.1):
     H = random_hamiltonian_in_subspace(nqbits, energy_subspace)

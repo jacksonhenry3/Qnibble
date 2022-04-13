@@ -18,7 +18,6 @@ class Ket:
         return len(self.data)
 
     def __eq__(self, other):
-        assert False
         return list(self.data) == list(other.data) and list(self._order) == list(other._order)
 
     # this breaks putting it inside a numpy array?!
@@ -37,8 +36,6 @@ class Ket:
     def __add__(self, other):
         return Ket(np.array(list(self) + list(other)))  # THIS IS INELEGANT
 
-
-
     @functools.cached_property
     def energy(self) -> int:
         return sum([int(d) for d in self])
@@ -47,9 +44,9 @@ class Ket:
     def num(self) -> int:
         return self._num
 
-    def reorder(self, order):
+    def reorder(self, order, baked=True):
         self._order = order
-        self._num = int(''.join([str(e) for e in self.data[self._order]]), 2)
+        self._num = int(''.join([str(e) for e in self.data[order]]), 2)
 
 
 class Basis(tuple):
@@ -72,12 +69,12 @@ class Basis(tuple):
         return res
 
 
-@functools.lru_cache(maxsize=1000, typed=False)
+# @functools.lru_cache(maxsize=1000, typed=False)
 def canonical_basis(n):
     return Basis([Ket(np.array(list(f"{i:b}".zfill(n)))) for i in range(2 ** n)])
 
 
-@functools.lru_cache(maxsize=1000, typed=False)
+# @functools.lru_cache(maxsize=1000, typed=False)
 def energy_basis(n):
     basis = canonical_basis(n)
     energy = [b.energy for b in basis]
