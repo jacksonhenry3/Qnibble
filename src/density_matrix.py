@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 from matplotlib import colors
 import scipy.linalg as sp
 import copy
+
 SPARSE_TYPE = sparse.csc_matrix
 
 
@@ -25,6 +26,7 @@ class DensityMatrix:
 
     def __add__(self, other):
         assert isinstance(other, DensityMatrix), f"Addition is only defined between two DensityMatrix objects, not {other}, of type {type(other)} and DensityMatrix"
+        assert self.basis == other.basis
         return DensityMatrix(self._data + other._data, self._basis)
 
     def __mul__(self, other):
@@ -51,6 +53,8 @@ class DensityMatrix:
         return DensityMatrix(-self.data, self.basis)
 
     def tensor(self, *others, resultant_basis=None):
+        if others == tuple():
+            return self
         res_data = self._data
         res_basis = self._basis
         for other in others:
@@ -151,8 +155,6 @@ class DensityMatrix:
         for e in self.basis:
             new_basis.append(e.reorder(new_order))
         self._basis = Basis(new_basis)
-
-
 
     # ==== visualization ====
 

@@ -1,9 +1,10 @@
 from src.random_hamiltonian import random_hamiltonian
 from src import density_matrix as DM
-from src.ket import energy_basis, canonical_basis
+from src.ket import energy_basis
 from src import measurements
 import matplotlib.pyplot as plt
 import numpy as np
+from src.step import step
 
 dtheta = .025
 
@@ -56,30 +57,24 @@ data = [
     [0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.]
 ]
 
-H = DM.DensityMatrix(DM.SPARSE_TYPE(data), canonical_basis(block_size))
+# H = DM.DensityMatrix(DM.SPARSE_TYPE(data), canonical_basis(block_size))
+H = random_hamiltonian(block_size)
 
-#TODO FIGURE OUT WHY THIS BREAKS IF I USE THE ENERGY BASIS IDENTITY?!?!?
-I = DM.Identity(canonical_basis(block_size))
-H = H.tensor(I) + I.tensor(H)
-H.change_to_energy_basis()
-U = DM.dm_exp(-H * dtheta * 1j)
-U.change_to_energy_basis()
 pops = []
-for _ in range(500):
+
+groups = [[0, 1, 2, 3], [4, 5, 6, 7]]
+step_sizes = [.025, .025]
+
+for _ in range(50):
     print(_)
 
-    order = list(range(number_of_qbits))
-    shift = np.random.randint(len(order))
-    order = np.roll(order, shift)
-    np.random.shuffle(order)
-    U.relabel_basis(order)
-    U.change_to_energy_basis()
-    sys = U * sys * U.H
+    sys = step(sys, groups, [H, H], step_sizes)
+
     pops.append(measurements.pops(sys))
 
 # plt.imshow(np.transpose(pops))
 plt.plot(pops)
 plt.show()
 
-plt.plot(np.sum(pops,1))
+plt.plot(np.sum(pops, 1))
 plt.show()
