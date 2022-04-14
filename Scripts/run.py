@@ -58,15 +58,25 @@ data = [
 ]
 
 # H = DM.DensityMatrix(DM.SPARSE_TYPE(data), canonical_basis(block_size))
-H = random_hamiltonian(block_size)
+
 
 pops = []
 
-groups = [[0, 1, 2, 3], [4, 5, 6, 7]]
-step_sizes = [.025, .025]
+possible_groups = []
+for offset in range(4):
+    order = list(range(number_of_qbits))
+    order = np.roll(order, offset)
+    order = order.reshape((2,4))
+    possible_groups.append(order)
 
-for _ in range(50):
+
+
+for _ in range(500):
     print(_)
+
+    H = random_hamiltonian(block_size)
+    groups = possible_groups[np.random.randint(4)]
+    step_sizes = [.025, .021]
 
     sys = step(sys, groups, [H, H], step_sizes)
 

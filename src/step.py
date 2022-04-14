@@ -33,9 +33,9 @@ def step(dm: DensityMatrix, groups: list[list[int]], Hamiltonians: list[DensityM
 
     for index in range(len(groups)):
         to_tensor = identities.copy()
-        to_tensor[index] = Hamiltonians[index]
-        H = to_tensor[0].tensor(*to_tensor[1:])
-        U = dm_exp(-1j * H * step_sizes[index])
+        H = Hamiltonians[index]
+        to_tensor[index] = dm_exp(-1j * H * step_sizes[index])
+        U = to_tensor[0].tensor(*to_tensor[1:])
         U.relabel_basis(order)
         U.change_to_energy_basis()
         Unitarys.append(U)

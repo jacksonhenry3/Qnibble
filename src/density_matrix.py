@@ -4,7 +4,7 @@ from scipy import sparse
 from src.ket import energy_basis, canonical_basis, Basis
 import matplotlib.pyplot as plt
 from matplotlib import colors
-import scipy.linalg as sp
+import scipy.sparse.linalg as sp
 import copy
 
 SPARSE_TYPE = sparse.csc_matrix
