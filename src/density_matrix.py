@@ -179,7 +179,7 @@ class DensityMatrix:
         if self.size < 2 ** 6:
             ax.grid(which='minor', color='k', linestyle='-', linewidth=1.5)
         else:
-            ax.grid(which='minor', color='k', linestyle='-', linewidth=0)
+            ax.grid(which='minor', color='k', linestyle='-', linewidth=.5)
 
             plt.tick_params(
                 which='major',  # Just major  ticks are affected
@@ -199,7 +199,7 @@ def Identity(basis: Basis) -> DensityMatrix:
 
 
 def qbit(pop: float) -> DensityMatrix:
-    assert 0 <= pop <= .5, f"population must be between 0 and .5 but you chose {pop}"
+    # assert 0 <= pop <= .5, f"population must be between 0 and .5 but you chose {pop}"
     return DensityMatrix(SPARSE_TYPE([[1 - pop, 0], [0, pop]]), energy_basis(1))
 
 

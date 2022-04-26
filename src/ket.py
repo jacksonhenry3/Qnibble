@@ -33,15 +33,14 @@ class Ket:
     def __add__(self, other):
         return Ket(np.array(list(self) + list(other)))  # THIS IS INELEGANT
 
-    # @functools.cached_property
-    @property
+    @functools.cached_property
+    # @property
     def energy(self) -> int:
         return sum([int(d) for d in self])
 
     @property
     def num(self) -> int:
         return self._num
-
 
     def reorder(self, order):
         return Ket(self.data[order])
@@ -68,12 +67,12 @@ class Basis(tuple):
         return res
 
 
-# @functools.lru_cache(maxsize=1000, typed=False)
+@functools.lru_cache(maxsize=2 ** 12, typed=False)
 def canonical_basis(n):
     return Basis([Ket(np.array(list(f"{i:b}".zfill(n)))) for i in range(2 ** n)])
 
 
-# @functools.lru_cache(maxsize=1000, typed=False)
+@functools.lru_cache(maxsize=2 ** 12, typed=False)
 def energy_basis(n):
     basis = canonical_basis(n)
     energy = [b.energy for b in basis]

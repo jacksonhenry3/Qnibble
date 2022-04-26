@@ -52,6 +52,7 @@ for i in range(500):
 
     temps.append(np.real(measure.pops(sys)))
 
+
 # img = plt.imshow(np.transpose(temps), interpolation="nearest", aspect='auto')
 # img.set_cmap('hot')
 # plt.axis('off')
