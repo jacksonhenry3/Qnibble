@@ -6,7 +6,7 @@ class Ket:
     __slots__ = "data", "_num", "__dict__"
 
     def __init__(self, data: iter):
-        self.data = np.array(data)
+        self.data = np.array(list(data))
         self._num = int(''.join([str(e) for e in data]), 2)
 
     def __iter__(self):

@@ -5,10 +5,11 @@ from src.ket import energy_basis, canonical_basis, Basis
 import matplotlib.pyplot as plt
 from matplotlib import colors
 import scipy.sparse.linalg as sp
+import scipy.linalg as sp_dense
 import copy
 
 SPARSE_TYPE = sparse.csc_matrix
-
+SPARSE_TYPE_STRING = "csc"
 
 class DensityMatrix:
     __slots__ = "_data", "_basis"
@@ -22,7 +23,7 @@ class DensityMatrix:
         return f'DM {id(self)}'
 
     def __eq__(self, other):
-        return (self.data != other.data).nnz == 0 and self.basis == other.basis
+        return self.data.shape==other.data.shape and (self.data != other.data).nnz == 0 and self.basis == other.basis
 
     def __add__(self, other):
         assert isinstance(other, DensityMatrix), f"Addition is only defined between two DensityMatrix objects, not {other}, of type {type(other)} and DensityMatrix"
@@ -43,11 +44,11 @@ class DensityMatrix:
             return self.__mul__(other)
         raise TypeError(f"multiplication between {self} and {other} (type {type(other)} is not defined")
 
-    # def __pow__(self, power: int):
-    #     result = Identity(self.basis)
-    #     for _ in range(power):
-    #         result *= self
-    #     return result
+    def __pow__(self, power: int):
+        result = Identity(self.basis)
+        for _ in range(power):
+            result *= self
+        return result
 
     def __neg__(self):
         return DensityMatrix(-self.data, self.basis)
@@ -228,7 +229,7 @@ def dm_exp(dm: DensityMatrix) -> DensityMatrix:
 
 
 def dm_log(dm: DensityMatrix) -> DensityMatrix:
-    return DensityMatrix(SPARSE_TYPE(sp.logm(dm.data.todense())), dm.basis)
+    return DensityMatrix(SPARSE_TYPE(sp_dense.logm(dm.data.todense())), dm.basis)
 
 
 def dm_trace(dm: DensityMatrix) -> float:
