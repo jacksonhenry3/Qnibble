@@ -4,7 +4,7 @@ from src.ket import energy_basis
 import numpy as np
 from scipy.linalg import block_diag
 
-
+np.random.seed(0)
 def random_hamiltonian(nqbits: int):
     blocks_real = [np.random.random([comb(nqbits, i), comb(nqbits, i)]) for i in range(nqbits + 1)]
     blocks_complex = [1j * np.random.random([comb(nqbits, i), comb(nqbits, i)]) for i in range(nqbits + 1)]
