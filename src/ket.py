@@ -5,9 +5,9 @@ import functools
 class Ket:
     __slots__ = "data", "_num", "__dict__"
 
-    def __init__(self, data: iter):
+    def __init__(self, data: iter, num=None):
         self.data = np.array(list(data))
-        self._num = int(''.join([str(e) for e in data]), 2)
+        self._num = num or int(''.join([str(e) for e in data]), 2)
 
     def __iter__(self):
         ''' Returns the Iterator object '''
@@ -31,7 +31,10 @@ class Ket:
         return self.energy < other.energy
 
     def __add__(self, other):
-        return Ket(np.array(list(self) + list(other)))  # THIS IS INELEGANT
+        n = self.num
+        m = other.num
+        l = len(other)
+        return Ket(np.array(list(self) + list(other)), num=n * 2 ** l + m)
 
     @functools.cached_property
     # @property

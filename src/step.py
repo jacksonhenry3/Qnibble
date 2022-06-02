@@ -26,7 +26,6 @@ def step(dm: DensityMatrix, groups: list[list[int]], Unitarys: list[DensityMatri
     order = ['error' for _ in range(len(temp_order))]
     for i,index in enumerate(temp_order):
         order[index] = i
-    print(order)
 
     # make sure each qbit is assigned to a group and that there are no extras or duplicates.
     assert set(order) == set(range(dm.number_of_qbits))
