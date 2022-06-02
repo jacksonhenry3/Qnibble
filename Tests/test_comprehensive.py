@@ -70,7 +70,8 @@ class TestComprehensive:
         groupss = [[[0, 2, 4, 6], [1, 3, 5, 7]], [[0, 1, 2, 3], [4, 5, 6, 7]]]
 
         step_sizes = [dtheta for _ in range(chunks)]
-        hamiltonians = [H for _ in range(chunks)]
+        #hamiltonians = [H for _ in range(chunks)]
+        Unitarys = [DM.dm_exp(1j*dtheta*H) for _ in range(chunks)]
 
         Unitaries = []
         correlation = []
@@ -78,7 +79,7 @@ class TestComprehensive:
             #print(_)
             groups = groupss[(_ + 1) % 2]
             #print(groups)
-            sys = step(sys, groups, hamiltonians, step_sizes)
+            sys = step(sys, groups, Unitarys)
             pops.append(measurements.pops(sys))
 
         UnnatiResults = [[0.102022, 0.200982, 0.298861, 0.398135, 0.152104, 0.251058, 0.348878, 0.447961], [0.105157, 0.204515, 0.296364, 0.395547, 0.153089, 0.252141, 0.347254, 0.445933],
@@ -133,12 +134,3 @@ class TestComprehensive:
                          [0.26985, 0.274336, 0.275133, 0.281187, 0.267959, 0.272033, 0.272539, 0.286963], [0.270411, 0.276441, 0.272893, 0.28132, 0.271435, 0.273029, 0.270742, 0.283729]]
 
         assert_almost_equal(UnnatiResults, pops,5)
-        #plt.plot(pops, "*")
-        #plt.plot(UnnatiResults)
-        #plt.show()
-        # plt.plot(correlation, 'o')
-        # plt.show()
-
-        # plt.plot(np.sum(np.array(UnnatiData), 1))
-        # plt.plot(np.sum(pops, 1))
-        # plt.show()
