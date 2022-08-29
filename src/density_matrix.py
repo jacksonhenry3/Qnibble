@@ -131,6 +131,10 @@ class DensityMatrix:
         """Return the conjugate transpose of self"""
         return DensityMatrix(np.transpose(self._data).conjugate(), self._basis)
 
+    @property
+    def data_dense(self):
+        return self.data.toarray()
+
     # ==== in place modification ====
 
     def change_to_energy_basis(self):
@@ -200,7 +204,7 @@ def Identity(basis: Basis) -> DensityMatrix:
 
 
 def qbit(pop: float) -> DensityMatrix:
-    # assert 0 <= pop <= .5, f"population must be between 0 and .5 but you chose {pop}"
+    assert 0 <= pop <= .5, f"population must be between 0 and .5 but you chose {pop}"
     return DensityMatrix(SPARSE_TYPE([[1 - pop, 0], [0, pop]]), energy_basis(1))
 
 
@@ -235,7 +239,7 @@ def dm_log(dm: DensityMatrix) -> DensityMatrix:
 def dm_trace(dm: DensityMatrix) -> float:
     # return dm.data.trace()
     # TODO FIND A GOOD WAY TO DO THE TRACE
-    return np.sum(dm.data.data)
+    return np.sum(dm.data.data)[0]
 
 
 def permute_sparse_matrix(M, new_order: list):

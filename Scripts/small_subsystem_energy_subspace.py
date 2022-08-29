@@ -3,6 +3,7 @@ import numpy as np
 from itertools import permutations
 # import scipy as sp
 from src.density_matrix import DensityMatrix as DM
+from src.density_matrix import SPARSE_TYPE
 from src.ket import energy_basis, canonical_basis, Ket
 
 
@@ -46,10 +47,10 @@ def do(num_qbits, partition_size):
             possible_to_entangle_with[state.num] = p
             for v in p:
                 mat[state.num, v] = 1
-    return mat
+    return SPARSE_TYPE(mat)
 
 
-dm = DM(do(10,5), canonical_basis(10))
+dm = DM(do(8,2), canonical_basis(8))
 dm.change_to_energy_basis()
 dm.plot()
 

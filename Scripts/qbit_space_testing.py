@@ -3,8 +3,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from src import measurements as measure, density_matrix as DM
 
-N = 8
-chunks = 2
+N = 12
+chunks = 3
 
 assert N // chunks == N / chunks
 
@@ -25,14 +25,14 @@ temps = []
 sys.change_to_energy_basis()
 
 
-for i in range(500):
+for i in range(50):
     print(i)
     Unitarys = []
 
     if chunks > 1:
         for chunk_index in range(chunks - 1):
             to_tensor = [I for _ in range(chunks)]
-            to_tensor[chunk_index] = random_unitary(block_size, dt=.025)
+            to_tensor[chunk_index] = random_unitary(block_size)
             U = to_tensor[0].tensor(*to_tensor[1:])
             order = list(range(N))
             shift = np.random.randint(len(order))
@@ -57,5 +57,5 @@ for i in range(500):
 # img.set_cmap('hot')
 # plt.axis('off')
 # sys.plot()
-plt.plot(temps, '.')
-plt.show()
+# plt.plot(temps, '.')
+# plt.show()
