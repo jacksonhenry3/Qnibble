@@ -36,7 +36,7 @@ class DensityMatrix:
             return DensityMatrix(self._data * other, self._basis)
         elif isinstance(other, DensityMatrix):
             assert self.basis == other.basis
-            return DensityMatrix(self.data @ other.data, copy.copy(self.basis))
+            return DensityMatrix(SPARSE_TYPE.dot(self.data,other.data), copy.copy(self.basis))
         raise TypeError(f"multiplication between {self} and {other} (type {type(other)} is not defined")
 
     def __rmul__(self, other):
