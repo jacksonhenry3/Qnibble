@@ -8,8 +8,12 @@ import scipy.sparse.linalg as sp
 import scipy.linalg as sp_dense
 import copy
 
-SPARSE_TYPE = sparse.csc_matrix
-SPARSE_TYPE_STRING = "csc"
+#experimental
+
+
+SPARSE_TYPE = sparse.bsr_matrix
+SPARSE_TYPE_STRING = "bsr"
+
 
 class DensityMatrix:
     __slots__ = "_data", "_basis"
@@ -23,7 +27,7 @@ class DensityMatrix:
         return f'DM {id(self)}'
 
     def __eq__(self, other):
-        return self.data.shape==other.data.shape and (self.data != other.data).nnz == 0 and self.basis == other.basis
+        return self.data.shape == other.data.shape and (self.data != other.data).nnz == 0 and self.basis == other.basis
 
     def __add__(self, other):
         assert isinstance(other, DensityMatrix), f"Addition is only defined between two DensityMatrix objects, not {other}, of type {type(other)} and DensityMatrix"
@@ -36,7 +40,7 @@ class DensityMatrix:
             return DensityMatrix(self._data * other, self._basis)
         elif isinstance(other, DensityMatrix):
             assert self.basis == other.basis
-            return DensityMatrix(SPARSE_TYPE.dot(self.data,other.data), copy.copy(self.basis))
+            return DensityMatrix(SPARSE_TYPE.dot(self.data, other.data), copy.copy(self.basis))
         raise TypeError(f"multiplication between {self} and {other} (type {type(other)} is not defined")
 
     def __rmul__(self, other):
@@ -166,7 +170,7 @@ class DensityMatrix:
     def plot(self):
         fig, ax = plt.subplots(1, 1)
         dat = self._data.toarray()
-        img = ax.imshow(.0001 + np.abs(dat), interpolation='none', cmap="hot", norm=colors.LogNorm())
+        img = ax.imshow(.0001 + np.abs(dat), interpolation='none', cmap="gist_heat", norm=colors.LogNorm())
         label_list = [str(b) for b in self._basis]
         ax.set_xticks(list(range(self.size)))
         ax.set_yticks(list(range(self.size)))
@@ -239,7 +243,7 @@ def dm_log(dm: DensityMatrix) -> DensityMatrix:
 def dm_trace(dm: DensityMatrix) -> float:
     # return dm.data.trace()
     # TODO FIND A GOOD WAY TO DO THE TRACE
-    return np.sum(dm.data.data)[0]
+    return dm.data.diagonal(k=0).sum()
 
 
 def permute_sparse_matrix(M, new_order: list):

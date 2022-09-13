@@ -16,7 +16,6 @@ from matplotlib import collections as mc
 
 @dataclass
 class Graph:
-    """Class for keeping track of an item in inventory."""
     nodes: list
     edges: list
 

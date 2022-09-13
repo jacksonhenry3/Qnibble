@@ -48,6 +48,8 @@ def D(dm1: DensityMatrix, dm2: DensityMatrix):
 def extractable_work(T: float, dm: DensityMatrix):
     pop = pop_from_temp(T)
     reference_dm = n_thermal_qbits([pop for _ in range(dm.number_of_qbits)])
+    reference_dm.change_to_energy_basis()
+    dm.change_to_energy_basis()
     return T * D(dm, reference_dm)
 
 
