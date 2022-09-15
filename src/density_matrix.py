@@ -80,32 +80,33 @@ class DensityMatrix:
 
         return qbit(tot)
 
-    # def ptrace(self, qbits: list):
-    #     """
-    #
-    #     Args:
-    #         qbits: a list of indices of the qubits to trace out
-    #
-    #     Returns: a new density matrix with the requested qubits traced out
-    #
-    #     I don't see a way to do this sparsely? either slow calculations or reshape.
-    #
-    #     """
-    #     assert len(qbits) < self.basis.num_qubits, "cant completely contract"
-    #
-    #     if len(qbits) == self.basis.num_qubits - 1:
-    #         remaining_qbit = list(set(range(self.basis.num_qubits)) - set(qbits))[0]
-    #         return self.ptrace_to_a_single_qbit(remaining_qbit)
-    #
-    #     for q in qbits:
-    #         assert q < self.basis.num_qubits, "qbit index out of range"
-    #
-    #     n = self.number_of_qbits
-    #     data = self.qbit_basis()
-    #     axes = np.concatenate((np.array(qbits), np.array(qbits) + n))
-    #     new_data = np.sum(data, axis=tuple(axes))
-    #     new_data
-    #     return DensityMatrix(new_data, canonical_basis(n - len(qbits)))
+    def ptrace(self, qbits: list):
+        """
+
+        Args:
+            qbits: a list of indices of the qubits to trace out
+
+        Returns: a new density matrix with the requested qubits traced out
+
+        I don't see a way to do this sparsely? either slow calculations or reshape.
+
+        """
+        assert len(qbits) < self.basis.num_qubits, "cant completely contract"
+
+        if len(qbits) == self.basis.num_qubits - 1:
+            remaining_qbit = list(set(range(self.basis.num_qubits)) - set(qbits))[0]
+            return self.ptrace_to_a_single_qbit(remaining_qbit)
+
+        for q in qbits:
+            assert q < self.basis.num_qubits, "qbit index out of range"
+
+        n = self.number_of_qbits
+        new_n = n-len(qbits)
+        data = self.qbit_basis()
+        axes = np.concatenate((np.array(qbits), np.array(qbits) + n))
+        new_data = np.sum(data, axis=tuple(axes))
+        new_data = new_data.reshape((2**new_n,2**new_n))
+        return DensityMatrix(SPARSE_TYPE(new_data), canonical_basis(n - len(qbits)))
 
     def qbit_basis(self):
         n = self.number_of_qbits
