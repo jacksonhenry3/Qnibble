@@ -11,8 +11,8 @@ import copy
 #experimental
 
 
-SPARSE_TYPE = sparse.bsr_matrix
-SPARSE_TYPE_STRING = "bsr"
+SPARSE_TYPE = sparse.csc_matrix
+SPARSE_TYPE_STRING = "csc"
 
 
 class DensityMatrix:
@@ -40,7 +40,7 @@ class DensityMatrix:
             return DensityMatrix(self._data * other, self._basis)
         elif isinstance(other, DensityMatrix):
             assert self.basis == other.basis
-            return DensityMatrix(SPARSE_TYPE.dot(self.data, other.data), copy.copy(self.basis))
+            return DensityMatrix(self.data@other.data, copy.copy(self.basis))
         raise TypeError(f"multiplication between {self} and {other} (type {type(other)} is not defined")
 
     def __rmul__(self, other):
@@ -108,7 +108,7 @@ class DensityMatrix:
         new_data = new_data.reshape((2**new_n,2**new_n))
         return DensityMatrix(SPARSE_TYPE(new_data), canonical_basis(n - len(qbits)))
 
-    def qbit_basis(self):
+    def qbit_basis(self) -> np.ndarray:
         n = self.number_of_qbits
         self.change_to_canonical_basis()
         data = self.data.toarray().reshape(*[2 for _ in range(2 * n)])
