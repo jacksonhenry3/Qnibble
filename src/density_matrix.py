@@ -201,6 +201,11 @@ class DensityMatrix:
         plt.show()
 
 
+def tensor(DMS: list[DensityMatrix]) -> DensityMatrix:
+    """An alias to tensor together a list of density matrices"""
+    return DMS[0].tensor(*DMS[1:])
+
+
 # Utilities to generate density matrices
 def Identity(basis: Basis) -> DensityMatrix:
     """ Creates the identity density matrix for n qubits in basis"""
