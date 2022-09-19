@@ -6,3 +6,6 @@
 /.idea/Qnibble.iml
 /.idea/vcs.xml
 /.idea/other.xml
+profiles_and_meta_data/
+.ipynb_checkpoints/
+/src/__pycache/
