@@ -2,7 +2,7 @@ import src.density_matrix as DM
 from math import comb
 from src.ket import energy_basis
 import numpy as np
-from scipy.linalg import block_diag
+from cupyx.scipy.linalg import block_diag
 from scipy.stats import unitary_group
 
 
@@ -44,4 +44,4 @@ def random_unitary(nqbits: int) -> DM.DensityMatrix:
     """
     blocks = [np.array([[1]])] + [unitary_group.rvs(comb(nqbits, i)) for i in range(1, nqbits)] + [np.array([[1]])]
     m = block_diag(*blocks)
-    return DM.DensityMatrix(DM.SPARSE_TYPE(m), energy_basis(nqbits))
+    return DM.DensityMatrix(DM.SPARSE_TYPE(m,dtype=np.complex64), energy_basis(nqbits))
