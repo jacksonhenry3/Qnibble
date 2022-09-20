@@ -1,61 +1,58 @@
-from src.random_hamiltonian import random_hamiltonian
 from src import density_matrix as DM
-from src.ket import energy_basis, canonical_basis
 from src import measurements
 import matplotlib.pyplot as plt
 import numpy as np
 from src.step import step
+import cupy as cp
 from src.random_hamiltonian import random_unitary
 
+print("all modules loaded")
+rng = np.random.default_rng(seed=0)
+
+mempool = cp.get_default_memory_pool()
+mempool.set_limit(size=16 * 1024 ** 3)
 # Properties of the system
-number_of_qbits = 8
+number_of_qbits = 15
 
 # initial conditions
-initial_pops = np.random.random(number_of_qbits)/2
-initial_pops = [.1,.1,.15,.1,.4,.45,.4,.4]
+initial_pops = np.random.random(number_of_qbits)
+num_blocks = 3
 # generate the system and change to the energy basis
 sys = DM.n_thermal_qbits(initial_pops)
 sys.change_to_energy_basis()
 
-# how the system will be broken up
-chunks = 2
+sys * sys
 
-assert number_of_qbits // chunks == number_of_qbits / chunks
-block_size = number_of_qbits // chunks
+block_size = number_of_qbits // num_blocks
 
-U = random_unitary(block_size)
-
-Unitaries = [U for _ in range(chunks)]
-
-#groupss = [[[0, 1, 2, 3], [4, 5, 6, 7],[8,9,10,11],[12,13,14,15]], [[0, 1, 2, 4], [3, 5, 6, 8],[7,9,10,11],[12,13,14,15]]]
-groupss = [[[0,1,2,3],[4,5,6,7]],[[0,1,2,4],[3,5,6,7]]]
-rng = np.random.default_rng()
-arr = np.arange(number_of_qbits)
-
-temps = []
-means = [[np.mean(initial_pops[:4]), np.mean(initial_pops[4:])]]
 import time
-start = time.time()
-for _ in range(25):
-    print(_)
-    U = random_unitary(4)
 
-    Unitaries = [U for _ in range(chunks)]
-    random_index = np.random.randint(len(groupss))
-    groups = groupss[random_index]
-    sys = step(sys, groups, Unitaries)
-    temps.append(measurements.temps(sys))
-    #means.append([np.mean(pops[-1][:4]), np.mean(pops[-1][4:])])
-print(time.time()-start)
-#for qbit_index, pop in enumerate(np.transpose(pops)):
-#    color = 'b'
-#    if qbit_index > 3:
-#        color = 'r'
-#    plt.plot(pop, c=color, alpha=.2)
-plt.plot(temps)
-#means = np.transpose(means)
-#plt.plot(means[0], 'b')
-#plt.plot(means[1], 'r')
-plt.axis("off")
-#plt.legend([f"qbit {i}" for i in range(number_of_qbits)])
-plt.show()
+start = time.time()
+for i in range(10):
+    print(f"using {mempool.used_bytes()} out of a set limit of {mempool.total_bytes()}")
+    print(i)
+    sub_system_unitaries = [random_unitary(block_size) for _ in range(num_blocks)]
+
+    U = DM.tensor(sub_system_unitaries)
+    sub_system_unitaries = None
+    # shift the order of the qbits
+
+    order = rng.permutation(number_of_qbits)
+
+    U.relabel_basis(order)
+    U.change_to_energy_basis()
+
+    mempool.free_all_blocks()
+    sys = U * sys
+    mempool.free_all_blocks()
+    U = U.H
+    mempool.free_all_blocks()
+    sys = sys * U
+    mempool.free_all_blocks()
+print(time.time() - start)
+# measurments = [np.vstack((measurments[i], measurment(qm_sys))) for i, measurment in enumerate(measurment_set)]
+# print(f"{np.round(time.time() - start, 2)} seconds elapsed")
+# return measurments
+
+# cpu 10 runs 13.5690336227417
+# gpu 10 runs 4.858150005340576

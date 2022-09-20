@@ -1,18 +1,20 @@
 import numpy as np
-from scipy import sparse
+from cupyx.scipy import sparse
 
 from src.ket import energy_basis, canonical_basis, Basis
 import matplotlib.pyplot as plt
 from matplotlib import colors
-import scipy.sparse.linalg as sp
-import scipy.linalg as sp_dense
+# import cupyx.scipy.sparse.linalg as sp
+# import cupyx.scipy.linalg as sp_dense
 import copy
+import cupy as cp
+# experimental
 
-#experimental
+
+SPARSE_TYPE = sparse.csr_matrix
 
 
-SPARSE_TYPE = sparse.csc_matrix
-SPARSE_TYPE_STRING = "csc"
+# SPARSE_TYPE_STRING = "csc"
 
 
 class DensityMatrix:
@@ -40,7 +42,7 @@ class DensityMatrix:
             return DensityMatrix(self._data * other, self._basis)
         elif isinstance(other, DensityMatrix):
             assert self.basis == other.basis
-            return DensityMatrix(self.data@other.data, copy.copy(self.basis))
+            return DensityMatrix(self.data @ other.data, copy.copy(self.basis))
         raise TypeError(f"multiplication between {self} and {other} (type {type(other)} is not defined")
 
     def __rmul__(self, other):
@@ -101,11 +103,11 @@ class DensityMatrix:
             assert q < self.basis.num_qubits, "qbit index out of range"
 
         n = self.number_of_qbits
-        new_n = n-len(qbits)
+        new_n = n - len(qbits)
         data = self.qbit_basis()
         axes = np.concatenate((np.array(qbits), np.array(qbits) + n))
         new_data = np.sum(data, axis=tuple(axes))
-        new_data = new_data.reshape((2**new_n,2**new_n))
+        new_data = new_data.reshape((2 ** new_n, 2 ** new_n))
         return DensityMatrix(SPARSE_TYPE(new_data), canonical_basis(n - len(qbits)))
 
     def qbit_basis(self) -> np.ndarray:
@@ -134,11 +136,11 @@ class DensityMatrix:
     @property
     def H(self):
         """Return the conjugate transpose of self"""
-        return DensityMatrix(np.transpose(self._data).conjugate(), self._basis)
+        return DensityMatrix(self._data.H, self._basis)
 
-    @property
-    def data_dense(self):
-        return self.data.toarray()
+    # @property
+    # def data_dense(self):
+    #     return self.data.toarray()
 
     # ==== in place modification ====
 
@@ -215,7 +217,7 @@ def Identity(basis: Basis) -> DensityMatrix:
 
 def qbit(pop: float) -> DensityMatrix:
     assert 0 <= pop <= .5, f"population must be between 0 and .5 but you chose {pop}"
-    return DensityMatrix(SPARSE_TYPE([[1 - pop, 0], [0, pop]]), energy_basis(1))
+    return DensityMatrix(SPARSE_TYPE([[1 - pop, 0], [0, pop]], dtype=np.complex64), energy_basis(1))
 
 
 def n_thermal_qbits(pops: list) -> DensityMatrix:
@@ -238,12 +240,12 @@ def n_thermal_qbits(pops: list) -> DensityMatrix:
 
 
 # functions that operate on density matrices
-def dm_exp(dm: DensityMatrix) -> DensityMatrix:
-    return DensityMatrix(sp.expm(dm.data), dm.basis)
+# def dm_exp(dm: DensityMatrix) -> DensityMatrix:
+#     return DensityMatrix(sp.expm(dm.data), dm.basis)
 
 
-def dm_log(dm: DensityMatrix) -> DensityMatrix:
-    return DensityMatrix(SPARSE_TYPE(sp_dense.logm(dm.data.todense())), dm.basis)
+# def dm_log(dm: DensityMatrix) -> DensityMatrix:
+#     return DensityMatrix(SPARSE_TYPE(sp_dense.logm(dm.data.todense())), dm.basis)
 
 
 def dm_trace(dm: DensityMatrix) -> float:
@@ -263,9 +265,10 @@ def permute_sparse_matrix(M, new_order: list):
     # I = I[new_order, :]
     # I = SPARSE_TYPE(I)
 
-    I = sparse.eye(M.shape[0]).tocoo()
+    I = sparse.eye(M.shape[0], dtype=np.float64).tocoo()
     I.row = I.row[new_order]
-    return I.T @ M @ I
+    I = SPARSE_TYPE(I)
+    return SPARSE_TYPE(I.T @ M @ I, dtype = np.complex64)
 
 
 def conserves_energy(dm: DensityMatrix) -> bool:
