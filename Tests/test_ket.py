@@ -1,6 +1,6 @@
 """Tests that basis kets are working properly"""
 from src import ket as ket
-
+import numpy as np
 
 class TestKet:
     """
@@ -11,7 +11,7 @@ class TestKet:
     def test_create(self):
         """Tests the creation of a simple ket and validates its properties"""
         test_ket = ket.Ket([0, 1, 0, 1, 0])
-        assert test_ket.data == [0, 1, 0, 1, 0]
+        assert np.array_equal(test_ket.data,np.array([0, 1, 0, 1, 0]))
         assert test_ket.num == 10
 
     def test_iter(self):

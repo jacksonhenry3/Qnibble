@@ -1,47 +1,35 @@
-import src.density_matrix as DM
+import src.setup as setup
+
 from math import comb
+import src.density_matrix as DM
 from src.ket import energy_basis
+
 import numpy as np
 from cupyx.scipy.linalg import block_diag
 from scipy.stats import unitary_group
 
+SPARSE_TYPE = setup.SPARSE_TYPE
 
-def random_hamiltonian(nqbits: int):
-    blocks_real = [np.random.random([comb(nqbits, i), comb(nqbits, i)]) for i in range(nqbits + 1)]
-    blocks_complex = [1j * np.random.random([comb(nqbits, i), comb(nqbits, i)]) for i in range(nqbits + 1)]
-    blocks = [blocks_real[i] + blocks_complex[i] for i in range(nqbits + 1)]
-    blocks = [block + np.conjugate(block.T) for block in blocks]
+
+def random_unitary_in_subspace(nqbits: int, energy_subspace: int):
+    blocks = [np.array([[1]])] + [np.zeros((comb(nqbits, e), comb(nqbits, e))) if e is not energy_subspace else unitary_group.rvs(comb(nqbits, e)) for e in range(1, nqbits)] + [np.array([[1]])]
     m = block_diag(*blocks)
-    np.fill_diagonal(m, 0)
-    return DM.DensityMatrix(DM.SPARSE_TYPE(m), energy_basis(nqbits))
-
-
-def random_hamiltonian_in_subspace(nqbits: int, energy_subspace: int):
-    blocks_real = [np.random.random([comb(nqbits, i), comb(nqbits, i)]) if i == energy_subspace else np.identity(comb(nqbits, i)) for i in range(nqbits + 1)]
-    blocks_complex = [1j * np.random.random([comb(nqbits, i), comb(nqbits, i)]) if i == energy_subspace else np.identity(comb(nqbits, i)) for i in range(nqbits + 1)]
-    blocks = [blocks_real[i] + blocks_complex[i] for i in range(nqbits + 1)]
-    blocks = [block + np.conjugate(block.T) for block in blocks]
-    m = block_diag(*blocks)
-    np.fill_diagonal(m, 0)
-    return DM.DensityMatrix(DM.SPARSE_TYPE(m), energy_basis(nqbits))
-
-
-def random_unitary_in_subspace(nqbits: int, energy_subspace: int, dt=.1):
-    H = random_hamiltonian_in_subspace(nqbits, energy_subspace)
-    return DM.dm_exp(-dt * 1j * H)
+    return DM.DensityMatrix(DM.SPARSE_TYPE(m, dtype=np.complex64), energy_basis(nqbits))
 
 
 def random_unitary(nqbits: int) -> DM.DensityMatrix:
     """
-
     Args:
         nqbits: the number of qbits in the system.
 
     Returns: A density matrix object of a random energy preserving unitary on n qbits.
 
-    This function uses the ability to generate completly random unitaries from scipy.stats.unitary_group to generate complelty random unitaries in energy preserving subsapces of the full unitary.
+    This function uses the ability to generate completely random unitaries from scipy.stats.unitary_group to generate complete random unitaries in energy preserving subspaces of the full unitary.
 
     """
     blocks = [np.array([[1]])] + [unitary_group.rvs(comb(nqbits, i)) for i in range(1, nqbits)] + [np.array([[1]])]
     m = block_diag(*blocks)
-    return DM.DensityMatrix(DM.SPARSE_TYPE(m,dtype=np.complex64), energy_basis(nqbits))
+    return DM.DensityMatrix(DM.SPARSE_TYPE(m, dtype=np.complex64), energy_basis(nqbits))
+
+
+print(random_unitary(3))

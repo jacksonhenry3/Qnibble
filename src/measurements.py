@@ -1,5 +1,6 @@
 import numpy as np
-from src.density_matrix import DensityMatrix, n_thermal_qbits, dm_trace#, dm_log
+from src.density_matrix import DensityMatrix, n_thermal_qbits, dm_trace, dm_log
+import cupy as cp
 
 
 # measurements
@@ -8,17 +9,22 @@ def temp(qbit: DensityMatrix):
     p = pop(qbit)
     return np.real(temp_from_pop(p))
 
+
 def pop(qbit: DensityMatrix):
     assert qbit.size == 2, "density matrix must be for a single qubit"
     p = qbit.data.diagonal()[1]
     return np.real(p)
 
+
 def pops(dm: DensityMatrix):
     n = dm.number_of_qbits
     result = []
     for i in range(n):
-        result.append(pop(dm.ptrace_to_a_single_qbit(i)))
+        q = dm.ptrace_to_a_single_qbit(i)
+        p = pop(q)
+        result.append(p)
     return result
+
 
 def temps(dm: DensityMatrix):
     n = dm.number_of_qbits
@@ -60,7 +66,7 @@ def extractable_work_of_each_qubit(dm: DensityMatrix):
     for i in range(n):
         temp_list = temps(dm)
         temp_list.pop(i)
-        T = np.mean(temp_list)
+        T = cp.mean(temp_list)
         result.append(extractable_work(T, dm.ptrace_to_a_single_qbit(i)))
     return result
 
