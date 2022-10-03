@@ -7,9 +7,11 @@ from matplotlib import colors
 
 import copy
 import warnings
+from functools import reduce
+import numpy as np
 
 xp = setup.xp
-sparse = setup.sparse
+sp = setup.sp
 SPARSE_TYPE = setup.SPARSE_TYPE
 
 from scipy.linalg import logm
@@ -65,7 +67,7 @@ class DensityMatrix:
         res_basis = self._basis
         for other in others:
             if isinstance(other, DensityMatrix):
-                res_data = sparse.kron(res_data, other._data)
+                res_data = sp.sparse.kron(res_data, other._data)
                 if resultant_basis is None:
                     res_basis = res_basis.tensor(other._basis)
             else:
@@ -147,7 +149,7 @@ class DensityMatrix:
 
     @property
     def number_of_qbits(self):
-        return int(xp.log2(self.size))
+        return int(xp.round(xp.log2(self.size)))
 
     @property
     def H(self):
@@ -161,9 +163,9 @@ class DensityMatrix:
     # ==== in place modification ====
 
     def change_to_energy_basis(self):
-        energy = [b.energy for b in self.basis]
-        nums = [b.num for b in self.basis]
-        idx = xp.lexsort((nums, energy))
+        energy = np.array([b.energy for b in self.basis])
+        nums = np.array([b.num for b in self.basis])
+        idx = np.lexsort(np.array([nums, energy]))
         self._data = permute_sparse_matrix(self._data, list(idx))
         self._basis = self.basis.reorder(idx)
 
@@ -249,15 +251,15 @@ def n_thermal_qbits(pops: list) -> DensityMatrix:
     for i in range(num_states):
         state = list(format(i, f'0{len(pops)}b'))
         value_list = [pops[j] if b == '1' else 1 - pops[j] for j, b in enumerate(state)]
-        value = xp.product(value_list)
+        value = reduce((lambda x, y: x * y), value_list)
         data.append(value)
 
-    return DensityMatrix(sparse.diags(data, format='csc'), canonical_basis(len(pops)))
+    return DensityMatrix(sp.sparse.diags(data, format='csc'), canonical_basis(len(pops)))
 
 
 # functions that operate on density matrices
 def dm_exp(dm: DensityMatrix) -> DensityMatrix:
-    return DensityMatrix(sparse.linalg.expm(dm.data), dm.basis)
+    return DensityMatrix(sp.sparse.linalg.expm(dm.data), dm.basis)
 
 
 def dm_log(dm: DensityMatrix) -> DensityMatrix:
@@ -280,7 +282,7 @@ def permute_sparse_matrix(M, new_order: list):
     # I = I[new_order, :]
     # I = SPARSE_TYPE(I)
 
-    I = sparse.eye(M.shape[0], dtype=xp.float64).tocoo()
+    I = sp.sparse.eye(M.shape[0], dtype=xp.float64).tocoo()
     I.row = I.row[new_order]
     I = SPARSE_TYPE(I)
     return SPARSE_TYPE(I.T @ M @ I, dtype=xp.complex64)
@@ -294,7 +296,7 @@ def permute_sparse_matrix_new(m, new_order):
     col = new_order[col]
     row = new_order[row]
 
-    coo = sparse.coo_matrix((data, (row, col)), shape=m.shape)
+    coo = sp.sparse.coo_matrix((data, (row, col)), shape=m.shape)
     csr = coo.tocsr()
     return csr
 

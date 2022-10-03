@@ -1,6 +1,12 @@
 import numpy as np
 from src.density_matrix import DensityMatrix, n_thermal_qbits, dm_trace, dm_log
 import cupy as cp
+import scipy as sp
+import scipy.linalg
+
+σx = np.matrix([[0, 1], [1, 0]])
+σy = np.matrix([[0, -1j], [1j, 0]])
+σz = np.matrix([[1, 0], [0, -1]])
 
 
 # measurements
@@ -77,3 +83,36 @@ def change_in_extractable_work(T_initial: float, dm_initial: DensityMatrix, T_fi
 
 def entropy(dm: DensityMatrix):
     return dm_trace(-dm * dm_log(dm))
+
+
+def concurrence(dm: DensityMatrix) -> float:
+    """
+
+    Args:
+        dm: a 2 qbit density matrix
+
+    Returns: a real number between zero and 1
+
+
+    ref: https://www.rintonpress.com/journals/qic-1-1/eof2.pdf pg 33
+
+    """
+
+    # TODO assert dm size
+
+    data: np.ndarray = dm.data.toarray()
+
+    spin_flip_operator = sp.linalg.kron(σy, σy)
+    spin_flipped = spin_flip_operator @ data.conj() @ spin_flip_operator
+    vals, _ = sp.linalg.eig(data @ spin_flipped)
+
+    sorted_sqrt_eig_vals = np.real(np.sort(np.sqrt(vals)))
+    combined = sorted_sqrt_eig_vals[3] - sorted_sqrt_eig_vals[2] - sorted_sqrt_eig_vals[1] - sorted_sqrt_eig_vals[0]
+    return max(combined, 0)
+
+
+def uncorrelated_thermal_concurrence(dm: DensityMatrix) -> float:
+    a = dm.data.toarray()[1, 2]
+    b = dm.data.toarray()[0, 0]
+    c = dm.data.toarray()[3, 3]
+    return np.abs(a) - np.sqrt(b * c)
