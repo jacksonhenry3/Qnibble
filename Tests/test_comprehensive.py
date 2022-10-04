@@ -1,8 +1,12 @@
+from src.setup import use_gpu
+
+
 from src import density_matrix as DM
 from src.ket import canonical_basis
 from src import measurements
 import matplotlib.pyplot as plt
 from src.step import step
+
 
 from numpy.testing import assert_almost_equal
 
