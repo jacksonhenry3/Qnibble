@@ -1,13 +1,6 @@
-from src.setup import use_gpu
-use_gpu()
-
 import src.density_matrix as DM
 import itertools
 import numpy as np
-
-
-from src import measurements
-
 
 def step(dm: DM.DensityMatrix, groups: list[list[int]], Unitarys: list[DM.DensityMatrix]) -> DM.DensityMatrix:
     """
@@ -27,7 +20,6 @@ def step(dm: DM.DensityMatrix, groups: list[list[int]], Unitarys: list[DM.Densit
 
     order = np.array(list(itertools.chain.from_iterable(groups)))
 
-
     # make sure each qbit is assigned to a group and that there are no extras or duplicates.
     assert set(order) == set(range(dm.number_of_qbits))
 
@@ -40,10 +32,3 @@ def step(dm: DM.DensityMatrix, groups: list[list[int]], Unitarys: list[DM.Densit
     dm = U * dm * U.H
 
     return dm
-
-
-import src.random_hamiltonian as r
-
-sys = DM.n_thermal_qbits([.1, .1, .1])
-
-step(sys, [[0], [1, 2]], [r.random_unitary(1), r.random_unitary(2)])
