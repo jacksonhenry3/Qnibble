@@ -1,5 +1,5 @@
 from src import density_matrix as dm
-from src import random_hamiltonian as r
+from src import random_unitary as r
 from src import ket
 #pops = [.2,.2,]
 #sys = dm.n_thermal_qbits(pops)

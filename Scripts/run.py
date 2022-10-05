@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from src.step import step
 import cupy as cp
-from src.random_hamiltonian import random_unitary
+from src.random_unitary import random_unitary
 import src.measurements as measure
 
 print("all modules loaded")

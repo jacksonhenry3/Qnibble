@@ -3,7 +3,7 @@ import os
 
 import src.density_matrix as DM
 from src.step import step
-from src.random_hamiltonian import random_unitary
+from src.random_unitary import random_unitary
 
 
 def run(dm: DM.DensityMatrix, measurement_set, num_iterations: int, Unitaries, orders):

@@ -1,6 +1,6 @@
 if __name__ == '__main__':
 
-    from src.random_hamiltonian import random_unitary
+    from src.random_unitary import random_unitary
     import matplotlib.pyplot as plt
     import numpy as np
     from src import measurements as measure, density_matrix as DM
