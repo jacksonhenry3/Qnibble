@@ -1,9 +1,8 @@
-from src.setup import use_gpu
-
 from src import density_matrix as DM
 from src.ket import canonical_basis
 from src import measurements
-from src.step import step
+
+from src.simulation import run
 
 from numpy.testing import assert_almost_equal
 
@@ -66,17 +65,12 @@ class TestComprehensive:
 
         H = DM.DensityMatrix(DM.SPARSE_TYPE(hamiltonian_data), canonical_basis(block_size))
         H.change_to_energy_basis()
-        pops = []
 
-        groupss = [[[0, 2, 4, 6], [1, 3, 5, 7]], [[0, 1, 2, 3], [4, 5, 6, 7]]]
+        Unitary = DM.tensor([DM.dm_exp(1j * dtheta * H) for _ in range(chunks)])
 
+        orders = [[0, 1, 2, 3, 4, 5, 6, 7], [0, 4, 1, 5, 2, 6, 3, 7]]
 
-        Unitarys = [DM.dm_exp(1j * dtheta * H) for _ in range(chunks)]
-
-        for i in range(100):
-            groups = groupss[(i + 1) % 2]
-            sys = step(sys, groups, Unitarys)
-            pops.append(measurements.pops(sys))
+        pops = run(sys, measurement_set=[measurements.pops], num_iterations=100, subsystems_size=4, orders=orders, Unitaries=Unitary)[0][1:]
 
         UnnatiResults = [[0.102022, 0.200982, 0.298861, 0.398135, 0.152104, 0.251058, 0.348878, 0.447961], [0.105157, 0.204515, 0.296364, 0.395547, 0.153089, 0.252141, 0.347254, 0.445933],
                          [0.112636, 0.208809, 0.291704, 0.388434, 0.159891, 0.255837, 0.343439, 0.43925], [0.120093, 0.217169, 0.286156, 0.382944, 0.162301, 0.258347, 0.339119, 0.43387],
