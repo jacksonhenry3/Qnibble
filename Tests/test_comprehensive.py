@@ -1,12 +1,9 @@
 from src.setup import use_gpu
 
-
 from src import density_matrix as DM
 from src.ket import canonical_basis
 from src import measurements
-import matplotlib.pyplot as plt
 from src.step import step
-
 
 from numpy.testing import assert_almost_equal
 
@@ -73,16 +70,11 @@ class TestComprehensive:
 
         groupss = [[[0, 2, 4, 6], [1, 3, 5, 7]], [[0, 1, 2, 3], [4, 5, 6, 7]]]
 
-        step_sizes = [dtheta for _ in range(chunks)]
-        #hamiltonians = [H for _ in range(chunks)]
-        Unitarys = [DM.dm_exp(1j*dtheta*H) for _ in range(chunks)]
 
-        Unitaries = []
-        correlation = []
-        for _ in range(100):
-            #print(_)
-            groups = groupss[(_ + 1) % 2]
-            #print(groups)
+        Unitarys = [DM.dm_exp(1j * dtheta * H) for _ in range(chunks)]
+
+        for i in range(100):
+            groups = groupss[(i + 1) % 2]
             sys = step(sys, groups, Unitarys)
             pops.append(measurements.pops(sys))
 
@@ -137,4 +129,4 @@ class TestComprehensive:
                          [0.268044, 0.272048, 0.277827, 0.281431, 0.263129, 0.270788, 0.276704, 0.290028], [0.268819, 0.274208, 0.275737, 0.281742, 0.266384, 0.271532, 0.274764, 0.286814],
                          [0.26985, 0.274336, 0.275133, 0.281187, 0.267959, 0.272033, 0.272539, 0.286963], [0.270411, 0.276441, 0.272893, 0.28132, 0.271435, 0.273029, 0.270742, 0.283729]]
 
-        assert_almost_equal(UnnatiResults, pops,5)
+        assert_almost_equal(UnnatiResults, pops, 5)
