@@ -6,13 +6,13 @@ from src.random_unitary import random_unitary
 import copy
 
 
-def run(dm: DM.DensityMatrix, measurement_set, num_iterations: int, subsystems_size: int, orders, Unitaries=None):
+def run(dm: DM.DensityMatrix, measurement_set, num_iterations: int, num_chunks: int, orders, Unitaries=None):
     """
     Args:
         dm: the density matrix to evolve
         measurement_set: a list of functions that take a density matrix as an argument and return a number
         num_iterations: An integer representing the number of iterations the system will go through
-        subsystems_size : The size of the subsystems that the full system will be broken in to.
+        num_chunks : The number of subsystems that the full system will be broken in to.
         Unitaries: either a list of DMs to be used to evolve the system, if there are fewer unitaries than iterations they will be used cyclically.
                        or: a single unitary to be used at each step
                        or: None, in which case random unitaries will be generated at each step.
@@ -23,6 +23,8 @@ def run(dm: DM.DensityMatrix, measurement_set, num_iterations: int, subsystems_s
     """
     if type(measurement_set) != list:
         measurement_set = [measurement_set]
+
+    assert dm.number_of_qbits % num_chunks == 0
 
     measurement_values = [np.array(measurement(dm)) for measurement in measurement_set]
 
@@ -44,7 +46,7 @@ def run(dm: DM.DensityMatrix, measurement_set, num_iterations: int, subsystems_s
         order = orders[i % len(orders)]
 
         if generate_random_unitary:
-            U = DM.tensor([random_unitary(len(g)) for g in order])
+            U = DM.tensor([random_unitary(dm.number_of_qbits//num_chunks) for _ in range(num_chunks)])
         else:
             U = Unitaries[i % num_unitaries]
 
@@ -68,7 +70,7 @@ def step(dm: DM.DensityMatrix, order: list[int], Unitary: DM.DensityMatrix, unit
     """
     # Unitary = copy.deepcopy(Unitary)
     # make sure each qbit is assigned to a group and that there are no extras or duplicates.
-    assert set(order) == set(range(dm.number_of_qbits))
+    assert set(order) == set(range(dm.number_of_qbits)),f"{set(order)} vs { set(range(dm.number_of_qbits))}"
     Unitary.relabel_basis(order)
     Unitary.change_to_energy_basis()
     dm.change_to_energy_basis()

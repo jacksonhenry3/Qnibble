@@ -72,7 +72,7 @@ def extractable_work_of_each_qubit(dm: DensityMatrix):
     for i in range(n):
         temp_list = temps(dm)
         temp_list.pop(i)
-        T = cp.mean(temp_list)
+        T = np.mean(temp_list)
         result.append(extractable_work(T, dm.ptrace_to_a_single_qbit(i)))
     return result
 
