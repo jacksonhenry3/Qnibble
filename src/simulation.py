@@ -2,21 +2,21 @@ import numpy as np
 import os
 
 import src.density_matrix as DM
-from src.step import step
 from src.random_unitary import random_unitary
+import copy
 
 
-def run(dm: DM.DensityMatrix, measurement_set, num_iterations: int, Unitaries, orders):
+def run(dm: DM.DensityMatrix, measurement_set, num_iterations: int, subsystems_size: int, orders, Unitaries=None):
     """
-
     Args:
         dm: the density matrix to evolve
         measurement_set: a list of functions that take a density matrix as an argument and return a number
         num_iterations: An integer representing the number of iterations the system will go through
-        Unitaries: either a list of DMs to be used to evolve the system
+        subsystems_size : The size of the subsystems that the full system will be broken in to.
+        Unitaries: either a list of DMs to be used to evolve the system, if there are fewer unitaries than iterations they will be used cyclically.
                        or: a single unitary to be used at each step
                        or: None, in which case random unitaries will be generated at each step.
-        orders: A list of qbit orderes at each iteration step.
+        orders: A list of qbit orders at each iteration step. If there are fewer orders than steps they will be used cyclically.
 
     Returns: A density matrix that has been evolved by the given hamiltonians for the given step sizes.
 
@@ -30,31 +30,57 @@ def run(dm: DM.DensityMatrix, measurement_set, num_iterations: int, Unitaries, o
 
     if type(Unitaries) == list:
         assert len(Unitaries) == num_iterations, "There must be a unitary for each trial"
+        num_unitaries = len(Unitaries)
+
     elif type(Unitaries) == DM.DensityMatrix:
-        Unitaries = [Unitaries for _ in range(num_iterations)]
+        Unitaries = [Unitaries]
+        num_unitaries = 1
     else:
         generate_random_unitary = True
         print("using random unitaries")
 
-    assert len(orders) == num_iterations, "There must be an order for each trial"
-
     for i in range(num_iterations):
 
-        order = orders[i]
+        order = orders[i % len(orders)]
 
         if generate_random_unitary:
             U = DM.tensor([random_unitary(len(g)) for g in order])
         else:
-            U = Unitaries[i]
+            U = Unitaries[i % num_unitaries]
 
-        U.relabel_basis(order)
-        U.change_to_energy_basis()
-
-        dm = U * dm * U.H
+        dm = step(dm, order, U, not generate_random_unitary)
 
         measurement_values = [np.vstack((measurement_values[i], measurement(dm))) for i, measurement in enumerate(measurement_set)]
 
     return measurement_values
+
+
+def step(dm: DM.DensityMatrix, order: list[int], Unitary: DM.DensityMatrix, unitary_reused=False) -> DM.DensityMatrix:
+    """
+    Args:
+        dm: the density matrix to evolve
+        order: the qbit order to be used e.g. [0,2,1,3]
+        Unitary: A Unitary that will be used to evolve the system
+        unitary_reused: if the unitary will be reused make sure to undo the reordering
+
+    Returns: A density matrix that has been evolved by the given hamiltonians for the given step sizes.
+
+    """
+    # Unitary = copy.deepcopy(Unitary)
+    # make sure each qbit is assigned to a group and that there are no extras or duplicates.
+    assert set(order) == set(range(dm.number_of_qbits))
+    Unitary.relabel_basis(order)
+    Unitary.change_to_energy_basis()
+    dm.change_to_energy_basis()
+    dm = Unitary * dm * Unitary.H
+
+    if unitary_reused:
+        inverse_order = list(range(len(order)))
+        for i, value in enumerate(order):
+            inverse_order[value] = i
+        Unitary.relabel_basis(inverse_order)
+
+    return dm
 
 
 def save_data(data: np.ndarray, num_qbits: str, measurement: str, num_chunks: str, connectivity_type: str, run_index: str, sim_index=int, extra=""):
