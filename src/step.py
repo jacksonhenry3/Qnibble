@@ -18,7 +18,10 @@ def step(dm: DM.DensityMatrix, groups: list[list[int]], Unitarys: list[DM.Densit
     # make sure that the given hamiltonians have the same sizes as the given groupings
     for index, unitary in enumerate(Unitarys): assert unitary.number_of_qbits == len(groups[index]), "Each unitary must be for a system of the size of each group"
 
-    order = np.array(list(itertools.chain.from_iterable(groups)))
+    temp_order = np.array(list(itertools.chain.from_iterable(groups)))
+    order = ['error' for _ in range(len(temp_order))]
+    for i,index in enumerate(temp_order):
+        order[index] = i
 
     # make sure each qbit is assigned to a group and that there are no extras or duplicates.
     assert set(order) == set(range(dm.number_of_qbits))
