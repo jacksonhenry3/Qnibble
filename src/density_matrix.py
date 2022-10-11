@@ -81,7 +81,7 @@ class DensityMatrix:
         for i, b in enumerate(self.basis):
             tot += diags[i] * (b.data[remaining_qbit] == '1')
 
-        return qbit(tot)
+        return qbit(float(xp.real(tot)))
 
     def ptrace(self, qbits: list):
         """

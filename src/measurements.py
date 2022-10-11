@@ -19,7 +19,7 @@ def temp(qbit: DensityMatrix):
 def pop(qbit: DensityMatrix):
     assert qbit.size == 2, "density matrix must be for a single qubit"
     p = qbit.data.diagonal()[1]
-    return np.real(p)
+    return float(np.real(p))
 
 
 def pops(dm: DensityMatrix):
