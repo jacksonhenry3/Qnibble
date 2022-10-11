@@ -47,7 +47,7 @@ def run(dm: DM.DensityMatrix, measurement_set, num_iterations: int, num_chunks: 
 
     for i in range(num_iterations):
         progress = i / num_iterations
-        if int(progress * 100 * verbose) % int(verbose * 100) == 0:
+        if int(progress * 100) % int(verbose * 100) == 0:
             print(progress)
 
         order = orders[i % len(orders)]
