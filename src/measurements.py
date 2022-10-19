@@ -1,5 +1,5 @@
 import numpy as np
-from src.density_matrix import DensityMatrix, n_thermal_qbits, dm_trace, dm_log
+from src.density_matrix import DensityMatrix, n_thermal_qbits, dm_trace, dm_log,qbit
 import cupy as cp
 import scipy as sp
 import scipy.linalg
@@ -56,13 +56,22 @@ def D(dm1: DensityMatrix, dm2: DensityMatrix):
     assert dm1.size == dm2.size
     return dm_trace(dm1 * dm_log(dm1)) - dm_trace(dm1 * dm_log(dm2))
 
+def D_single_qbits(pop_1:float,pop_2:float):
+    tr_1 = (1-pop_1)*np.log(1-pop_1)+(pop_1)*np.log(pop_1)
+    tr_2 = (1-pop_2)*np.log(1-pop_2)+(pop_2)*np.log(pop_2)
+    return tr_1 - tr_2
+
 
 def extractable_work(T: float, dm: DensityMatrix):
     pop = pop_from_temp(T)
     reference_dm = n_thermal_qbits([pop for _ in range(dm.number_of_qbits)])
     reference_dm.change_to_energy_basis()
     dm.change_to_energy_basis()
-    return T * D(dm, reference_dm)
+    return float(np.real(T * D(dm, reference_dm)))
+
+def extractable_work_of_a_single_qbit(T: float, pop: float):
+    ref_pop = pop_from_temp(T)
+    return float(np.real(T * D_single_qbits(pop, ref_pop)))
 
 
 def extractable_work_of_each_qubit(dm: DensityMatrix):
@@ -73,7 +82,7 @@ def extractable_work_of_each_qubit(dm: DensityMatrix):
         temp_list = temps(dm)
         temp_list.pop(i)
         T = np.mean(temp_list)
-        result.append(extractable_work(T, dm.ptrace_to_a_single_qbit(i)))
+        result.append(extractable_work_of_a_single_qbit(T, pop(dm.ptrace_to_a_single_qbit(i))))
     return result
 
 

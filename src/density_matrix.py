@@ -76,10 +76,13 @@ class DensityMatrix:
         return DensityMatrix(res_data, res_basis)
 
     def ptrace_to_a_single_qbit(self, remaining_qbit):
+        n = self.number_of_qbits
+        qbit_val = 2 ** (n-remaining_qbit-1)
         tot = 0
         diags = self.data.diagonal()
         for i, b in enumerate(self.basis):
-            tot += diags[i] * (b.data[remaining_qbit] == '1')
+            #This uses bitwise and to identify when the remaining_qbit qbit is 1 (b.num & qbit_val) will give false if the remaining qbit value is zero for a given state
+            tot += diags[i] * bool((b.num & qbit_val))
 
         return qbit(float(xp.real(tot)))
 
@@ -264,6 +267,9 @@ def dm_exp(dm: DensityMatrix) -> DensityMatrix:
 
 def dm_log(dm: DensityMatrix) -> DensityMatrix:
     warnings.warn("Requires conversion to and from dense", Warning)
+    if xp != np:
+        warnings.warn("Requires sending data to and from the gpu", Warning)
+        return DensityMatrix(SPARSE_TYPE(xp.array(logm(xp.asnumpy(dm.data.todense())))), dm.basis)
     return DensityMatrix(SPARSE_TYPE(logm(dm.data.todense())), dm.basis)
 
 
