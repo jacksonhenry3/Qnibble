@@ -81,9 +81,8 @@ class Ket:
 
 class Basis(tuple):
     @functools.cached_property
-    @property
     def num_qubits(self):
-        return int(np.log2(len(self)))
+        return self[0].num_qbit
 
     def reorder(self, order):
         x = np.empty((len(self)), dtype=Ket)
