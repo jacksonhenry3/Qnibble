@@ -7,7 +7,7 @@ from matplotlib import colors
 
 import copy
 import warnings
-from functools import reduce
+from functools import cached_property, reduce
 import numpy as np
 
 xp = setup.xp
@@ -18,12 +18,13 @@ from scipy.linalg import logm
 
 
 class DensityMatrix:
-    __slots__ = "_data", "_basis"
+    __slots__ = "number_of_qbits", "_data", "_basis", "__dict__"
 
     def __init__(self, matrix: SPARSE_TYPE, basis: Basis):
         """This doesn't validate inputs, eg. the basis is allowed to be wrong the dimension """
         self._data: SPARSE_TYPE = SPARSE_TYPE(matrix)
         self._basis = basis
+        self.number_of_qbits = basis.num_qubits
 
     def __repr__(self):
         return f'DM {id(self)}'
@@ -75,13 +76,13 @@ class DensityMatrix:
         res_basis = resultant_basis or res_basis
         return DensityMatrix(res_data, res_basis)
 
+    # @profile
     def ptrace_to_a_single_qbit(self, remaining_qbit):
-        tot = 0
-        diags = self.data.diagonal()
-        for i, b in enumerate(self.basis):
-            tot += diags[i] * (b.data[remaining_qbit] == '1')
-
-        return qbit(tot)
+        n = self.number_of_qbits
+        qbit_val = 2 ** (n - remaining_qbit - 1)
+        diags = xp.real(self.data.diagonal())
+        nums = xp.array([b.num for b in self.basis])
+        return xp.sum(diags[nums & qbit_val != 0])
 
     def ptrace(self, qbits: list):
         """
@@ -146,10 +147,6 @@ class DensityMatrix:
     @property
     def size(self):
         return self._data.shape[0]
-
-    @property
-    def number_of_qbits(self):
-        return int(xp.round(xp.log2(self.size)))
 
     @property
     def H(self):
@@ -264,6 +261,9 @@ def dm_exp(dm: DensityMatrix) -> DensityMatrix:
 
 def dm_log(dm: DensityMatrix) -> DensityMatrix:
     warnings.warn("Requires conversion to and from dense", Warning)
+    if xp != np:
+        warnings.warn("Requires sending data to and from the gpu", Warning)
+        return DensityMatrix(SPARSE_TYPE(xp.array(logm(xp.asnumpy(dm.data.todense())))), dm.basis)
     return DensityMatrix(SPARSE_TYPE(logm(dm.data.todense())), dm.basis)
 
 

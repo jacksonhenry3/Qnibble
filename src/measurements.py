@@ -1,6 +1,6 @@
 import numpy as np
-from src.density_matrix import DensityMatrix, n_thermal_qbits, dm_trace, dm_log
-import cupy as cp
+from src.density_matrix import DensityMatrix, n_thermal_qbits, dm_trace, dm_log,qbit
+# import cupy as cp
 import scipy as sp
 import scipy.linalg
 
@@ -19,15 +19,14 @@ def temp(qbit: DensityMatrix):
 def pop(qbit: DensityMatrix):
     assert qbit.size == 2, "density matrix must be for a single qubit"
     p = qbit.data.diagonal()[1]
-    return np.real(p)
+    return float(np.real(p))
 
 
 def pops(dm: DensityMatrix):
     n = dm.number_of_qbits
     result = []
     for i in range(n):
-        q = dm.ptrace_to_a_single_qbit(i)
-        p = pop(q)
+        p = dm.ptrace_to_a_single_qbit(i)
         result.append(p)
     return result
 
@@ -36,7 +35,7 @@ def temps(dm: DensityMatrix):
     n = dm.number_of_qbits
     result = []
     for i in range(n):
-        result.append(temp(dm.ptrace_to_a_single_qbit(i)))
+        result.append(float(temp_from_pop(dm.ptrace_to_a_single_qbit(i))))
     return result
 
 
@@ -56,13 +55,22 @@ def D(dm1: DensityMatrix, dm2: DensityMatrix):
     assert dm1.size == dm2.size
     return dm_trace(dm1 * dm_log(dm1)) - dm_trace(dm1 * dm_log(dm2))
 
+def D_single_qbits(pop_1:float,pop_2:float):
+    tr_1 = (1-pop_1)*np.log(1-pop_1)+(pop_1)*np.log(pop_1)
+    tr_2 = (1-pop_2)*np.log(1-pop_2)+(pop_2)*np.log(pop_2)
+    return tr_1 - tr_2
+
 
 def extractable_work(T: float, dm: DensityMatrix):
     pop = pop_from_temp(T)
     reference_dm = n_thermal_qbits([pop for _ in range(dm.number_of_qbits)])
     reference_dm.change_to_energy_basis()
     dm.change_to_energy_basis()
-    return T * D(dm, reference_dm)
+    return float(np.real(T * D(dm, reference_dm)))
+
+def extractable_work_of_a_single_qbit(T: float, pop: float):
+    ref_pop = pop_from_temp(T)
+    return float(np.real(T * D_single_qbits(pop, ref_pop)))
 
 
 def extractable_work_of_each_qubit(dm: DensityMatrix):
@@ -72,8 +80,8 @@ def extractable_work_of_each_qubit(dm: DensityMatrix):
     for i in range(n):
         temp_list = temps(dm)
         temp_list.pop(i)
-        T = cp.mean(temp_list)
-        result.append(extractable_work(T, dm.ptrace_to_a_single_qbit(i)))
+        T = np.mean(temp_list)
+        result.append(extractable_work_of_a_single_qbit(T, dm.ptrace_to_a_single_qbit(i)))
     return result
 
 
