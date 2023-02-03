@@ -1,6 +1,6 @@
 import numpy as np
 from src.density_matrix import DensityMatrix, n_thermal_qbits, dm_trace, dm_log,qbit
-import cupy as cp
+# import cupy as cp
 import scipy as sp
 import scipy.linalg
 
@@ -26,8 +26,7 @@ def pops(dm: DensityMatrix):
     n = dm.number_of_qbits
     result = []
     for i in range(n):
-        q = dm.ptrace_to_a_single_qbit(i)
-        p = pop(q)
+        p = dm.ptrace_to_a_single_qbit(i)
         result.append(p)
     return result
 

@@ -9,6 +9,3 @@ def n_random_line_orders(line_length: int, n: int) -> list[list[int]]:
 
 def n_random_gas_orders(num_qbits: int, n: int) -> list[np.ndarray]:
     return [rng.permutation(num_qbits) for _ in range(n)]
-
-def alternating(num_qbits: int, n: int) -> list[np.ndarray]:
-    return [rng.permutation(num_qbits) for _ in range(n)]

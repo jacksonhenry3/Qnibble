@@ -17,23 +17,23 @@ import numpy.typing as npt
 import itertools
 
 
-class BlockDiagonalSParse:
+class BlockDiagonalSparse:
 
     def __init__(self, data: npt.NDArray[SPARSE_TYPE]):
         self.data = data
 
     def __matmul__(self, other):
-        return BlockDiagonalSParse(self.data @ other.data)
+        return BlockDiagonalSparse(self.data @ other.data)
 
     def __mul__(self, other):
         assert type(other) is int or float
-        return BlockDiagonalSParse(self.data * other)
+        return BlockDiagonalSparse(self.data * other)
 
     def __add__(self, other):
-        return BlockDiagonalSParse(self.data + other.data)
+        return BlockDiagonalSparse(self.data + other.data)
 
     def __sub__(self, other):
-        return BlockDiagonalSParse(self.data - other.data)
+        return BlockDiagonalSparse(self.data - other.data)
 
     def __repr__(self):
         return self.data.__repr__()
@@ -50,7 +50,7 @@ class BlockDiagonalSParse:
 
 
 
-BDS = BlockDiagonalSParse
+BDS = BlockDiagonalSparse
 
 eg_1 = BDS(np.array([s.eye(3, 3), s.eye(3, 3), s.eye(3, 3), s.eye(3, 3)]))
 eg_2 = BDS(np.array([s.eye(3, 3), s.eye(3, 3), s.eye(3, 3), s.eye(3, 3)]))

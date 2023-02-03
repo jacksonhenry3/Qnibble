@@ -1,4 +1,6 @@
 import numpy as np
+from src.setup import xp
+
 import os
 
 import src.density_matrix as DM
@@ -25,7 +27,7 @@ def run(dm: DM.DensityMatrix, measurement_set, num_iterations: int, num_chunks: 
     if type(measurement_set) != list:
         measurement_set = [measurement_set]
 
-    measurement_values = [np.array(measurement(dm)) for measurement in measurement_set]
+    measurement_values = [measurement(dm) for measurement in measurement_set]
 
     generate_random_unitary = False
 
@@ -63,7 +65,7 @@ def run(dm: DM.DensityMatrix, measurement_set, num_iterations: int, num_chunks: 
 
         dm = step(dm, order, U, not generate_random_unitary)
 
-        measurement_values = [np.vstack((measurement_values[i], measurement(dm))) for i, measurement in enumerate(measurement_set)]
+        measurement_values = [xp.vstack((measurement_values[i], measurement(dm))) for i, measurement in enumerate(measurement_set)]
 
     return measurement_values
 
