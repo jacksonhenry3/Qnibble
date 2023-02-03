@@ -54,6 +54,12 @@ class Ket:
         self.num = num
         self.num_qbit = num_qbit
 
+    def __repr__(self) -> str:
+        return f"|{self.num},{self.energy}:" + f"{''.join([['↓', '↑'][int(e)] for i, e in enumerate(self.data())])}⟩"
+
+    def data(self) -> list:
+        return [*bin(self.num)[2:].zfill(self.num_qbit)]
+
     @property
     def energy(self):
         return bin(self.num).count("1")

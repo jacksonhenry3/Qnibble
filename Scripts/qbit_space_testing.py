@@ -1,6 +1,6 @@
 if __name__ == '__main__':
 
-    from src.random_unitary import random_unitary
+    from src.random_unitary import random_energy_preserving_unitary
     import matplotlib.pyplot as plt
     import numpy as np
     from src import measurements as measure, density_matrix as DM
@@ -31,10 +31,10 @@ if __name__ == '__main__':
         Unitarys = []
 
         if chunks > 1:
-            to_tensor = [random_unitary(block_size) for _ in range(chunks)]
+            to_tensor = [random_energy_preserving_unitary(block_size) for _ in range(chunks)]
             U = to_tensor[0].tensor(*to_tensor[1:])
         else:
-            U = random_unitary(block_size)
+            U = random_energy_preserving_unitary(block_size)
         order = list(range(N))
         shift = np.random.randint(len(order))
         order = np.roll(order, shift)

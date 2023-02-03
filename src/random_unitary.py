@@ -14,12 +14,12 @@ SPARSE_TYPE = setup.SPARSE_TYPE
 
 
 def random_unitary_in_subspace(nqbits: int, energy_subspace: int):
-    blocks = [np.array([[1]])] + [np.zeros((comb(nqbits, e), comb(nqbits, e))) if e is not energy_subspace else unitary_group.rvs(comb(nqbits, e)) for e in range(1, nqbits)] + [np.array([[1]])]
+    blocks = [np.array([[1]])] + [np.eye((comb(nqbits, e))) if e is not energy_subspace else unitary_group.rvs(comb(nqbits, e)) for e in range(1, nqbits)] + [np.array([[1]])]
     m = sp.linalg.block_diag(*blocks)
     return DM.DensityMatrix(DM.SPARSE_TYPE(m, dtype=np.complex64), energy_basis(nqbits))
 
 
-def random_unitary(nqbits: int) -> DM.DensityMatrix:
+def random_energy_preserving_unitary(nqbits: int) -> DM.DensityMatrix:
     """
     Args:
         nqbits: the number of qbits in the system.

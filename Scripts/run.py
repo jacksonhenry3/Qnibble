@@ -2,9 +2,9 @@ from src import density_matrix as DM
 from src import measurements
 import matplotlib.pyplot as plt
 import numpy as np
-from src.step import step
+from src.simulation import step
 import cupy as cp
-from src.random_unitary import random_unitary
+from src.random_unitary import random_energy_preserving_unitary
 import src.measurements as measure
 
 print("all modules loaded")
@@ -35,7 +35,7 @@ print(a)
 #     print(f"using {mempool.used_bytes()} out of a set limit of {mempool.total_bytes()}, {mempool.get_limit()}")
 #     print(i)
 #     print(sys.data.nnz)
-#     sub_system_unitaries = [random_unitary(block_size) for _ in range(num_blocks)]
+#     sub_system_unitaries = [random_energy_preserving_unitary(block_size) for _ in range(num_blocks)]
 #
 #     U = DM.tensor(sub_system_unitaries)
 #     sub_system_unitaries = None

@@ -4,7 +4,7 @@ from src.setup import xp
 import os
 
 import src.density_matrix as DM
-from src.random_unitary import random_unitary
+from src.random_unitary import random_energy_preserving_unitary
 import copy
 
 
@@ -56,7 +56,7 @@ def run(dm: DM.DensityMatrix, measurement_set, num_iterations: int, num_chunks: 
 
         if generate_random_unitary:
 
-            U = DM.tensor([random_unitary(chunk_size) for _ in range(num_chunks)])
+            U = DM.tensor([random_energy_preserving_unitary(chunk_size) for _ in range(num_chunks)])
 
             if leftovers:
                 U = U.tensor(leftover_identity)
