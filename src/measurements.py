@@ -90,7 +90,7 @@ def change_in_extractable_work(T_initial: float, dm_initial: DensityMatrix, T_fi
     return extractable_work(T_final, dm_final) - extractable_work(T_initial, dm_initial)
 
 
-def entropy(dm: DensityMatrix, exact = False) -> float:
+def entropy(dm: DensityMatrix, exact = True) -> float:
     if exact:
         result = -dm_trace(dm * dm_log(dm))
         return result
