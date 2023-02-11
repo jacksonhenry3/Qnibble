@@ -3,6 +3,7 @@ from src.density_matrix import DensityMatrix, n_thermal_qbits, dm_trace, dm_log,
 # import cupy as cp
 import scipy as sp
 import scipy.linalg
+import scipy.sparse.linalg.eigen as eigen
 
 σx = np.matrix([[0, 1], [1, 0]])
 σy = np.matrix([[0, -1j], [1j, 0]])
@@ -89,8 +90,17 @@ def change_in_extractable_work(T_initial: float, dm_initial: DensityMatrix, T_fi
     return extractable_work(T_final, dm_final) - extractable_work(T_initial, dm_initial)
 
 
-def entropy(dm: DensityMatrix):
-    return dm_trace(-dm * dm_log(dm))
+def entropy(dm: DensityMatrix, exact = False) -> float:
+    if exact:
+        result = -dm_trace(dm * dm_log(dm))
+        return result
+
+    # This method can't find all eigenvalues becouse of the algorithm it uses, but it does find all but the smallest two,
+    # leading to a precision loss of ~10-6
+    # See https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.linalg.eigs.html for details
+    eigen_vals, _ = eigen.eigsh(dm.data,k=2**dm.number_of_qbits-2, which="LR")
+    from_eigen = -np.sum([eta*np.log(eta) for eta in eigen_vals])
+    return from_eigen
 
 
 def concurrence(dm: DensityMatrix) -> float:
