@@ -124,3 +124,9 @@ def uncorrelated_thermal_concurrence(dm: DensityMatrix) -> float:
     b = dm.data.toarray()[0, 0]
     c = dm.data.toarray()[3, 3]
     return np.abs(a) - np.sqrt(b * c)
+
+def mutual_information(dm: DensityMatrix, sub_system_qbits: list[int]) -> float :
+    environment_qbits = list(set(range(dm.basis.num_qubits)) - set(sub_system_qbits))
+    sub_system = dm.ptrace(environment_qbits)
+    environment = dm.ptrace(sub_system_qbits)
+    return entropy(sub_system)+entropy(environment)-entropy(dm)
