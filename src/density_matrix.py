@@ -30,7 +30,9 @@ class DensityMatrix:
         return f'DM {id(self)}'
 
     def __eq__(self, other):
-        return self.data.shape == other.data.shape and (self.data != other.data).nnz == 0 and self.basis == other.basis
+        rtol = 10e-5
+        atol = 10e-4
+        return self.data.shape == other.data.shape and np.abs(np.abs(self.data - other.data) - rtol * np.abs(other.data)).max() <= atol and self.basis == other.basis
 
     def __add__(self, other):
         assert isinstance(other, DensityMatrix), f"Addition is only defined between two DensityMatrix objects, not {other}, of type {type(other)} and DensityMatrix"
@@ -145,7 +147,7 @@ class DensityMatrix:
         2: data[:n/2,:n/2]+data[n/2:,n/2:]
         3. profit"""
         n = self.number_of_qbits
-        order = xp.array(range(n))
+        order = np.arange(n)
         order[0] = qbit
         order[qbit] = 0
 
@@ -207,7 +209,7 @@ class DensityMatrix:
     def change_to_canonical_basis(self):
         nums = [b.num for b in self.basis]
         # energy = [b.energy for b in self.basis]
-        idx = xp.argsort(nums)
+        idx = np.argsort(nums)
         self._data = permute_sparse_matrix(self._data, idx)
         self._basis = self.basis.reorder(idx)
 

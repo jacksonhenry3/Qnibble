@@ -1,9 +1,12 @@
+import src.setup as setup
+
+xp = setup.xp
+sp = setup.sp
+SPARSE_TYPE = setup.SPARSE_TYPE
+
 import numpy as np
 from src.density_matrix import DensityMatrix, n_thermal_qbits, dm_trace, dm_log,qbit
-# import cupy as cp
-import scipy as sp
-import scipy.linalg
-import scipy.sparse.linalg.eigen as eigen
+
 
 σx = np.matrix([[0, 1], [1, 0]])
 σy = np.matrix([[0, -1j], [1j, 0]])
@@ -90,17 +93,17 @@ def change_in_extractable_work(T_initial: float, dm_initial: DensityMatrix, T_fi
     return extractable_work(T_final, dm_final) - extractable_work(T_initial, dm_initial)
 
 
-def entropy(dm: DensityMatrix, exact = True) -> float:
-    if exact:
-        result = -dm_trace(dm * dm_log(dm))
-        return result
+def entropy(dm: DensityMatrix) -> float:
+    # if exact:
+    result = -dm_trace(dm * dm_log(dm))
+    return float(xp.real(result))
 
     # This method can't find all eigenvalues becouse of the algorithm it uses, but it does find all but the smallest two,
     # leading to a precision loss of ~10-6
     # See https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.linalg.eigs.html for details
-    eigen_vals, _ = eigen.eigsh(dm.data,k=2**dm.number_of_qbits-2, which="LR")
-    from_eigen = -np.sum([eta*np.log(eta) for eta in eigen_vals])
-    return from_eigen
+    # eigen_vals = sp.sparse.linalg.eigsh(dm.data,k=2**dm.number_of_qbits-3, which="LM",return_eigenvectors = False)
+    # from_eigen = -xp.sum(eigen_vals*xp.log(eigen_vals))
+    # return from_eigen
 
 
 def concurrence(dm: DensityMatrix) -> float:
@@ -122,7 +125,7 @@ def concurrence(dm: DensityMatrix) -> float:
 
     spin_flip_operator = sp.linalg.kron(σy, σy)
     spin_flipped = spin_flip_operator @ data.conj() @ spin_flip_operator
-    vals, _ = sp.linalg.eig(data @ spin_flipped)
+    vals, _ = sp.sparse.linalg.eig(data @ spin_flipped)
 
     sorted_sqrt_eig_vals = np.real(np.sort(np.sqrt(vals)))
     combined = sorted_sqrt_eig_vals[3] - sorted_sqrt_eig_vals[2] - sorted_sqrt_eig_vals[1] - sorted_sqrt_eig_vals[0]

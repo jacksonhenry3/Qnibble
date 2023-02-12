@@ -9,9 +9,7 @@ from matplotlib import pyplot as plt
 # Add directory above current directory to path
 import sys as SYS
 
-from measurements import mutual_information, entropy
-from random_unitary import random_energy_preserving_unitary
-from simulation import step
+
 
 SYS.path.insert(0, '..')
 SYS.path.insert(0, '')
@@ -24,11 +22,13 @@ from src import (
     measurements as measure,
     density_matrix as DM,
     simulation as sim,
+    random_unitary,
     orders)
+
 
 N = 8
 num_chunks = 2
-num_iterations = 8
+num_iterations = 20
 
 
 ordering = orders.n_random_line_orders(line_length=N, n=num_iterations)
@@ -46,26 +46,26 @@ S2 = []
 Stot = []
 sub_system = system.ptrace(environment_qbits)
 environment = system.ptrace(sub_system_qbits)
-S1.append(entropy(sub_system))
-S2.append(entropy(environment))
-Stot.append(entropy(system))
+S1.append(measure.entropy(sub_system))
+S2.append(measure.entropy(environment))
+Stot.append(measure.entropy(system))
 
 MI = []
-MI.append(mutual_information(system, sub_system_qbits))
+MI.append(measure.mutual_information(system, sub_system_qbits))
 for iteration_index in range(num_iterations):
     print(iteration_index)
-    U = DM.tensor([random_energy_preserving_unitary(N//num_chunks), DM.Identity(DM.energy_basis(4))])
-    system = step(system,[0,1,2,3,4,5,6,7],U)
+    U = DM.tensor([random_unitary.random_energy_preserving_unitary(N//num_chunks), DM.Identity(DM.energy_basis(4))])
+    system = sim.step(system,ordering[iteration_index],U)
 
 
 
 
     sub_system = system.ptrace(environment_qbits)
     environment = system.ptrace(sub_system_qbits)
-    S1.append(entropy(sub_system))
-    S2.append(entropy(environment))
-    Stot.append(entropy(system))
-    mi = mutual_information(system, sub_system_qbits)
+    S1.append(measure.entropy(sub_system))
+    S2.append(measure.entropy(environment))
+    Stot.append(measure.entropy(system))
+    mi = measure.mutual_information(system, sub_system_qbits)
     MI.append(mi)
     if mi <.1:
         print('doing it')
