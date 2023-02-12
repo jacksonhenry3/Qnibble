@@ -1,6 +1,6 @@
 import src.setup as setup
 
-from src.ket import energy_basis, canonical_basis, Basis
+from src.ket import energy_basis, canonical_basis, Basis, Ket
 
 import matplotlib.pyplot as plt
 from matplotlib import colors
@@ -84,32 +84,57 @@ class DensityMatrix:
         nums = xp.array([b.num for b in self.basis])
         return xp.sum(diags[nums & qbit_val != 0])
 
-    def ptrace(self, qbits: list):
-        """
+    def ptrace(self, qbits):
+        # Add a check that all indices are valid no repeats etc.
+        result = self
+        for qbit_index in sorted(qbits)[::-1]:
+            result = result._ptrace(qbit_index)
+        return result
 
+
+    def __ptrace(self, qbit):
+        """
         Args:
-            qbits: a list of indices of the qubits to trace out
-
-        Returns: a new density matrix with the requested qubits traced out
-
-        I don't see a way to do this sparsely? either slow calculations or reshape.
-
+            qbit:
+        Returns:
         """
-        assert len(qbits) < self.basis.num_qubits, "cant completely contract"
-        for q in qbits:
-            assert q < self.basis.num_qubits, "qbit index out of range"
+        num_qbits = int(np.log2(len(self.basis)))
+        new_basis = energy_basis(num_qbits - 1)
+        new_matrix = np.zeros((2 ** (num_qbits - 1), 2 ** (num_qbits - 1)), dtype=np.float)
+        for x, b1 in enumerate(new_basis):
+            for y, b2 in enumerate(new_basis):
 
-        if len(qbits) == self.basis.num_qubits - 1:
-            remaining_qbit = list(set(range(self.basis.num_qubits)) - set(qbits))[0]
-            return self.ptrace_to_a_single_qbit(remaining_qbit)
+                first_X_str = "".join(str(x) for x in b1.data())
+                first_X_num = int(first_X_str[:qbit]+'0'+first_X_str[:qbit],2)
+                first_X = Ket(first_X_num,num_qbits)
 
-        n = self.number_of_qbits
-        new_n = n - len(qbits)
-        data = self.qbit_basis()
-        axes = xp.concatenate((xp.array(qbits), xp.array(qbits) + n))
-        new_data = xp.sum(data, axis=tuple(axes))
-        new_data = new_data.reshape((2 ** new_n, 2 ** new_n))
-        return DensityMatrix(SPARSE_TYPE(new_data), canonical_basis(n - len(qbits)))
+                first_Y_str = "".join(str(x) for x in b2.data())
+                first_Y_num = int(first_Y_str[:qbit]+'0'+first_Y_str[:qbit],2)
+                first_Y = Ket(first_Y_num,num_qbits)
+
+                second_X_str = "".join(str(x) for x in b1.data())
+                second_X_num = int(second_X_str[:qbit]+'1'+second_X_str[:qbit],2)
+                second_X = Ket(second_X_num,num_qbits)
+
+                second_Y_str = "".join(str(x) for x in b2.data())
+                second_Y_num = int(second_Y_str[:qbit]+'1'+second_Y_str[:qbit],2)
+                second_Y = Ket(second_Y_num,num_qbits)
+
+
+
+                for i, b in enumerate(self.basis):
+                    if first_X == b:
+                        first_X_i = i
+                    if first_Y == b:
+                        first_Y_i = i
+                    if second_X == b:
+                        second_X_i = i
+                    if second_Y == b:
+                        second_Y_i = i
+
+                new_matrix[x, y] = self.data[first_X_i, first_Y_i] + self.data[second_X_i, second_Y_i]
+
+        return DensityMatrix(new_matrix, new_basis)
 
     def _ptrace(self, qbit):
 
@@ -123,11 +148,24 @@ class DensityMatrix:
         order = xp.array(range(n))
         order[0] = qbit
         order[qbit] = 0
+
+        # print(order)
+
         self.relabel_basis(order)
         self.change_to_canonical_basis()
+
         half_size = 2 ** (n - 1)
         new_data = self.data[:half_size, :half_size] + self.data[half_size:, half_size:]
-        return DensityMatrix(new_data, canonical_basis(n - 1))
+
+        # change back
+        self.relabel_basis(order)
+        self.change_to_canonical_basis()
+
+        idx = np.argsort(order[1:])
+        res = DensityMatrix(new_data, canonical_basis(n-1))
+        res.relabel_basis(idx)
+        res.change_to_canonical_basis()
+        return res
 
     def qbit_basis(self) -> xp.ndarray:
         n = self.number_of_qbits
