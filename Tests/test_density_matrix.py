@@ -108,4 +108,5 @@ class TestKet:
         dm_1 = U1*dm_1*U1.H
         dm_2 = U1*dm_2*U1.H
         total = dm_1.tensor(dm_2)
-        assert dm_2 == total.ptrace([0,1])
+        res = total.ptrace([0,1])
+        assert dm_2 == res

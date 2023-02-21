@@ -1,3 +1,5 @@
+import scipy.sparse.linalg
+
 import src.setup as setup
 
 xp = setup.xp
@@ -5,8 +7,7 @@ sp = setup.sp
 SPARSE_TYPE = setup.SPARSE_TYPE
 
 import numpy as np
-from src.density_matrix import DensityMatrix, n_thermal_qbits, dm_trace, dm_log,qbit
-
+from src.density_matrix import DensityMatrix, n_thermal_qbits, dm_trace, dm_log, qbit
 
 σx = np.matrix([[0, 1], [1, 0]])
 σy = np.matrix([[0, -1j], [1j, 0]])
@@ -59,9 +60,10 @@ def D(dm1: DensityMatrix, dm2: DensityMatrix):
     assert dm1.size == dm2.size
     return dm_trace(dm1 * dm_log(dm1)) - dm_trace(dm1 * dm_log(dm2))
 
-def D_single_qbits(pop_1:float,pop_2:float):
-    tr_1 = (1-pop_1)*np.log(1-pop_1)+(pop_1)*np.log(pop_1)
-    tr_2 = (1-pop_2)*np.log(1-pop_2)+(pop_2)*np.log(pop_2)
+
+def D_single_qbits(pop_1: float, pop_2: float):
+    tr_1 = (1 - pop_1) * np.log(1 - pop_1) + (pop_1) * np.log(pop_1)
+    tr_2 = (1 - pop_2) * np.log(1 - pop_2) + (pop_2) * np.log(pop_2)
     return tr_1 - tr_2
 
 
@@ -71,6 +73,7 @@ def extractable_work(T: float, dm: DensityMatrix):
     reference_dm.change_to_energy_basis()
     dm.change_to_energy_basis()
     return float(np.real(T * D(dm, reference_dm)))
+
 
 def extractable_work_of_a_single_qbit(T: float, pop: float):
     ref_pop = pop_from_temp(T)
@@ -94,16 +97,22 @@ def change_in_extractable_work(T_initial: float, dm_initial: DensityMatrix, T_fi
 
 
 def entropy(dm: DensityMatrix) -> float:
-    # if exact:
-    result = -dm_trace(dm * dm_log(dm))
-    return float(xp.real(result))
+    if dm.number_of_qbits <= 2:
+        result = -dm_trace(dm * dm_log(dm))
+        return float(xp.real(result))
 
     # This method can't find all eigenvalues becouse of the algorithm it uses, but it does find all but the smallest two,
     # leading to a precision loss of ~10-6
     # See https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.linalg.eigs.html for details
     # eigen_vals = sp.sparse.linalg.eigsh(dm.data,k=2**dm.number_of_qbits-3, which="LM",return_eigenvectors = False)
-    # from_eigen = -xp.sum(eigen_vals*xp.log(eigen_vals))
-    # return from_eigen
+
+    # if setup.using_gpu:
+    eigen_vals = scipy.sparse.linalg.eigsh(dm.data.get(), k=2 ** dm.number_of_qbits - 3, which="LM", return_eigenvectors=False)
+    from_eigen = -np.sum(eigen_vals * np.log(eigen_vals))
+    # else:
+    #     eigen_vals = sp.sparse.linalg.eigsh(dm.data, k=2 ** dm.number_of_qbits - 3, return_eigenvectors=False)
+    #     from_eigen = -np.sum(eigen_vals * np.log(eigen_vals))
+    return from_eigen
 
 
 def concurrence(dm: DensityMatrix) -> float:
@@ -138,8 +147,22 @@ def uncorrelated_thermal_concurrence(dm: DensityMatrix) -> float:
     c = dm.data.toarray()[3, 3]
     return np.abs(a) - np.sqrt(b * c)
 
-def mutual_information(dm: DensityMatrix, sub_system_qbits: list[int]) -> float :
+
+def mutual_information(dm: DensityMatrix, sub_system_qbits: list[int]) -> float:
     environment_qbits = list(set(range(dm.basis.num_qubits)) - set(sub_system_qbits))
     sub_system = dm.ptrace(environment_qbits)
     environment = dm.ptrace(sub_system_qbits)
-    return entropy(sub_system)+entropy(environment)-entropy(dm)
+    return entropy(sub_system) + entropy(environment) - entropy(dm)
+
+
+def mutual_information(dm: DensityMatrix, sub_system_qbits_a: list[int], sub_system_qbits_b: list[int]) -> float:
+    everything_thats_not_system_a = list(set(range(dm.basis.num_qubits)) - set(sub_system_qbits_a))
+    sub_system_b = dm.ptrace(everything_thats_not_system_a)
+
+    everything_thats_not_system_b = list(set(range(dm.basis.num_qubits)) - set(sub_system_qbits_b))
+    sub_system_a = dm.ptrace(everything_thats_not_system_b)
+
+    sub_system_qbits_ab = set(everything_thats_not_system_a).union(everything_thats_not_system_b)
+    everything_thats_not_system_ab = list(set(range(dm.basis.num_qubits)) - set(sub_system_qbits_ab))
+    sub_system_ab = dm.ptrace(everything_thats_not_system_ab)
+    return entropy(sub_system_a) + entropy(sub_system_b) - entropy(sub_system_ab)

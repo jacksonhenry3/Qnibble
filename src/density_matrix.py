@@ -24,7 +24,7 @@ class DensityMatrix:
         """This doesn't validate inputs, eg. the basis is allowed to be wrong the dimension """
         self._data: SPARSE_TYPE = SPARSE_TYPE(matrix)
         self._basis = basis
-        self.number_of_qbits = basis.num_qubits
+        self.number_of_qbits: int = basis.num_qubits
 
     def __repr__(self):
         return f'DM {id(self)}'
@@ -93,7 +93,6 @@ class DensityMatrix:
             result = result._ptrace(qbit_index)
         return result
 
-
     def __ptrace(self, qbit):
         """
         Args:
@@ -107,22 +106,20 @@ class DensityMatrix:
             for y, b2 in enumerate(new_basis):
 
                 first_X_str = "".join(str(x) for x in b1.data())
-                first_X_num = int(first_X_str[:qbit]+'0'+first_X_str[:qbit],2)
-                first_X = Ket(first_X_num,num_qbits)
+                first_X_num = int(first_X_str[:qbit] + '0' + first_X_str[:qbit], 2)
+                first_X = Ket(first_X_num, num_qbits)
 
                 first_Y_str = "".join(str(x) for x in b2.data())
-                first_Y_num = int(first_Y_str[:qbit]+'0'+first_Y_str[:qbit],2)
-                first_Y = Ket(first_Y_num,num_qbits)
+                first_Y_num = int(first_Y_str[:qbit] + '0' + first_Y_str[:qbit], 2)
+                first_Y = Ket(first_Y_num, num_qbits)
 
                 second_X_str = "".join(str(x) for x in b1.data())
-                second_X_num = int(second_X_str[:qbit]+'1'+second_X_str[:qbit],2)
-                second_X = Ket(second_X_num,num_qbits)
+                second_X_num = int(second_X_str[:qbit] + '1' + second_X_str[:qbit], 2)
+                second_X = Ket(second_X_num, num_qbits)
 
                 second_Y_str = "".join(str(x) for x in b2.data())
-                second_Y_num = int(second_Y_str[:qbit]+'1'+second_Y_str[:qbit],2)
-                second_Y = Ket(second_Y_num,num_qbits)
-
-
+                second_Y_num = int(second_Y_str[:qbit] + '1' + second_Y_str[:qbit], 2)
+                second_Y = Ket(second_Y_num, num_qbits)
 
                 for i, b in enumerate(self.basis):
                     if first_X == b:
@@ -140,32 +137,20 @@ class DensityMatrix:
 
     def _ptrace(self, qbit):
 
-        """
-        new ptrace algorithm idea
-
-        1 reorder so qbit to be ptraced has index 0
-        2: data[:n/2,:n/2]+data[n/2:,n/2:]
-        3. profit"""
         n = self.number_of_qbits
-        order = np.arange(n)
-        order[0] = qbit
-        order[qbit] = 0
+        num_divisions = 2 ** (qbit + 1)
+        division_size = 2 ** (n - qbit - 1)
 
-        # print(order)
-
-        self.relabel_basis(order)
-        self.change_to_canonical_basis()
+        # create a numpy array of x and y indices
+        x, y = xp.indices((2 ** n, 2 ** n))
+        mask0 = xp.bitwise_and((2 ** n - 1) - x, 2 ** (n - qbit - 1)) * xp.bitwise_and((2 ** n - 1) - y, 2 ** (n - qbit - 1)) != 0
+        mask1 = xp.bitwise_and(x, 2 ** (n - qbit - 1)) * xp.bitwise_and(y, 2 ** (n - qbit - 1)) != 0
 
         half_size = 2 ** (n - 1)
-        new_data = self.data[:half_size, :half_size] + self.data[half_size:, half_size:]
 
-        # change back
-        self.relabel_basis(order)
-        self.change_to_canonical_basis()
-
-        idx = np.argsort(order[1:])
-        res = DensityMatrix(new_data, canonical_basis(n-1))
-        res.relabel_basis(idx)
+        new_data = self.data[mask0].reshape(half_size, half_size) + self.data[mask1].reshape(half_size, half_size)
+        res = DensityMatrix(new_data, canonical_basis(n - 1))
+        # res.relabel_basis(idx)
         res.change_to_canonical_basis()
         return res
 
