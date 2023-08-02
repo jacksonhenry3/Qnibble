@@ -12,7 +12,7 @@ def accessible_states(state, partition_size):
 
 
 def partition(lst, n, offset=0):
-    lst = lst.data
+    lst = lst.data()
     L = len(lst)
     lst = np.roll(lst, offset)
     return [lst[i:i + n] for i in range(0, L, n)]
@@ -43,7 +43,7 @@ def do(num_qbits, partition_size):
         print(state)
         for offset in range(partition_size):
             p = partition(state, partition_size, offset=offset)
-            p = [Ket(np.roll(perm, -offset)).num for perm in all_permutations(p)]
+            p = [Ket(np.roll(perm, -offset), num_qbits).num for perm in all_permutations(p)]
             possible_to_entangle_with[state.num] = p
             for v in p:
                 mat[state.num, v] = 1

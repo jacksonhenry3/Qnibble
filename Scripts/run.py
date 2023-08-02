@@ -1,63 +1,47 @@
-from src import density_matrix as DM
-from src import measurements
-import matplotlib.pyplot as plt
+# Add directory above current directory to path
+import sys as SYS;
+
+SYS.path.insert(0, '..')
+import os
 import numpy as np
-from src.simulation import step
-import cupy as cp
-from src.random_unitary import random_energy_preserving_unitary
-import src.measurements as measure
+import matplotlib.pyplot as plt
+from multiprocessing import Pool
 
-print("all modules loaded")
-rng = np.random.default_rng(seed=0)
+from src import setup
 
-# mempool = cp.get_default_memory_pool()
-# mempool.set_limit(size=16 * 1024 ** 3)
-# # Properties of the system
-# number_of_qbits = 16
-#
-#
-# # initial conditions
-# initial_pops = np.random.random(number_of_qbits)
-# num_blocks = 8
-# # generate the system and change to the energy basis
-# sys = DM.n_thermal_qbits(initial_pops)
-# sys.change_to_energy_basis()
+setup.use_gpu()
 
+from src import (
+    measurements as measure,
+    density_matrix as DM,
+    simulation as sim,
+    orders,
+    random_unitary,
+    simulation)
 
-# block_size = number_of_qbits // num_blocks
+bath_size = 4
+hot_pop = .49
+cold_pop = .01
 
-a = DM.n_thermal_qbits([.3, .2, .3, .4])
-print(a)
-# import time
-#
-# start = time.time()
-# for i in range(100):
-#     print(f"using {mempool.used_bytes()} out of a set limit of {mempool.total_bytes()}, {mempool.get_limit()}")
-#     print(i)
-#     print(sys.data.nnz)
-#     sub_system_unitaries = [random_energy_preserving_unitary(block_size) for _ in range(num_blocks)]
-#
-#     U = DM.tensor(sub_system_unitaries)
-#     sub_system_unitaries = None
-#     # shift the order of the qbits
-#
-#     order = rng.permutation(number_of_qbits)
-#
-#     U.relabel_basis(order)
-#     U.change_to_energy_basis()
-#
-#     mempool.free_all_blocks()
-#     sys = U * sys
-#     mempool.free_all_blocks()
-#     U = U.H
-#     mempool.free_all_blocks()
-#     sys = sys * U
-#     mempool.free_all_blocks()
-# print(time.time() - start)
-#
-# measurments = [np.vstack((measurments[i], measurment(qm_sys))) for i, measurment in enumerate(measurment_set)]
-# print(f"{np.round(time.time() - start, 2)} seconds elapsed")
-# return measurments
+system_size = 4
+system_pop = .25
 
-# cpu 10 runs 13.5690336227417
-# gpu 10 runs 4.858150005340576
+pops = [system_pop for _ in range(system_size)] + [hot_pop for _ in range(bath_size)] + [cold_pop for _ in range(bath_size)]
+system = DM.n_thermal_qbits(pops)
+
+interacting_with_the_hot_bath = [np.array([0, 1, 2, 3, 4, 5, 6, 7]), np.array([8, 9, 10, 11])]
+interacting_with_the_cold_bath = [np.array([0, 1, 2, 3, 8, 9, 10, 11]), np.array([4, 5, 6, 7])]
+interacting_with_the_self = [np.array([0, 1, 2, 3]), np.array([4, 5, 6, 7]), np.array([8, 9, 10, 11])]
+
+orders = [interacting_with_the_hot_bath for _ in range(5)]
+orders += [interacting_with_the_self for _ in range(5)]
+num_iterations = 5
+
+measurments = [measure.pops, measure.extractable_work_of_each_qubit]
+results = sim.run(system,
+                  measurement_set=measurments,
+                  num_iterations=num_iterations,
+                  orders=orders,
+                  qbits_to_measure=[0, 1, 2, 3],
+                  verbose=True
+                  )[0];

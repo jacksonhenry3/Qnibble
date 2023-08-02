@@ -91,8 +91,8 @@ class TestKet:
         data_1, data_2 = identity(4), dm.SPARSE_TYPE(np.ones((4, 4)))
         basis_1 = ket.Basis([ket.Ket(0, 2), ket.Ket(1, 2), ket.Ket(2, 2), ket.Ket(3, 2)])
         dm_1, dm_2 = dm.DensityMatrix(data_1, basis_1), dm.DensityMatrix(data_2, basis_1)
-        assert np.allclose(dm.dm_log(dm_1).data.toarray() , sp_dense.logm(dm_1.data.toarray()))
-        assert not np.allclose(dm.dm_log(dm_1).data.toarray() , sp_dense.logm(dm_2.data.toarray()))
+        assert np.allclose(dm.dm_log(dm_1).data.toarray(), sp_dense.logm(dm_1.data.toarray()))
+        assert not np.allclose(dm.dm_log(dm_1).data.toarray(), sp_dense.logm(dm_2.data.toarray()))
         assert dm.dm_log(dm.dm_exp(dm_1)) == dm_1
 
     def test_dm_trace(self):
@@ -103,10 +103,10 @@ class TestKet:
         assert dm.dm_trace(dm_2) == np.trace(data_2.toarray())
 
     def test_dm_partial_trace(self):
-        dm_1,dm_2 = dm.n_thermal_qbits([.1,.2]),dm.n_thermal_qbits([.3,.02])
+        dm_1, dm_2 = dm.n_thermal_qbits([.1, .2]), dm.n_thermal_qbits([.3, .02])
         U1, U2 = random_unitary.random_energy_preserving_unitary(2), random_unitary.random_energy_preserving_unitary(2)
-        dm_1 = U1*dm_1*U1.H
-        dm_2 = U1*dm_2*U1.H
+        dm_1 = U1 * dm_1 * U1.H
+        dm_2 = U1 * dm_2 * U1.H
         total = dm_1.tensor(dm_2)
-        res = total.ptrace([0,1])
+        res = total.ptrace([0, 1])
         assert dm_2 == res

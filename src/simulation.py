@@ -8,7 +8,7 @@ from src.random_unitary import random_energy_preserving_unitary
 import copy
 
 
-def run(dm: DM.DensityMatrix, measurement_set, num_iterations: int, num_chunks: int, orders, Unitaries=None, verbose=False):
+def run(dm: DM.DensityMatrix, measurement_set, num_iterations: int, orders, qbits_to_measure = "all", Unitaries=None, verbose=False):
     """
     Args:
         dm: the density matrix to evolve
@@ -21,13 +21,19 @@ def run(dm: DM.DensityMatrix, measurement_set, num_iterations: int, num_chunks: 
         orders: A list of qbit orders at each iteration step. If there are fewer orders than steps they will be used cyclically.
         verbose: a float or false. if it is a float between zero and 1 progress will be reported every verbose percent. i.e verbose =.1 will give ten progress reports
 
-    Returns: A density matrix that has been evolved by the given hamiltonians for the given step sizes.
+    Returns: measurement results and A density matrix that has been evolved by the given hamiltonians for the given step sizes.
 
     """
+
+    if qbits_to_measure == "all":
+        qbits_to_measure = list(range(dm.number_of_qbits))
+
+    qbits_to_trace_out = list(set(range(dm.number_of_qbits)) - set(qbits_to_measure))
+
     if type(measurement_set) != list:
         measurement_set = [measurement_set]
 
-    measurement_values = [measurement(dm) for measurement in measurement_set]
+    measurement_values = [measurement(dm.ptrace(qbits_to_trace_out)) for measurement in measurement_set]
 
     generate_random_unitary = False
 
@@ -42,12 +48,15 @@ def run(dm: DM.DensityMatrix, measurement_set, num_iterations: int, num_chunks: 
         generate_random_unitary = True
         print("using random unitaries")
 
-    chunk_size = dm.number_of_qbits // num_chunks
-    leftovers = dm.number_of_qbits-chunk_size*num_chunks
-    if leftovers:
-        leftover_identity = DM.Identity(DM.energy_basis(leftovers))
+
+
 
     for i in range(num_iterations):
+        chunk_sizes = [len(chunk) for chunk in orders[i]]
+        leftovers = dm.number_of_qbits % np.sum(chunk_sizes)
+        if leftovers:
+            leftover_identity = DM.Identity(DM.energy_basis(leftovers))
+
         progress = i / num_iterations
         if verbose and int(progress * 1000) % int(verbose * 1000) == 0:
             print(progress)
@@ -56,7 +65,7 @@ def run(dm: DM.DensityMatrix, measurement_set, num_iterations: int, num_chunks: 
 
         if generate_random_unitary:
 
-            U = DM.tensor([random_energy_preserving_unitary(chunk_size) for _ in range(num_chunks)])
+            U = DM.tensor([random_energy_preserving_unitary(chunk_size) for chunk_size in chunk_sizes])
 
             if leftovers:
                 U = U.tensor(leftover_identity)
@@ -65,12 +74,12 @@ def run(dm: DM.DensityMatrix, measurement_set, num_iterations: int, num_chunks: 
 
         dm = step(dm, order, U, not generate_random_unitary)
 
-        measurement_values = [xp.vstack((measurement_values[i], measurement(dm))) for i, measurement in enumerate(measurement_set)]
+        measurement_values = [xp.vstack((measurement_values[i], measurement(dm.ptrace(qbits_to_trace_out)))) for i, measurement in enumerate(measurement_set)]
 
-    return measurement_values
+    return measurement_values,dm
 
 
-def step(dm: DM.DensityMatrix, order: list[int], Unitary: DM.DensityMatrix, unitary_reused=False) -> DM.DensityMatrix:
+def step(dm: DM.DensityMatrix, order: list[np.ndarray], Unitary: DM.DensityMatrix, unitary_reused=False) -> DM.DensityMatrix:
     """
     Args:
         dm: the density matrix to evolve
@@ -81,9 +90,11 @@ def step(dm: DM.DensityMatrix, order: list[int], Unitary: DM.DensityMatrix, unit
     Returns: A density matrix that has been evolved by the given hamiltonians for the given step sizes.
 
     """
-    # Unitary = copy.deepcopy(Unitary)
     # make sure each qbit is assigned to a group and that there are no extras or duplicates.
-    assert set(order) == set(range(dm.number_of_qbits)), f"{set(order)} vs {set(range(dm.number_of_qbits))}"
+    #flatten order using a list comprehension
+    order = [qbit for chunk in order for qbit in chunk]
+    # print(order)
+    assert set(list(order)) == set(range(dm.number_of_qbits)), f"{set(order)} vs {set(range(dm.number_of_qbits))}"
     Unitary.relabel_basis(order)
     Unitary.change_to_energy_basis()
     dm.change_to_energy_basis()

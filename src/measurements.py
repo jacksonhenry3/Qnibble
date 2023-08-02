@@ -53,11 +53,15 @@ def temp_from_pop(pop: float):
 
 
 def pop_from_temp(T: float):
-    return 1 / (1 + np.exp(1 / T))
+    pop = 1 / (1 + np.exp(1 / T))
+    # assert 0 <= pop <= 1, "pop must be between 0 and 1"
+    return pop
 
 
 def D(dm1: DensityMatrix, dm2: DensityMatrix):
     assert dm1.size == dm2.size
+
+    #this is related to entropy
     return dm_trace(dm1 * dm_log(dm1)) - dm_trace(dm1 * dm_log(dm2))
 
 
@@ -97,9 +101,9 @@ def change_in_extractable_work(T_initial: float, dm_initial: DensityMatrix, T_fi
 
 
 def entropy(dm: DensityMatrix) -> float:
-    if dm.number_of_qbits <= 2:
-        result = -dm_trace(dm * dm_log(dm))
-        return float(xp.real(result))
+    # if dm.number_of_qbits <= 2:
+    result = -dm_trace(dm * dm_log(dm))
+    return float(xp.real(result))
 
     # This method can't find all eigenvalues becouse of the algorithm it uses, but it does find all but the smallest two,
     # leading to a precision loss of ~10-6
@@ -107,12 +111,12 @@ def entropy(dm: DensityMatrix) -> float:
     # eigen_vals = sp.sparse.linalg.eigsh(dm.data,k=2**dm.number_of_qbits-3, which="LM",return_eigenvectors = False)
 
     # if setup.using_gpu:
-    eigen_vals = scipy.sparse.linalg.eigsh(dm.data.get(), k=2 ** dm.number_of_qbits - 3, which="LM", return_eigenvectors=False)
-    from_eigen = -np.sum(eigen_vals * np.log(eigen_vals))
-    # else:
-    #     eigen_vals = sp.sparse.linalg.eigsh(dm.data, k=2 ** dm.number_of_qbits - 3, return_eigenvectors=False)
-    #     from_eigen = -np.sum(eigen_vals * np.log(eigen_vals))
-    return from_eigen
+    # eigen_vals = scipy.sparse.linalg.eigsh(dm.data.get(), k=2 ** dm.number_of_qbits - 3, which="LM", return_eigenvectors=False)
+    # from_eigen = -np.sum(eigen_vals * np.log(eigen_vals))
+    # # else:
+    # #     eigen_vals = sp.sparse.linalg.eigsh(dm.data, k=2 ** dm.number_of_qbits - 3, return_eigenvectors=False)
+    # #     from_eigen = -np.sum(eigen_vals * np.log(eigen_vals))
+    # return from_eigen
 
 
 def concurrence(dm: DensityMatrix) -> float:
@@ -148,7 +152,7 @@ def uncorrelated_thermal_concurrence(dm: DensityMatrix) -> float:
     return np.abs(a) - np.sqrt(b * c)
 
 
-def mutual_information(dm: DensityMatrix, sub_system_qbits: list[int]) -> float:
+def mutual_information_with_environment(dm: DensityMatrix, sub_system_qbits: list[int]) -> float:
     environment_qbits = list(set(range(dm.basis.num_qubits)) - set(sub_system_qbits))
     sub_system = dm.ptrace(environment_qbits)
     environment = dm.ptrace(sub_system_qbits)
