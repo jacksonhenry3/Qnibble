@@ -1,3 +1,5 @@
+import itertools
+
 import src.setup as setup
 
 from src.ket import energy_basis, canonical_basis, Basis, Ket
@@ -7,14 +9,43 @@ from matplotlib import colors
 
 import copy
 import warnings
-from functools import cached_property, reduce
+from functools import reduce, lru_cache
+
 import numpy as np
 
 xp = setup.xp
 sp = setup.sp
 SPARSE_TYPE = setup.SPARSE_TYPE
 
+from scipy.sparse import coo_matrix
+
 from scipy.linalg import logm
+
+
+@lru_cache
+def _ptrace_mask(n: int, qbits: list[int]) -> SPARSE_TYPE:
+    """Returns a mask for the partial trace of a density matrix"""
+
+    # create a numpy array of x and y indices
+    x, y = xp.indices((2 ** n, 2 ** n))
+
+    # if qbit is an integer
+    if type(qbits) == int:
+        qbit = qbits
+        mask0 = SPARSE_TYPE(xp.bitwise_and(~x, 2 ** (n - qbit - 1)) * xp.bitwise_and(~y, 2 ** (n - qbit - 1)) != 0)
+        mask1 = SPARSE_TYPE(xp.bitwise_and(x, 2 ** (n - qbit - 1)) * xp.bitwise_and(y, 2 ** (n - qbit - 1)) != 0)
+
+        return [mask0, mask1]
+
+    masks = []
+    # loop over all qbits and
+    for qbit in qbits:
+        print(qbit)
+        masks.append(_ptrace_mask(n, qbit))
+
+    res = itertools.product(*masks)
+    res = [reduce(lambda x, y: x * y, r) for r in res]
+    return res
 
 
 class DensityMatrix:
@@ -84,7 +115,10 @@ class DensityMatrix:
         qbit_val = 2 ** (n - remaining_qbit - 1)
         diags = xp.real(self.data.diagonal())
         nums = xp.array([b.num for b in self.basis])
-        return xp.sum(diags[nums & qbit_val != 0])
+        pop = xp.sum(diags[nums & qbit_val != 0])
+        # assert that pop is between 0 and 1
+        # assert 0 <= pop <= 1, f"Population of qbit {remaining_qbit} is {pop}"
+        return pop
 
     def ptrace(self, qbits):
         # Add a check that all indices are valid no repeats etc.
@@ -93,65 +127,21 @@ class DensityMatrix:
             result = result._ptrace(qbit_index)
         return result
 
-    def __ptrace(self, qbit):
-        """
-        Args:
-            qbit:
-        Returns:
-        """
-        num_qbits = int(np.log2(len(self.basis)))
-        new_basis = energy_basis(num_qbits - 1)
-        new_matrix = np.zeros((2 ** (num_qbits - 1), 2 ** (num_qbits - 1)), dtype=np.float)
-        for x, b1 in enumerate(new_basis):
-            for y, b2 in enumerate(new_basis):
-
-                first_X_str = "".join(str(x) for x in b1.data())
-                first_X_num = int(first_X_str[:qbit] + '0' + first_X_str[:qbit], 2)
-                first_X = Ket(first_X_num, num_qbits)
-
-                first_Y_str = "".join(str(x) for x in b2.data())
-                first_Y_num = int(first_Y_str[:qbit] + '0' + first_Y_str[:qbit], 2)
-                first_Y = Ket(first_Y_num, num_qbits)
-
-                second_X_str = "".join(str(x) for x in b1.data())
-                second_X_num = int(second_X_str[:qbit] + '1' + second_X_str[:qbit], 2)
-                second_X = Ket(second_X_num, num_qbits)
-
-                second_Y_str = "".join(str(x) for x in b2.data())
-                second_Y_num = int(second_Y_str[:qbit] + '1' + second_Y_str[:qbit], 2)
-                second_Y = Ket(second_Y_num, num_qbits)
-
-                for i, b in enumerate(self.basis):
-                    if first_X == b:
-                        first_X_i = i
-                    if first_Y == b:
-                        first_Y_i = i
-                    if second_X == b:
-                        second_X_i = i
-                    if second_Y == b:
-                        second_Y_i = i
-
-                new_matrix[x, y] = self.data[first_X_i, first_Y_i] + self.data[second_X_i, second_Y_i]
-
-        return DensityMatrix(new_matrix, new_basis)
-
     def _ptrace(self, qbit):
 
+        #TODO create composite masks for multiple qbits
+
         n = self.number_of_qbits
-        num_divisions = 2 ** (qbit + 1)
-        division_size = 2 ** (n - qbit - 1)
 
         # create a numpy array of x and y indices
         x, y = xp.indices((2 ** n, 2 ** n))
-        mask0 = xp.bitwise_and((2 ** n - 1) - x, 2 ** (n - qbit - 1)) * xp.bitwise_and((2 ** n - 1) - y, 2 ** (n - qbit - 1)) != 0
+        mask0 = xp.bitwise_and(~x, 2 ** (n - qbit - 1)) * xp.bitwise_and(~y, 2 ** (n - qbit - 1)) != 0
         mask1 = xp.bitwise_and(x, 2 ** (n - qbit - 1)) * xp.bitwise_and(y, 2 ** (n - qbit - 1)) != 0
 
         half_size = 2 ** (n - 1)
 
         new_data = self.data[mask0].reshape(half_size, half_size) + self.data[mask1].reshape(half_size, half_size)
         res = DensityMatrix(new_data, canonical_basis(n - 1))
-        # res.relabel_basis(idx)
-        res.change_to_canonical_basis()
         return res
 
     def qbit_basis(self) -> xp.ndarray:
@@ -213,7 +203,7 @@ class DensityMatrix:
     def plot(self):
         fig, ax = plt.subplots(1, 1)
         dat = self._data.toarray()
-        img = ax.imshow(.0001 + xp.abs(dat), interpolation='none', cmap="gist_heat", norm=colors.LogNorm())
+        img = ax.imshow(.0001 + np.abs(dat), interpolation='none', cmap="gist_heat", norm=colors.LogNorm())
         label_list = [str(b) for b in self._basis]
         ax.set_xticks(list(range(self.size)))
         ax.set_yticks(list(range(self.size)))
@@ -231,7 +221,7 @@ class DensityMatrix:
         if self.size < 2 ** 6:
             ax.grid(which='minor', color='k', linestyle='-', linewidth=1.5)
         else:
-            ax.grid(which='minor', color='k', linestyle='-', linewidth=.5)
+            # ax.grid(which='minor', color='k', linestyle='-', linewidth=.5)
 
             plt.tick_params(
                 which='major',  # Just major  ticks are affected
@@ -268,6 +258,8 @@ def n_thermal_qbits(pops: list) -> DensityMatrix:
     Returns:
         A density matrix for n thermal qbits with the specified populations
     """
+    # assert pops to be between 0 and .5
+    assert all([0 <= pop <= .5 for pop in pops]), f"population must be between 0 and .5 but you chose {pops}"
     num_states = 2 ** len(pops)
     data = []
     for i in range(num_states):

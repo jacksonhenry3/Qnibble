@@ -4,7 +4,7 @@ sp = setup.sp
 
 from math import comb
 import src.density_matrix as DM
-from src.ket import energy_basis
+from src.ket import energy_basis,canonical_basis
 
 import numpy as np
 
@@ -35,6 +35,30 @@ def random_hamiltonian_in_subspace(nqbits: int, energy_subspace: int):
     return DM.DensityMatrix(DM.SPARSE_TYPE(m, dtype=np.complex64), energy_basis(nqbits))
 
 
+def random_hamiltonian_in_subspace_coppying_mathematica(nqbits: int, energy_subspace: int):
+    """
+    Args:
+        nqbits: number of qubits
+        energy_subspace: the energy subspace to generate the hamiltonian in
+    Returns: a random hamiltonian with the given number of qubits in the energy basis that preserves energy within the given subspace
+    """
+
+    def hamiltonian(i1, i2, n):
+        base = np.zeros((2 ** n, 2 ** n))*1j
+        base[i1, i2] = 1j
+        base[i2, i1] = -1j
+        return base
+
+    #get the indices of the energy subspace (i.e. all numbers with energy_subspace number of 1s in their binary representation)\
+    indices = [i for i in range(2 ** nqbits) if bin(i).count("1") == energy_subspace]
+
+    #sum over all the hamiltonians for each pair of indices
+    m = sum([np.random.random()*hamiltonian(indices[i1], indices[i2], nqbits) for i1 in range(len(indices)) for i2 in range(i1)])
+
+
+    return DM.DensityMatrix(DM.SPARSE_TYPE(m, dtype=np.complex64), canonical_basis(nqbits))
+
+
 def random_hamiltonian(nqbits: int):
     """
     Args:
@@ -49,7 +73,7 @@ def random_hamiltonian(nqbits: int):
     return DM.DensityMatrix(DM.SPARSE_TYPE(m, dtype=np.complex64), energy_basis(nqbits))
 
 
-def random_unitary_in_subspace(nqbits: int, energy_subspace: int, dt=1.0):
+def random_unitary_in_subspace(nqbits: int, energy_subspace: int):
     blocks = [np.array([[1]])] + [np.eye((comb(nqbits, e))) if e is not energy_subspace else unitary_group.rvs(comb(nqbits, e)) for e in range(1, nqbits)] + [np.array([[1]])]
     m = sp.linalg.block_diag(*blocks)
     # m = sp.linalg.fractional_matrix_power(m, dt)
@@ -57,7 +81,7 @@ def random_unitary_in_subspace(nqbits: int, energy_subspace: int, dt=1.0):
     return DM.DensityMatrix(DM.SPARSE_TYPE(m, dtype=np.complex64), energy_basis(nqbits))
 
 
-def random_energy_preserving_unitary(nqbits: int, dt=1.0) -> DM.DensityMatrix:
+def random_energy_preserving_unitary(nqbits: int) -> DM.DensityMatrix:
     """
     Args:
         nqbits: the number of qbits in the system.

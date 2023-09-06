@@ -2,7 +2,8 @@ from dataclasses import dataclass
 import numpy as np
 import pylab as pl
 from matplotlib import collections as mc
-
+import matplotlib.pyplot as plt
+import itertools
 
 # lines = [[(0, 1), (1, 1)], [(2, 3), (3, 3)], [(1, 2), (1, 3)]]
 # c = np.array([(1, 0, 0, 1), (0, 1, 0, 1), (0, 0, 1, 1)])
@@ -20,7 +21,10 @@ class Graph:
     edges: list
 
     def add_node(self):
-        index = max(self.nodes)
+        if len(self.nodes) == 0:
+            self.nodes.append(0)
+            return 0
+        index = max(self.nodes) + 1
         self.nodes.append(index)
         return index
 
@@ -36,22 +40,71 @@ class Graph:
         lines = []
         for edge in self.edges:
             lines.append([coords[n] for n in edge])
-        lc = mc.LineCollection(lines, linewidths=2)
+        lc = mc.LineCollection(lines, linewidths=.1, alpha=1)
         fig, ax = pl.subplots()
         ax.add_collection(lc)
         ax.autoscale()
-        ax.margins(0.1)
+        ax.margins(0.0)
+
+        return fig, ax
 
 
-a = Graph(edges=[], nodes=[0, 1, 2, 3, 4, 5])
+def generate_regular_graph(n, m):
+    if n * m % 2 != 0:
+        raise ValueError("n * m must be even")
 
-def n_vert_m_valent(N,M):
-    g = Graph([],[])
-    g.add_node()
+    G = Graph([], [])
+    for _ in range(n):
+        G.add_node()
+    if m % 2 == 0:
+        for i in range(n):
+            for j in range(-m // 2, m // 2 + 1):
+                if j != 0:
+                    G.add_edge(i, (i + j) % n)
+    else:
+        for i in range(n):
+            for j in range(-(m - 1) // 2, (m - 1) // 2 + 2):
+                if j != 0:
+                    G.add_edge(i, (i + j) % n)
+    return G
 
-for n in a.nodes:
-    for e in range(5):
-        a.add_edge(n, (n + e) % 5)
 
-a.plot()
-pl.show()
+def connections(i, n, m):
+    """
+    i is the index of the node
+    n is the number of nodes
+    m is the degree of the graph
+    """
+    if m % 2 == 0:
+        result = list(range((-m // 2 + i), (m // 2 + 1 + i)))
+        result.remove(0)
+        return result
+    else:
+        result = list(range((-m // 2 + i), (m // 2 + 2 + i)))
+        result.remove(0)
+        return result
+
+
+def all_regular_groups(n, m, g):
+    # group differences
+    if g > m:
+        raise ValueError("g must be less than or equal to m")
+    group_differences = []
+    if m % 2 == 0:
+        for start in range(m//2):
+            options = connections(start, n, m)
+            # get all groups of size g from options using itertools
+            all_group_differences = []
+            for group in itertools.combinations(options, g):
+                all_group_differences.append(group)
+            group_differences.append(all_group_differences)
+    else:
+        print("buts")
+    return group_differences
+
+
+
+
+
+a = all_regular_groups(8, 6, 4)
+print(a)
