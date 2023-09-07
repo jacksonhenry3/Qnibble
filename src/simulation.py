@@ -52,7 +52,8 @@ def run(dm: DM.DensityMatrix, measurement_set, num_iterations: int, orders, qbit
 
 
     for i in range(num_iterations):
-        chunk_sizes = [len(chunk) for chunk in orders[i]]
+        order = orders[i % len(orders)]
+        chunk_sizes = [len(chunk) for chunk in order]
         leftovers = dm.number_of_qbits % np.sum(chunk_sizes)
         if leftovers:
             leftover_identity = DM.Identity(DM.energy_basis(leftovers))
@@ -61,7 +62,7 @@ def run(dm: DM.DensityMatrix, measurement_set, num_iterations: int, orders, qbit
         if verbose and int(progress * 1000) % int(verbose * 1000) == 0:
             print(progress)
 
-        order = orders[i % len(orders)]
+
 
         if generate_random_unitary:
 

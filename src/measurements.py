@@ -7,6 +7,7 @@ sp = setup.sp
 SPARSE_TYPE = setup.SPARSE_TYPE
 
 import numpy as np
+import src.density_matrix as DM
 from src.density_matrix import DensityMatrix, n_thermal_qbits, dm_trace, dm_log, qbit
 
 σx = np.matrix([[0, 1], [1, 0]])
@@ -58,10 +59,11 @@ def pop_from_temp(T: float):
     return pop
 
 
+# /relative entropy
 def D(dm1: DensityMatrix, dm2: DensityMatrix):
     assert dm1.size == dm2.size
 
-    #this is related to entropy
+    # this is related to entropy
     return dm_trace(dm1 * dm_log(dm1)) - dm_trace(dm1 * dm_log(dm2))
 
 
@@ -161,12 +163,32 @@ def mutual_information_with_environment(dm: DensityMatrix, sub_system_qbits: lis
 
 def mutual_information(dm: DensityMatrix, sub_system_qbits_a: list[int], sub_system_qbits_b: list[int]) -> float:
     everything_thats_not_system_a = list(set(range(dm.basis.num_qubits)) - set(sub_system_qbits_a))
-    sub_system_b = dm.ptrace(everything_thats_not_system_a)
+    sub_system_a = dm.ptrace(everything_thats_not_system_a)
 
     everything_thats_not_system_b = list(set(range(dm.basis.num_qubits)) - set(sub_system_qbits_b))
-    sub_system_a = dm.ptrace(everything_thats_not_system_b)
+    sub_system_b = dm.ptrace(everything_thats_not_system_b)
 
-    sub_system_qbits_ab = set(everything_thats_not_system_a).union(everything_thats_not_system_b)
+    sub_system_qbits_ab = sub_system_qbits_a + sub_system_qbits_b
     everything_thats_not_system_ab = list(set(range(dm.basis.num_qubits)) - set(sub_system_qbits_ab))
     sub_system_ab = dm.ptrace(everything_thats_not_system_ab)
     return entropy(sub_system_a) + entropy(sub_system_b) - entropy(sub_system_ab)
+
+
+def mutual_information_of_every_pair(dm: DensityMatrix):
+    n = dm.number_of_qbits
+    result = []
+    for i in range(n):
+        for j in range(i + 1, n):
+            result.append((mutual_information(dm, [i], [j]), i, j))
+    return result
+
+
+def relative_entropy_of_every_pair(dm: DensityMatrix):
+    n = dm.number_of_qbits
+    result = []
+    for i in range(n):
+        for j in range(i + 1, n):
+            dm1 = DM.qbit(dm.ptrace_to_a_single_qbit(i))
+            dm2 = DM.qbit(dm.ptrace_to_a_single_qbit(j))
+            result.append((D(dm1, dm2), i, j))
+    return result
