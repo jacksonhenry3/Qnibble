@@ -27,7 +27,10 @@ def n_alternating_messenger_orders(num_qbits: int, n: int) -> list[np.ndarray]:
     return [first_order if i % 2 == 0 else second_order for i in range(n)]
 
 
-def n_8qbit_c5_orders(n: int) -> list[np.ndarray]:
-    possible_order_1 = np.array([[0, 1, 2, 3], [4, 5, 6, 7]])
-    possible_order_2 = np.array([[0, 1, 6, 7], [2, 3, 4, 5]])
+def n_alternating_c5_orders(n: int) -> list[np.ndarray]:
+    assert n % 2 == 0, "n must be even"
+    a = np.arange(n).reshape(2, n // 2)
+    possible_order_1 = np.array([(a[:, i: i + 2]).flatten() for i in range(0, n // 2, 2)])
+    a = np.roll(a,1, axis=1)
+    possible_order_2 = np.array([(a[:, i: i + 2]).flatten() for i in range(0, n // 2, 2)])
     return [possible_order_1 if i % 2 == 0 else possible_order_2 for i in range(n)]
