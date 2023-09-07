@@ -46,6 +46,7 @@ def do(num_qbits, partition_size):
             p = [Ket(np.roll(perm, -offset), num_qbits).num for perm in all_permutations(p)]
             possible_to_entangle_with[state.num] = p
             for v in p:
+                sum([i for i in v])
                 mat[state.num, v] = 1
     return SPARSE_TYPE(mat)
 

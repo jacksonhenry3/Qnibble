@@ -11,3 +11,5 @@ profiles_and_meta_data/
 /src/__pycache/
 .DS_Store
 /data/
+/Scripts/.pytest_cache/
+/Notebooks/.ipynb_checkpoints/
