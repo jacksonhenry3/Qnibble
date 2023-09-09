@@ -19,10 +19,12 @@ def n_alternating_messenger_orders(num_qbits: int, n: int) -> list[np.ndarray]:
     """
     The first and last qbit will be the messenger qbits
     """
-    first_order = np.split(np.arange(num_qbits), [num_qbits // 2])
+
+    assert num_qbits % 4 == 0, "n must be a multiple of 4"
+    first_order = np.arange(num_qbits).reshape((num_qbits // 4, 4))
     second_order = np.arange(num_qbits)
     second_order[[0, -1]] = second_order[[-1, 0]]
-    second_order = np.split(second_order, [num_qbits // 2])
+    second_order = second_order.reshape((num_qbits // 4, 4))
 
     return [first_order if i % 2 == 0 else second_order for i in range(n)]
 
