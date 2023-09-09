@@ -41,7 +41,7 @@ class TestKet:
         basis_1 = ket.Basis([ket.Ket(0, 2), ket.Ket(1, 2), ket.Ket(2, 2), ket.Ket(3, 2)])
         dm_1_1, dm_1_2, dm_1_3 = dm.DensityMatrix(data_1, basis_1), dm.DensityMatrix(data_2, basis_1), dm.DensityMatrix(data_3, basis_1)
         assert dm_1_1 + dm_1_3 == dm_1_1
-        assert ((dm_1_1 + dm_1_2).data != data_1 + data_2).nnz == 0
+        assert ((dm_1_1 + dm_1_2).blocks != data_1 + data_2).nnz == 0
         assert (dm_1_2 + dm_1_2).basis == basis_1
 
         basis_2 = ket.Basis([ket.Ket(1, 2), ket.Ket(0, 2), ket.Ket(2, 2), ket.Ket(3, 2)])
@@ -55,15 +55,15 @@ class TestKet:
         basis_1 = ket.Basis([ket.Ket(0, 1), ket.Ket(1, 1)])
         dm_1, dm_2 = dm.DensityMatrix(data_1, basis_1), dm.DensityMatrix(data_2, basis_1)
         result = dm_1.tensor(dm_2)
-        assert (result.data != sparse.kron(data_1, data_2)).nnz == 0
+        assert (result.blocks != sparse.kron(data_1, data_2)).nnz == 0
 
     def test_multiply(self):
         data_1, data_2 = identity(2), dm.SPARSE_TYPE(np.ones((2, 2)))
         basis_1 = ket.Basis([ket.Ket(0, 1), ket.Ket(1, 1)])
         dm_1, dm_2 = dm.DensityMatrix(data_1, basis_1), dm.DensityMatrix(data_2, basis_1)
         assert dm_1 * dm_2 == dm_2
-        assert ((dm_1 * 3).data != 3 * data_1).nnz == 0
-        assert ((3 * dm_2).data != 3 * data_2).nnz == 0
+        assert ((dm_1 * 3).blocks != 3 * data_1).nnz == 0
+        assert ((3 * dm_2).blocks != 3 * data_2).nnz == 0
 
     def test_pow(self):
         data_1, data_2 = identity(2), dm.SPARSE_TYPE(np.ones((2, 2)))
@@ -78,7 +78,7 @@ class TestKet:
         basis_1 = ket.Basis([ket.Ket(0, 1), ket.Ket(1, 1)])
         dm_1, dm_2 = dm.DensityMatrix(data_1, basis_1), dm.DensityMatrix(data_2, basis_1)
         assert dm_1.H.H == dm_1
-        assert (dm_2.H.data != xp.conjugate(xp.transpose(data_2))).nnz == 0
+        assert (dm_2.H.blocks != xp.conjugate(xp.transpose(data_2))).nnz == 0
 
     def test_dm_exp(self):
         data_1, data_2 = identity(4), dm.SPARSE_TYPE(np.ones((4, 4)))

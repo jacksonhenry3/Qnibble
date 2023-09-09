@@ -11,64 +11,69 @@ print(block_diag(*list(map(lambda x, y: (x@y).toarray(), r1, r2))))
 """
 
 import numpy as np
-import scipy.sparse as s
-from density_matrix import SPARSE_TYPE
 import numpy.typing as npt
 import itertools
 
+import scipy as sp
+from scipy import linalg
 
-class BlockDiagonalSparse:
 
-    def __init__(self, data: npt.NDArray[SPARSE_TYPE]):
-        self.data = data
+class BlockSparseMatrix:
+
+    def __init__(self, data: npt.NDArray[object] or list):
+        self.blocks = np.array(data, dtype=object)
+        dim = sum([b.shape[0] for b in data])
+        self.shape = (dim, dim)
 
     def __matmul__(self, other):
-        return BlockDiagonalSparse(self.data @ other.data)
+        # assert that each block is the same size
+        assert all([b.shape == self.blocks[0].shape for b in self.blocks])
+        return BlockSparseMatrix(self.blocks @ other.blocks)
 
     def __mul__(self, other):
         assert type(other) is int or float
-        return BlockDiagonalSparse(self.data * other)
+        return BlockSparseMatrix(self.blocks * other)
 
     def __add__(self, other):
-        return BlockDiagonalSparse(self.data + other.data)
+        return BlockSparseMatrix(self.blocks + other.blocks)
 
     def __sub__(self, other):
-        return BlockDiagonalSparse(self.data - other.data)
+        return BlockSparseMatrix(self.blocks - other.blocks)
 
     def __repr__(self):
-        return self.data.__repr__()
+        return self.blocks.__repr__()
+
+    def diagonal(self):
+        return [b.diagonal() for b in self.blocks]
 
     def toarray(self):
-        return [b.toarray() for b in self.data]
-
-    """HIGLY SPECULATIVE"""
-    """https://math.stackexchange.com/questions/3346742/kronecker-product-of-two-block-diagonal-matrices"""
+        return sp.linalg.block_diag(*self.blocks)
 
     def kronecker_product(self, other):
-        pass
+        result_blocks = dict()
+        num_blocks = len(self.blocks)
+
+        for i in range(num_blocks):
+            for j in range(num_blocks):
+                # Calculate the Kronecker product between two blocks
+                result_block = np.kron(self.blocks[i], other.blocks[j])
+                result_blocks[(i, j)] = result_block
+
+        # sort the blocks by the sum of their indices
+        result_blocks = [result_blocks[key] for key in sorted(result_blocks.keys(), key=lambda x: x[0] + x[1])]
+
+        # The basis is not the usual kroneger product basis !TODO
+        """
+        OK, so for the kronecker product the energy subspace of each block adds together. they should bre repositioned based on this.
+        You can make an arbitrary choice for beyond the eergy subspace, but it should be consistent. (and needs to be iomplimented for KET aswell)
+        """
+        return BlockSparseMatrix(result_blocks)
 
 
+eg_1 = BlockSparseMatrix([np.array([[.1]]), np.array([[.8, .8], [.8, .1]]), np.array([[.8]])])
+eg_1 = eg_1.kronecker_product(eg_1)
+import matplotlib.pyplot as plt
 
-
-BDS = BlockDiagonalSparse
-
-eg_1 = BDS(np.array([s.eye(3, 3), s.eye(3, 3), s.eye(3, 3), s.eye(3, 3)]))
-eg_2 = BDS(np.array([s.eye(3, 3), s.eye(3, 3), s.eye(3, 3), s.eye(3, 3)]))
-
-# print(eg_1.toarray()@eg_1.toarray())
-print(eg_1 @ eg_2)
-
-
-# def prime_factors(n):
-#   prime_list= []
-#   i = 2
-#   while n>1 :
-#     if n%i == 0:
-#       prime_list.append(i)
-#       n = n/i
-#       i = 2
-#     else:
-#         i+=1
-#   return(prime_list)
-#
-# print(prime_factors(100))
+plt.imshow(eg_1.toarray())
+plt.show()
+# print(eg_1.toarray())

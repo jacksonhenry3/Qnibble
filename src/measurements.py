@@ -4,7 +4,7 @@ import src.setup as setup
 
 xp = setup.xp
 sp = setup.sp
-SPARSE_TYPE = setup.SPARSE_TYPE
+# SPARSE_TYPE = setup.SPARSE_TYPE
 
 import numpy as np
 import src.density_matrix as DM

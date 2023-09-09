@@ -10,7 +10,7 @@ import numpy as np
 
 from scipy.stats import unitary_group
 
-SPARSE_TYPE = setup.SPARSE_TYPE
+# SPARSE_TYPE = setup.SPARSE_TYPE
 
 
 def random_hamiltonian_in_subspace(nqbits: int, energy_subspace: int):
@@ -92,7 +92,7 @@ def random_energy_preserving_unitary(nqbits: int) -> DM.DensityMatrix:
 
     """
     blocks = [np.array([[1. + 0j]])] + [unitary_group.rvs(comb(nqbits, i)) for i in range(1, nqbits)] + [np.array([[1. + 0j]])]
-    m = sp.linalg.block_diag(*blocks)
+    # m = sp.linalg.block_diag(*blocks)
     # m = sp.linalg.fractional_matrix_power(m, dt)
     # m[m < 10 ** -5] = 0
-    return DM.DensityMatrix(SPARSE_TYPE(m), energy_basis(nqbits))
+    return DM.DensityMatrix(np.array(blocks), energy_basis(nqbits))

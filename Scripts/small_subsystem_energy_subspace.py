@@ -12,7 +12,7 @@ def accessible_states(state, partition_size):
 
 
 def partition(lst, n, offset=0):
-    lst = lst.data()
+    lst = lst.blocks()
     L = len(lst)
     lst = np.roll(lst, offset)
     return [lst[i:i + n] for i in range(0, L, n)]

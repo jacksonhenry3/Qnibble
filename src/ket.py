@@ -2,53 +2,6 @@ import numpy as np
 import functools
 
 
-# class Ket:
-#     __slots__ = "data", "_num", "__dict__"
-#
-#     def __init__(self, data: iter, num=None):
-#         self.data = np.array(data)
-#         self._num = num or int(''.join([str(e) for e in data]), 2)
-#
-#     # def __iter__(self):
-#     #     ''' Returns the Iterator object '''
-#     #     return iter(self.data)
-#
-#     def __len__(self):
-#         return len(self.data)
-#
-#     def __eq__(self, other):
-#         return list(self.data) == list(other.data)
-#
-#     # this breaks putting it inside a numpy array?!
-#     # def __getitem__(self, item):
-#     #     return self.data[item]
-#
-#     # def __repr__(self) -> str:
-#     #     return f"|{self.num},{self.energy}:" + f"{''.join([['↓', '↑'][int(e)] for i, e in enumerate(self)])}⟩"
-#
-#     def __lt__(self, other):
-#         assert isinstance(other, Ket)
-#         return self.energy < other.energy
-#
-#     def __add__(self, other):
-#         n = self.num
-#         m = other.num
-#         l = len(other)
-#         return Ket(np.array(list(self) + list(other)), num=n * 2 ** l + m)
-#
-#     @functools.cached_property
-#     # @property
-#     def energy(self) -> int:
-#         return sum([int(d) for d in self])
-#
-#     @property
-#     def num(self) -> int:
-#         return self._num
-#
-#     def reorder(self, order):
-#         return Ket(self.data[order])
-#
-
 class Ket:
     def __init__(self, num, num_qbit):
         self.num = num
@@ -57,21 +10,14 @@ class Ket:
     def __repr__(self) -> str:
         return f"|{self.num},{self.energy}:" + f"{''.join([['↓', '↑'][int(e)] for i, e in enumerate(self.data())])}⟩"
 
-
     def data(self) -> list:
         return [*bin(self.num)[2:].zfill(self.num_qbit)]
 
     @property
     def energy(self):
-        return bin(self.num).count("1")
+        return self.num.bit_count()
 
     def reorder(self, order):
-        # temp = 0
-        # for i, ip in enumerate(order):
-        #     temp += bool(self.num & 2 ** i) * (2 ** ip)
-        # self.num = temp
-
-
         binA = bin(self.num)[2:].zfill(self.num_qbit)
         return Ket(int(''.join(binA[i] for i in order), 2), self.num_qbit)
 

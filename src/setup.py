@@ -1,10 +1,8 @@
 import numpy as xp
 
 import scipy as sp
-import scipy.sparse
-import scipy.sparse.linalg
 
-SPARSE_TYPE = sp.sparse.csc_matrix
+# SPARSE_TYPE = sp.sparse.csc_matrix
 
 using_gpu = False
 

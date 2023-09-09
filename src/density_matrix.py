@@ -2,11 +2,13 @@ import itertools
 
 import src.setup as setup
 
+from src.Block_Sparse_Matrix import BlockSparseMatrix as BSM
+
 from src.ket import energy_basis, canonical_basis, Basis, Ket
 
 import matplotlib.pyplot as plt
 from matplotlib import colors
-
+import numpy.typing as npt
 import copy
 import warnings
 from functools import reduce, lru_cache
@@ -15,45 +17,48 @@ import numpy as np
 
 xp = setup.xp
 sp = setup.sp
-SPARSE_TYPE = setup.SPARSE_TYPE
 
-from scipy.sparse import coo_matrix
+import scipy.special
 
 from scipy.linalg import logm
 
 
-@lru_cache
-def _ptrace_mask(n: int, qbits: list[int]) -> SPARSE_TYPE:
-    """Returns a mask for the partial trace of a density matrix"""
-
-    # create a numpy array of x and y indices
-    x, y = xp.indices((2 ** n, 2 ** n))
-
-    # if qbit is an integer
-    if type(qbits) == int:
-        qbit = qbits
-        mask0 = SPARSE_TYPE(xp.bitwise_and(~x, 2 ** (n - qbit - 1)) * xp.bitwise_and(~y, 2 ** (n - qbit - 1)) != 0)
-        mask1 = SPARSE_TYPE(xp.bitwise_and(x, 2 ** (n - qbit - 1)) * xp.bitwise_and(y, 2 ** (n - qbit - 1)) != 0)
-
-        return [mask0, mask1]
-
-    masks = []
-    # loop over all qbits and
-    for qbit in qbits:
-        print(qbit)
-        masks.append(_ptrace_mask(n, qbit))
-
-    res = itertools.product(*masks)
-    res = [reduce(lambda x, y: x * y, r) for r in res]
-    return res
+# @lru_cache
+# def _ptrace_mask(n: int, qbits: list[int]) -> BSM:
+#     """Returns a mask for the partial trace of a density matrix"""
+#
+#     # create a numpy array of x and y indices
+#     x, y = xp.indices((2 ** n, 2 ** n))
+#
+#     # if qbit is an integer
+#     if type(qbits) == int:
+#         qbit = qbits
+#         mask0 = BSM(xp.bitwise_and(~x, 2 ** (n - qbit - 1)) * xp.bitwise_and(~y, 2 ** (n - qbit - 1)) != 0)
+#         mask1 = BSM(xp.bitwise_and(x, 2 ** (n - qbit - 1)) * xp.bitwise_and(y, 2 ** (n - qbit - 1)) != 0)
+#
+#         return [mask0, mask1]
+#
+#     masks = []
+#     # loop over all qbits and
+#     for qbit in qbits:
+#         print(qbit)
+#         masks.append(_ptrace_mask(n, qbit))
+#
+#     res = itertools.product(*masks)
+#     res = [reduce(lambda x, y: x * y, r) for r in res]
+#     return res
 
 
 class DensityMatrix:
     __slots__ = "number_of_qbits", "_data", "_basis", "__dict__"
 
-    def __init__(self, matrix: SPARSE_TYPE, basis: Basis):
+    def __init__(self, matrix: BSM, basis: Basis):
         """This doesn't validate inputs, eg. the basis is allowed to be wrong the dimension """
-        self._data: SPARSE_TYPE = SPARSE_TYPE(matrix)
+        # if data is type BSM, then it is already a density matrix
+        if isinstance(matrix, BSM):
+            self._data: BSM = matrix
+        else:
+            self._data: BSM = BSM(matrix)
         self._basis = basis
         self.number_of_qbits: int = basis.num_qubits
 
@@ -63,7 +68,7 @@ class DensityMatrix:
     def __eq__(self, other):
         rtol = 10e-5
         atol = 10e-4
-        return self.data.shape == other.data.shape and np.abs(np.abs(self.data - other.data) - rtol * np.abs(other.data)).max() <= atol and self.basis == other.basis
+        return self.data.shape == other.blocks.shape and np.abs(np.abs(self.data - other.blocks) - rtol * np.abs(other.blocks)).max() <= atol and self.basis == other.basis
 
     def __add__(self, other):
         assert isinstance(other, DensityMatrix), f"Addition is only defined between two DensityMatrix objects, not {other}, of type {type(other)} and DensityMatrix"
@@ -94,20 +99,55 @@ class DensityMatrix:
     def __neg__(self):
         return DensityMatrix(-self.data, self.basis)
 
-    def tensor(self, *others, resultant_basis=None):
-        if others == tuple():
-            return self
-        res_data = self._data
-        res_basis = self._basis
-        for other in others:
-            if isinstance(other, DensityMatrix):
-                res_data = sp.sparse.kron(res_data, other._data)
-                if resultant_basis is None:
-                    res_basis = res_basis.tensor(other._basis)
-            else:
-                raise TypeError(f"tensor product between {self} and {other} (type {type(other)} is not defined")
-        res_basis = resultant_basis or res_basis
-        return DensityMatrix(res_data, res_basis)
+    def tensor(self, other):
+        if not isinstance(other, DensityMatrix):
+            raise TypeError(f"tensor product between {self} and {other} (type {type(other)} is not defined")
+
+        result_blocks = dict()
+        result_basis_blocks = dict()
+        num_blocks = len(self.data.blocks)
+
+        basis_1_index = 0
+
+        for i in range(num_blocks):
+            basis_2_index = 0
+            for j in range(num_blocks):
+                # Calculate the Kronecker product between two blocks
+                result_block = np.kron(self.data.blocks[i], other.data.blocks[j])
+                result_blocks[(i, j)] = result_block
+
+                self_sub_space_basis = Basis(self.basis[basis_1_index:basis_1_index + self.data.blocks[i].shape[0]])
+                other_sub_space_basis = Basis(other.basis[basis_2_index:basis_2_index + other.data.blocks[j].shape[0]])
+
+                result_sub_space_basis = self_sub_space_basis.tensor(other_sub_space_basis)
+                result_basis_blocks[(i, j)] = result_sub_space_basis
+
+                basis_2_index += other.data.blocks[j].shape[0]
+            basis_1_index += self.data.blocks[i].shape[0]
+
+        # sort the blocks by the sum of their indices
+        result_blocks = [result_blocks[key] for key in sorted(result_blocks.keys(), key=lambda x: x[0] + x[1])]
+        result_basis = [result_basis_blocks[key] for key in sorted(result_basis_blocks.keys(), key=lambda x: x[0] + x[1])]
+        # the above is innefecient becouse it is doing the same sorting twice, this should uneeded.
+
+        result_basis = Basis(list(sum(result_basis, ())))
+
+        return DensityMatrix(BSM(result_blocks), result_basis)
+
+    # def tensor(self, *others, resultant_basis=None):
+    #     if others == tuple():
+    #         return self
+    #     res_data = self._data
+    #     res_basis = self._basis
+    #     for other in others:
+    #         if isinstance(other, DensityMatrix):
+    #             res_data = res_data.kronecker_product(other._data)
+    #             if resultant_basis is None:
+    #                 res_basis = res_basis.tensor(other._basis)
+    #         else:
+    #             raise TypeError(f"tensor product between {self} and {other} (type {type(other)} is not defined")
+    #     res_basis = resultant_basis or res_basis
+    #     return DensityMatrix(res_data, res_basis)
 
     # @profile
     def ptrace_to_a_single_qbit(self, remaining_qbit):
@@ -129,7 +169,7 @@ class DensityMatrix:
 
     def _ptrace(self, qbit):
 
-        #TODO create composite masks for multiple qbits
+        # TODO create composite masks for multiple qbits
 
         n = self.number_of_qbits
 
@@ -152,7 +192,7 @@ class DensityMatrix:
 
     # ==== static properties ====
     @property
-    def data(self) -> SPARSE_TYPE:
+    def data(self) -> BSM:
         return self._data
 
     @property
@@ -174,19 +214,19 @@ class DensityMatrix:
 
     # ==== in place modification ====
 
-    def change_to_energy_basis(self):
-        energy = np.array([b.energy for b in self.basis])
-        nums = np.array([b.num for b in self.basis])
-        idx = np.lexsort(np.array([nums, energy]))
-        self._data = permute_sparse_matrix(self._data, list(idx))
-        self._basis = self.basis.reorder(idx)
+    # def change_to_energy_basis(self):
+    #     energy = np.array([b.energy for b in self.basis])
+    #     nums = np.array([b.num for b in self.basis])
+    #     idx = np.lexsort(np.array([nums, energy]))
+    #     self._data = permute_sparse_matrix(self._data, list(idx))
+    #     self._basis = self.basis.reorder(idx)
 
-    def change_to_canonical_basis(self):
-        nums = [b.num for b in self.basis]
-        # energy = [b.energy for b in self.basis]
-        idx = np.argsort(nums)
-        self._data = permute_sparse_matrix(self._data, idx)
-        self._basis = self.basis.reorder(idx)
+    # def change_to_canonical_basis(self):
+    #     nums = [b.num for b in self.basis]
+    #     # energy = [b.energy for b in self.basis]
+    #     idx = np.argsort(nums)
+    #     self._data = permute_sparse_matrix(self._data, idx)
+    #     self._basis = self.basis.reorder(idx)
 
     def relabel_basis(self, new_order):
         """
@@ -242,12 +282,12 @@ def tensor(DMS: list[DensityMatrix]) -> DensityMatrix:
 def Identity(basis: Basis) -> DensityMatrix:
     """ Creates the identity density matrix for n qubits in basis"""
 
-    return DensityMatrix(SPARSE_TYPE(xp.identity(len(basis))), basis)
+    return DensityMatrix(BSM(xp.identity(len(basis))), basis)
 
 
 def qbit(pop: float) -> DensityMatrix:
     assert 0 <= pop <= .5, f"population must be between 0 and .5 but you chose {pop}"
-    return DensityMatrix(SPARSE_TYPE(xp.array([[1 - pop, 0], [0, pop]]), dtype=xp.complex64), energy_basis(1))
+    return DensityMatrix(BSM([1 - pop, pop]), energy_basis(1))
 
 
 def n_thermal_qbits(pops: list) -> DensityMatrix:
@@ -260,15 +300,24 @@ def n_thermal_qbits(pops: list) -> DensityMatrix:
     """
     # assert pops to be between 0 and .5
     assert all([0 <= pop <= .5 for pop in pops]), f"population must be between 0 and .5 but you chose {pops}"
-    num_states = 2 ** len(pops)
+    N = len(pops)
+    num_states = 2 ** N
     data = []
-    for i in range(num_states):
-        state = list(format(i, f'0{len(pops)}b'))
+    basis = energy_basis(N)
+    for i in basis:
+        state = list(format(i.num, f'0{len(pops)}b'))
         value_list = [pops[j] if b == '1' else 1 - pops[j] for j, b in enumerate(state)]
         value = reduce((lambda x, y: x * y), value_list)
         data.append(value)
 
-    return DensityMatrix(sp.sparse.diags(data, format='csc'), canonical_basis(len(pops)))
+    result = []
+    index = 0
+    for energy_subspace in range(N + 1):
+        block_size = scipy.special.comb(N, energy_subspace, exact=True)  # If this is slow use binom and round
+        result.append(np.diag(data[index:index + block_size]))
+        index += block_size
+
+    return DensityMatrix(BSM(result), basis)
 
 
 # functions that operate on density matrices
@@ -280,42 +329,12 @@ def dm_log(dm: DensityMatrix) -> DensityMatrix:
     warnings.warn("Requires conversion to and from dense", Warning)
     if xp != np:
         warnings.warn("Requires sending data to and from the gpu", Warning)
-        return DensityMatrix(SPARSE_TYPE(xp.array(logm(xp.asnumpy(dm.data.todense())))), dm.basis)
-    return DensityMatrix(SPARSE_TYPE(logm(dm.data.todense())), dm.basis)
+        return DensityMatrix(BSM(xp.array(logm(xp.asnumpy(dm.data.todense())))), dm.basis)
+    return DensityMatrix(BSM(logm(dm.data.todense())), dm.basis)
 
 
 def dm_trace(dm: DensityMatrix) -> float:
-    return dm.data.diagonal(k=0).sum()
-
-
-def permute_sparse_matrix(M, new_order: list):
-    """
-    Reorders the rows and/or columns in a scipy sparse matrix
-        using the specified array(s) of indexes
-        e.g., [1,0,2,3,...] would swap the first and second row/col.
-    """
-
-    # I = np.identity(M.shape[0])
-    # I = I[new_order, :]
-    # I = SPARSE_TYPE(I)
-
-    I = sp.sparse.eye(M.shape[0], dtype=xp.float64).tocoo()
-    I.row = I.row[new_order]
-    I = SPARSE_TYPE(I)
-    return SPARSE_TYPE(I.T @ M @ I, dtype=xp.complex64)
-
-
-def permute_sparse_matrix_new(m, new_order):
-    new_order = xp.array(new_order)
-    coo = m.tocoo()
-    row, col, data = coo.row, coo.col, coo.data
-
-    col = new_order[col]
-    row = new_order[row]
-
-    coo = sp.sparse.coo_matrix((data, (row, col)), shape=m.shape)
-    csr = coo.tocsr()
-    return csr
+    return dm.data.diagonal().sum()
 
 
 def conserves_energy(dm: DensityMatrix) -> bool:
