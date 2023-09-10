@@ -54,11 +54,8 @@ class DensityMatrix:
 
     def __init__(self, matrix: BSM, basis: Basis):
         """This doesn't validate inputs, eg. the basis is allowed to be wrong the dimension """
-        # if data is type BSM, then it is already a density matrix
-        if isinstance(matrix, BSM):
-            self._data: BSM = matrix
-        else:
-            self._data: BSM = BSM(matrix)
+
+        self._data: BSM = matrix
         self._basis = basis
         self.number_of_qbits: int = basis.num_qubits
 
@@ -104,50 +101,56 @@ class DensityMatrix:
             raise TypeError(f"tensor product between {self} and {other} (type {type(other)} is not defined")
 
         result_blocks = dict()
-        result_basis_blocks = dict()
-        num_blocks = len(self.data.blocks)
-
+        self_num_blocks = len(self.data.blocks)
+        other_num_blocks = len(other.data.blocks)
         basis_1_index = 0
 
-        for i in range(num_blocks):
+        for i in range(self_num_blocks):
             basis_2_index = 0
-            for j in range(num_blocks):
+            for j in range(other_num_blocks):
                 # Calculate the Kronecker product between two blocks
                 result_block = np.kron(self.data.blocks[i], other.data.blocks[j])
-                result_blocks[(i, j)] = result_block
 
                 self_sub_space_basis = Basis(self.basis[basis_1_index:basis_1_index + self.data.blocks[i].shape[0]])
                 other_sub_space_basis = Basis(other.basis[basis_2_index:basis_2_index + other.data.blocks[j].shape[0]])
 
                 result_sub_space_basis = self_sub_space_basis.tensor(other_sub_space_basis)
-                result_basis_blocks[(i, j)] = result_sub_space_basis
+
+                result_blocks[(i, j)] = result_block, result_sub_space_basis
 
                 basis_2_index += other.data.blocks[j].shape[0]
             basis_1_index += self.data.blocks[i].shape[0]
 
         # sort the blocks by the sum of their indices
-        result_blocks = [result_blocks[key] for key in sorted(result_blocks.keys(), key=lambda x: x[0] + x[1])]
-        result_basis = [result_basis_blocks[key] for key in sorted(result_basis_blocks.keys(), key=lambda x: x[0] + x[1])]
-        # the above is innefecient becouse it is doing the same sorting twice, this should uneeded.
+        result_blocks_sorted = {key: result_blocks[key] for key in sorted(result_blocks.keys(), key=lambda x: x[0] + x[1])}
 
-        result_basis = Basis(list(sum(result_basis, ())))
+        energy_blocks = dict()
 
-        return DensityMatrix(BSM(result_blocks), result_basis)
+        for energy, group in itertools.groupby(result_blocks_sorted, key=lambda x: x[0] + x[1]):
+            energy_block = []
+            energy_basis = []
+            for key in group:
+                block, basis = result_blocks[key]
+                energy_block.append(block)
+                energy_basis += list(basis)
+            energy_blocks[energy] = scipy.linalg.block_diag(*energy_block), energy_basis
 
-    # def tensor(self, *others, resultant_basis=None):
-    #     if others == tuple():
-    #         return self
-    #     res_data = self._data
-    #     res_basis = self._basis
-    #     for other in others:
-    #         if isinstance(other, DensityMatrix):
-    #             res_data = res_data.kronecker_product(other._data)
-    #             if resultant_basis is None:
-    #                 res_basis = res_basis.tensor(other._basis)
-    #         else:
-    #             raise TypeError(f"tensor product between {self} and {other} (type {type(other)} is not defined")
-    #     res_basis = resultant_basis or res_basis
-    #     return DensityMatrix(res_data, res_basis)
+        # sort the basis of each block in final_blocks by the basis number
+
+        for energy in energy_blocks:
+            basis = energy_blocks[energy][1]
+            idx = np.lexsort(np.array([[b.num for b in basis]]))
+            reordered_matrix = energy_blocks[energy][0][idx]
+            reordered_matrix = reordered_matrix[:, idx]
+            energy_blocks[energy] = reordered_matrix, [basis[i] for i in idx]
+
+        final_blocks = []
+        final_basis = []
+        for energy in sorted(energy_blocks.keys()):
+            final_blocks.append(energy_blocks[energy][0])
+            final_basis += energy_blocks[energy][1]
+
+        return DensityMatrix(BSM(final_blocks), Basis(final_basis))
 
     # @profile
     def ptrace_to_a_single_qbit(self, remaining_qbit):
@@ -275,7 +278,10 @@ class DensityMatrix:
 
 def tensor(DMS: list[DensityMatrix]) -> DensityMatrix:
     """An alias to tensor together a list of density matrices"""
-    return DMS[0].tensor(*DMS[1:])
+    result = DMS[0]
+    for dm in DMS[1:]:
+        result = result.tensor(dm)
+    return result
 
 
 # Utilities to generate density matrices

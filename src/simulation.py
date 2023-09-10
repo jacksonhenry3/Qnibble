@@ -8,7 +8,7 @@ from src.random_unitary import random_energy_preserving_unitary
 import copy
 
 
-def run(dm: DM.DensityMatrix, measurement_set, num_iterations: int, orders, qbits_to_measure = "all", Unitaries=None, verbose=False):
+def run(dm: DM.DensityMatrix, measurement_set, num_iterations: int, orders, qbits_to_measure="all", Unitaries=None, verbose=False):
     """
     Args:
         dm: the density matrix to evolve
@@ -48,9 +48,6 @@ def run(dm: DM.DensityMatrix, measurement_set, num_iterations: int, orders, qbit
         generate_random_unitary = True
         print("using random unitaries")
 
-
-
-
     for i in range(num_iterations):
         order = orders[i % len(orders)]
         chunk_sizes = [len(chunk) for chunk in order]
@@ -61,8 +58,6 @@ def run(dm: DM.DensityMatrix, measurement_set, num_iterations: int, orders, qbit
         progress = i / num_iterations
         if verbose and int(progress * 1000) % int(verbose * 1000) == 0:
             print(progress)
-
-
 
         if generate_random_unitary:
 
@@ -77,7 +72,7 @@ def run(dm: DM.DensityMatrix, measurement_set, num_iterations: int, orders, qbit
 
         measurement_values = [xp.vstack((measurement_values[i], measurement(dm.ptrace(qbits_to_trace_out)))) for i, measurement in enumerate(measurement_set)]
 
-    return measurement_values,dm
+    return measurement_values, dm
 
 
 def step(dm: DM.DensityMatrix, order: list[np.ndarray], Unitary: DM.DensityMatrix, unitary_reused=False) -> DM.DensityMatrix:
@@ -92,14 +87,15 @@ def step(dm: DM.DensityMatrix, order: list[np.ndarray], Unitary: DM.DensityMatri
 
     """
     # make sure each qbit is assigned to a group and that there are no extras or duplicates.
-    #flatten order using a list comprehension
+    # flatten order using a list comprehension
     order = [qbit for chunk in order for qbit in chunk]
     # print(order)
     assert set(list(order)) == set(range(dm.number_of_qbits)), f"{set(order)} vs {set(range(dm.number_of_qbits))}"
-    Unitary.relabel_basis(order)
+    # Unitary.relabel_basis(order)
     # Unitary.change_to_energy_basis()
     # dm.change_to_energy_basis()
-    dm = Unitary * dm * Unitary.H
+    dm = Unitary * dm
+    dm = dm * Unitary.H
 
     if unitary_reused:
         inverse_order = list(range(len(order)))
