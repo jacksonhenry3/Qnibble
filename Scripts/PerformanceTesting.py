@@ -24,7 +24,7 @@ from src import (
 
 num_iterations = 50
 measurements = []
-num_qbits = 12
+num_qbits = 16
 system = DM.n_thermal_qbits([random.random()/2. for _ in range(num_qbits)])
 
 

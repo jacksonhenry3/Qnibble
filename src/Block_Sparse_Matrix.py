@@ -17,11 +17,15 @@ import itertools
 import scipy as sp
 from scipy import linalg
 
+import src.setup as setup
+
+xp = setup.xp
+
 
 class BlockSparseMatrix:
 
-    def __init__(self, data: npt.NDArray[object] or list):
-        self.blocks = np.array(data, dtype=object)
+    def __init__(self, data: list):
+        self.blocks = [xp.array(d) for d in data]
         dim = sum([b.shape[0] for b in data])
         self.shape = (dim, dim)
 
@@ -35,7 +39,7 @@ class BlockSparseMatrix:
 
     def __mul__(self, other):
         assert type(other) is int or float
-        return BlockSparseMatrix(self.blocks * other)
+        return BlockSparseMatrix([block * other for block in self.blocks])
 
     def __add__(self, other):
         return BlockSparseMatrix(self.blocks + other.blocks)

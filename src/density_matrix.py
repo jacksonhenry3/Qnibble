@@ -8,7 +8,6 @@ from src.ket import energy_basis, canonical_basis, Basis, Ket
 
 import matplotlib.pyplot as plt
 from matplotlib import colors
-import numpy.typing as npt
 import copy
 import warnings
 from functools import reduce, lru_cache
@@ -20,7 +19,8 @@ sp = setup.sp
 
 import scipy.special
 
-from scipy.linalg import logm
+
+# from scipy.linalg import logm
 
 
 # @lru_cache
@@ -109,7 +109,7 @@ class DensityMatrix:
             basis_2_index = 0
             for j in range(other_num_blocks):
                 # Calculate the Kronecker product between two blocks
-                result_block = np.kron(self.data.blocks[i], other.data.blocks[j])
+                result_block = xp.kron(self.data.blocks[i], other.data.blocks[j])
 
                 self_sub_space_basis = Basis(self.basis[basis_1_index:basis_1_index + self.data.blocks[i].shape[0]])
                 other_sub_space_basis = Basis(other.basis[basis_2_index:basis_2_index + other.data.blocks[j].shape[0]])
@@ -133,7 +133,7 @@ class DensityMatrix:
                 block, basis = result_blocks[key]
                 energy_block.append(block)
                 energy_basis += list(basis)
-            energy_blocks[energy] = scipy.linalg.block_diag(*energy_block), energy_basis
+            energy_blocks[energy] = sp.linalg.block_diag(*energy_block), energy_basis
 
         # sort the basis of each block in final_blocks by the basis number
 
@@ -147,7 +147,7 @@ class DensityMatrix:
         final_blocks = []
         final_basis = []
         for energy in sorted(energy_blocks.keys()):
-            final_blocks.append(energy_blocks[energy][0])
+            final_blocks.append(energy_blocks[energy][0].astype(xp.complex64))
             final_basis += energy_blocks[energy][1]
 
         return DensityMatrix(BSM(final_blocks), Basis(final_basis))

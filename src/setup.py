@@ -11,7 +11,6 @@ def use_gpu():
     """ Call this function before importing anything else if you want to run using CUPY on the GPU"""
     global xp
     global sp
-    global SPARSE_TYPE
     global using_gpu
     using_gpu = True
     import cupy as xp
@@ -20,4 +19,3 @@ def use_gpu():
     import cupyx.scipy.sparse
     import cupyx.scipy.linalg
     import cupyx.scipy.sparse.linalg
-    SPARSE_TYPE = sp.sparse.csr_matrix
