@@ -25,6 +25,8 @@ xp = setup.xp
 class BlockSparseMatrix:
 
     def __init__(self, data: list):
+        if type(data) is not list:
+            data = [data]
         self.blocks = [xp.array(d) for d in data]
         dim = sum([b.shape[0] for b in data])
         self.shape = (dim, dim)
@@ -51,7 +53,7 @@ class BlockSparseMatrix:
         return self.blocks.__repr__()
 
     def diagonal(self):
-        return [b.diagonal() for b in self.blocks]
+        return np.concatenate([b.diagonal() for b in self.blocks])
 
     def toarray(self):
         return sp.linalg.block_diag(*self.blocks)

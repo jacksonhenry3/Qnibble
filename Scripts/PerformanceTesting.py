@@ -22,11 +22,12 @@ from src import (
     random_unitary,
     simulation)
 
-num_iterations = 50
-measurements = []
+num_iterations = 150
+measurements = [measure.extractable_work_of_each_qubit]
 num_qbits = 16
-system = DM.n_thermal_qbits([random.random()/2. for _ in range(num_qbits)])
-
+pops = [.2 for _ in range(num_qbits)]
+pops[0] = .4
+system = DM.n_thermal_qbits(pops)
 
 ordering = orders.n_random_line_orders(chunk_sizes=[4 for _ in range(num_qbits // 4)], n=100, num_qbits=num_qbits)
 
@@ -37,5 +38,6 @@ data, result = sim.run(system,
                        verbose=.001,
                        )
 
-# result.plot()
-# plt.show()
+for i,datum in enumerate(data):
+    print(i)
+    sim.save_data(data=datum, connectivity_type="line", run_index=str(0), sim_index=i, num_qbits=str(num_qbits), num_chunks=str(num_qbits // 4), measurement="extractable_work_of_each_qubit")
