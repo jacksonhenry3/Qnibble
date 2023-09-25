@@ -31,6 +31,17 @@ system = DM.n_thermal_qbits(pops)
 
 ordering = orders.n_random_line_orders(chunk_sizes=[4 for _ in range(num_qbits // 4)], n=100, num_qbits=num_qbits)
 
+identity = DM.Identity(DM.energy_basis(4))
+
+
+sub_unitary = random_unitary.random_unitary_in_subspace(4,2)
+unitary_list = []
+for unitary_index in range(num_qbits):
+    piece = DM.tensor([sub_unitary if j==unitary_index else identity for j in range(num_qbits//4)])
+    unitary_list.append(piece)
+
+unitary = np.product(unitary_list)
+
 data, result = sim.run(system,
                        measurement_set=measurements,
                        num_iterations=num_iterations,
