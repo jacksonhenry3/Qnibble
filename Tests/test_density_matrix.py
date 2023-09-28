@@ -5,7 +5,7 @@ import pytest
 import random_unitary
 from src import density_matrix as dm, ket as ket
 import src.setup as setup
-from src.setup import SPARSE_TYPE, xp
+from src.setup import  xp
 
 import numpy as np
 import scipy as sp

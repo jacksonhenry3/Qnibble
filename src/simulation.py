@@ -91,7 +91,7 @@ def step(dm: DM.DensityMatrix, order: list[np.ndarray], Unitary: DM.DensityMatri
     order = [qbit for chunk in order for qbit in chunk]
     # print(order)
     assert set(list(order)) == set(range(dm.number_of_qbits)), f"{set(order)} vs {set(range(dm.number_of_qbits))}"
-    # Unitary.relabel_basis(order)
+    Unitary.relabel_basis(order)
     # Unitary.change_to_energy_basis()
     # dm.change_to_energy_basis()
     dm = Unitary * dm

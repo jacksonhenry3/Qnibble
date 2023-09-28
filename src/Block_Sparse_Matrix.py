@@ -24,11 +24,9 @@ xp = setup.xp
 
 class BlockSparseMatrix:
 
-    def __init__(self, data: list):
-        if type(data) is not list:
-            data = [data]
+    def __init__(self, data: list[np.ndarray]):
         self.blocks = [xp.array(d) for d in data]
-        dim = sum([b.shape[0] for b in data])
+        dim = sum([b.shape[0] for b in self.blocks])
         self.shape = (dim, dim)
 
     def __matmul__(self, other):
@@ -47,10 +45,16 @@ class BlockSparseMatrix:
         return BlockSparseMatrix(self.blocks + other.blocks)
 
     def __sub__(self, other):
-        return BlockSparseMatrix(self.blocks - other.blocks)
+        return BlockSparseMatrix([b1 - b2 for b1, b2 in zip(self.blocks, other.blocks)])
+
+    def __neg__(self):
+        return BlockSparseMatrix([-block for block in self.blocks])
 
     def __repr__(self):
         return self.blocks.__repr__()
+
+    def log(self):
+        return BlockSparseMatrix([np.array(xp.log(b)) for b in self.blocks])
 
     def diagonal(self):
         return np.concatenate([b.diagonal() for b in self.blocks])

@@ -1,5 +1,7 @@
 import itertools
 
+from scipy.linalg import logm
+
 import src.setup as setup
 
 from src.Block_Sparse_Matrix import BlockSparseMatrix as BSM
@@ -11,7 +13,7 @@ from matplotlib import colors
 import copy
 import warnings
 from functools import reduce, lru_cache
-
+from math import comb
 import numpy as np
 
 xp = setup.xp
@@ -211,26 +213,6 @@ class DensityMatrix:
         """Return the conjugate transpose of self"""
         return DensityMatrix(self._data.H, self._basis)
 
-    # @property
-    # def data_dense(self):
-    #     return self.data.toarray()
-
-    # ==== in place modification ====
-
-    # def change_to_energy_basis(self):
-    #     energy = np.array([b.energy for b in self.basis])
-    #     nums = np.array([b.num for b in self.basis])
-    #     idx = np.lexsort(np.array([nums, energy]))
-    #     self._data = permute_sparse_matrix(self._data, list(idx))
-    #     self._basis = self.basis.reorder(idx)
-
-    # def change_to_canonical_basis(self):
-    #     nums = [b.num for b in self.basis]
-    #     # energy = [b.energy for b in self.basis]
-    #     idx = np.argsort(nums)
-    #     self._data = permute_sparse_matrix(self._data, idx)
-    #     self._basis = self.basis.reorder(idx)
-
     def relabel_basis(self, new_order):
         """
         changes basis by changing which is the "first" qbit.
@@ -239,7 +221,24 @@ class DensityMatrix:
         new_basis = []
         for e in self.basis:
             new_basis.append(e.reorder(new_order))
-        self._basis = Basis(new_basis)
+        # self._basis = Basis(new_basis)
+
+        block_sizes = [b.shape[0] for b in self.data.blocks]
+        current_index = 0
+
+        # loop over each energy block
+        for i, block in enumerate(self.data.blocks):
+            sub_basis = new_basis[current_index:current_index + block_sizes[i]]
+
+            # find the new order of the basis
+            new_order = [b.num for b in sub_basis]
+            new_order = np.argsort(new_order)
+
+            # reorder the block
+            self.data.blocks[i] = block[new_order]
+            self.data.blocks[i] = self.data.blocks[i][:, new_order]
+
+
 
     # ==== visualization ====
 
@@ -288,12 +287,17 @@ def tensor(DMS: list[DensityMatrix]) -> DensityMatrix:
 def Identity(basis: Basis) -> DensityMatrix:
     """ Creates the identity density matrix for n qubits in basis"""
 
-    return DensityMatrix(BSM(xp.identity(len(basis))), basis)
+    nqbits = basis.num_qubits
+
+    # construct the ap[roapriate blocks
+    blocks = [np.array([[1. + 0j]])] + [xp.identity(comb(nqbits, i)).astype(np.complex64) for i in range(1, nqbits)] + [np.array([[1. + 0j]])]
+
+    return DensityMatrix(BSM(blocks), basis)
 
 
 def qbit(pop: float) -> DensityMatrix:
     assert 0 <= pop <= .5, f"population must be between 0 and .5 but you chose {pop}"
-    return DensityMatrix(BSM([1 - pop, pop]), energy_basis(1))
+    return DensityMatrix(BSM([xp.array([[1 - pop]]), xp.array([[pop]])]), energy_basis(1))
 
 
 def n_thermal_qbits(pops: list) -> DensityMatrix:
@@ -332,11 +336,11 @@ def dm_exp(dm: DensityMatrix) -> DensityMatrix:
 
 
 def dm_log(dm: DensityMatrix) -> DensityMatrix:
-    warnings.warn("Requires conversion to and from dense", Warning)
     if xp != np:
         warnings.warn("Requires sending data to and from the gpu", Warning)
-        return DensityMatrix(BSM(xp.array(logm(xp.asnumpy(dm.data.todense())))), dm.basis)
-    return DensityMatrix(BSM(logm(dm.data.todense())), dm.basis)
+        raise NotImplementedError
+        # return DensityMatrix(BSM(xp.array(logm(xp.asnumpy(dm.data.todense())))), dm.basis)
+    return DensityMatrix(dm.data.log(), dm.basis)
 
 
 def dm_trace(dm: DensityMatrix) -> float:

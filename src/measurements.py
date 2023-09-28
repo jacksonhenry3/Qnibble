@@ -76,8 +76,6 @@ def D_single_qbits(pop_1: float, pop_2: float):
 def extractable_work(T: float, dm: DensityMatrix):
     pop = pop_from_temp(T)
     reference_dm = n_thermal_qbits([pop for _ in range(dm.number_of_qbits)])
-    reference_dm.change_to_energy_basis()
-    dm.change_to_energy_basis()
     return float(np.real(T * D(dm, reference_dm)))
 
 
