@@ -65,9 +65,17 @@ class DensityMatrix:
         return f'DM {id(self)}'
 
     def __eq__(self, other):
-        rtol = 10e-5
-        atol = 10e-4
-        return self.data.shape == other.blocks.shape and np.abs(np.abs(self.data - other.blocks) - rtol * np.abs(other.blocks)).max() <= atol and self.basis == other.basis
+
+        if not isinstance(other, DensityMatrix):
+            return False
+        if self.number_of_qbits != other.number_of_qbits:
+            return False
+        if self.basis != other.basis:
+            return False
+        for b1, b2 in zip(self.data.blocks, other.data.blocks):
+            if not np.allclose(b1, b2):
+                return False
+        return True
 
     def __add__(self, other):
         assert isinstance(other, DensityMatrix), f"Addition is only defined between two DensityMatrix objects, not {other}, of type {type(other)} and DensityMatrix"
@@ -83,6 +91,17 @@ class DensityMatrix:
             # TODO figure out why this coppy is needed and remove it
             return DensityMatrix(self.data @ other.data, copy.copy(self.basis))
         raise TypeError(f"multiplication between {self} and {other} (type {type(other)} is not defined")
+
+    def __neg__(self):
+        return DensityMatrix(-self.data, self.basis)
+
+    def tensor(self, other):
+        if not isinstance(other, DensityMatrix):
+            raise TypeError(f"tensor product between {self} and {other} (type {type(other)} is not defined")
+
+        result_blocks = dict()
+        self_num_blocks = len(self.data.blocks)
+        other_num_blocks = len(other.data.blocks)
 
     def __rmul__(self, other):
         if type(other) in [float, int, complex]:
@@ -230,15 +249,15 @@ class DensityMatrix:
         for i, block in enumerate(self.data.blocks):
             sub_basis = new_basis[current_index:current_index + block_sizes[i]]
 
-            # find the new order of the basis
+            current_index += block_sizes[i]
+
+            # find the new order of the basis BELOW IS WRONG
             new_order = [b.num for b in sub_basis]
             new_order = np.argsort(new_order)
 
             # reorder the block
-            self.data.blocks[i] = block[new_order]
+            self.data.blocks[i] = self.data.blocks[i][new_order]
             self.data.blocks[i] = self.data.blocks[i][:, new_order]
-
-
 
     # ==== visualization ====
 
@@ -332,7 +351,7 @@ def n_thermal_qbits(pops: list) -> DensityMatrix:
 
 # functions that operate on density matrices
 def dm_exp(dm: DensityMatrix) -> DensityMatrix:
-    return DensityMatrix(sp.sparse.linalg.expm(dm.data), dm.basis)
+    return DensityMatrix(dm.data.exp(), dm.basis)
 
 
 def dm_log(dm: DensityMatrix) -> DensityMatrix:

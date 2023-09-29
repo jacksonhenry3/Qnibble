@@ -13,6 +13,7 @@ print(block_diag(*list(map(lambda x, y: (x@y).toarray(), r1, r2))))
 import numpy as np
 import numpy.typing as npt
 import itertools
+from math import comb
 
 import scipy as sp
 from scipy import linalg
@@ -54,7 +55,10 @@ class BlockSparseMatrix:
         return self.blocks.__repr__()
 
     def log(self):
-        return BlockSparseMatrix([np.array(xp.log(b)) for b in self.blocks])
+        return BlockSparseMatrix([np.array(sp.linalg.logm(b)) for b in self.blocks])
+
+    def exp(self):
+        return BlockSparseMatrix([np.array(sp.linalg.expm(b)) for b in self.blocks])
 
     def diagonal(self):
         return np.concatenate([b.diagonal() for b in self.blocks])
@@ -65,3 +69,10 @@ class BlockSparseMatrix:
     @property
     def H(self):
         return BlockSparseMatrix([b.conj().T for b in self.blocks])
+
+
+# Utilities to generate density matrices
+def Identity(n) -> BlockSparseMatrix:
+    blocks = [np.array([[1. + 0j]])] + [xp.identity(comb(n, i)).astype(np.complex64) for i in range(1, n)] + [np.array([[1. + 0j]])]
+
+    return BlockSparseMatrix(blocks)

@@ -79,7 +79,7 @@ def step(dm: DM.DensityMatrix, order: list[np.ndarray], Unitary: DM.DensityMatri
     """
     Args:
         dm: the density matrix to evolve
-        order: the qbit order to be used e.g. [0,2,1,3]
+        order: the qbit order to be used e.g. [[0,2,1,3],[4,5,6,7]]
         Unitary: A Unitary that will be used to evolve the system
         unitary_reused: if the unitary will be reused make sure to undo the reordering
 
@@ -87,13 +87,11 @@ def step(dm: DM.DensityMatrix, order: list[np.ndarray], Unitary: DM.DensityMatri
 
     """
     # make sure each qbit is assigned to a group and that there are no extras or duplicates.
-    # flatten order using a list comprehension
     order = [qbit for chunk in order for qbit in chunk]
-    # print(order)
     assert set(list(order)) == set(range(dm.number_of_qbits)), f"{set(order)} vs {set(range(dm.number_of_qbits))}"
+
     Unitary.relabel_basis(order)
-    # Unitary.change_to_energy_basis()
-    # dm.change_to_energy_basis()
+
     dm = Unitary * dm
     dm = dm * Unitary.H
 

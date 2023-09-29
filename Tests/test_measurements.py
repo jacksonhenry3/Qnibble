@@ -48,3 +48,14 @@ class TestMeasurements:
     def test_entropy(self):
         dm = DM.qbit(.3)
         assert np.isclose(mes.entropy(dm), (0.6108643121554707 + 0j), 10 ** -6)
+
+
+    def test_pop(self):
+        dm = DM.qbit(.3)
+        assert np.isclose(mes.pop(dm), (0.3 + 0j), 10 ** -6)
+
+        dm = DM.n_thermal_qbits([.3,.4,.1,.1,.1])
+        assert np.isclose(mes.pops(dm)[0], (0.3 + 0j), 10 ** -6)
+        assert np.isclose(mes.pops(dm)[1], (0.4 + 0j), 10 ** -6)
+        assert np.isclose(mes.pops(dm)[3], (0.1 + 0j), 10 ** -6)
+

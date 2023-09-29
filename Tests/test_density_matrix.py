@@ -5,19 +5,21 @@ import pytest
 import random_unitary
 from src import density_matrix as dm, ket as ket
 import src.setup as setup
-from src.setup import  xp
+from src.setup import xp
 
 import numpy as np
 import scipy as sp
 from scipy import sparse
 import scipy.linalg as sp_dense
 
+import src.Block_Sparse_Matrix as BSM
+
 
 def identity(n):
-    return SPARSE_TYPE(sparse.identity(n, dtype=complex))
+    return BSM.Identity(n)
 
 
-class TestKet:
+class TestDM:
     """
     Testing the functionality of density matrices.
     The desired functionality is very specific compared to a general ket.
@@ -34,6 +36,15 @@ class TestKet:
         assert dm.DensityMatrix(data_1, basis) == dm.DensityMatrix(data_1, basis)
         assert dm.DensityMatrix(data_1, basis) == dm.DensityMatrix(data_2, basis)
         assert dm.DensityMatrix(data_1, basis) != dm.DensityMatrix(data_3, basis)
+
+    def test_reorder(self):
+        """Tests the reordering of a density matrix"""
+        # create a random unitary
+        unitary = random_unitary.random_energy_preserving_unitary(8)
+        clone = dm.DensityMatrix(unitary.data, ket.energy_basis(8))
+        clone.relabel_basis([0, 5, 2, 1, 4, 3, 6, 7])
+        clone.relabel_basis([0, 3, 2, 5, 4, 1, 6, 7])
+        assert clone == unitary
 
     def test_add(self):
         """Test the addition of multiple density matrices"""
