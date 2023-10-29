@@ -26,7 +26,10 @@ xp = setup.xp
 class BlockSparseMatrix:
 
     def __init__(self, data: list[np.ndarray]):
-        self.blocks = [xp.array(d) for d in data]
+
+        if type(data[0]) is not np.ndarray:
+            data = [np.array(d) for d in data]
+        self.blocks = data
         dim = sum([b.shape[0] for b in self.blocks])
         self.shape = (dim, dim)
 

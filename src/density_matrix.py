@@ -122,6 +122,7 @@ class DensityMatrix:
             raise TypeError(f"tensor product between {self} and {other} (type {type(other)} is not defined")
 
         result_blocks = dict()
+        result_basis = dict()
         self_num_blocks = len(self.data.blocks)
         other_num_blocks = len(other.data.blocks)
         basis_1_index = 0
@@ -130,48 +131,36 @@ class DensityMatrix:
             basis_2_index = 0
             for j in range(other_num_blocks):
                 # Calculate the Kronecker product between two blocks
-                result_block = xp.kron(self.data.blocks[i], other.data.blocks[j])
+                result_block = xp.kron(self.data.blocks[i], other.data.blocks[j]).astype(xp.complex64)
 
                 self_sub_space_basis = Basis(self.basis[basis_1_index:basis_1_index + self.data.blocks[i].shape[0]])
                 other_sub_space_basis = Basis(other.basis[basis_2_index:basis_2_index + other.data.blocks[j].shape[0]])
 
                 result_sub_space_basis = self_sub_space_basis.tensor(other_sub_space_basis)
 
-                result_blocks[(i, j)] = result_block, result_sub_space_basis
+                result_blocks[(i, j)] = result_block
+                result_basis[(i, j)] = result_sub_space_basis
 
                 basis_2_index += other.data.blocks[j].shape[0]
             basis_1_index += self.data.blocks[i].shape[0]
 
         # sort the blocks by the sum of their indices
-        result_blocks_sorted = {key: result_blocks[key] for key in sorted(result_blocks.keys(), key=lambda x: x[0] + x[1])}
-
-        energy_blocks = dict()
-
-        for energy, group in itertools.groupby(result_blocks_sorted, key=lambda x: x[0] + x[1]):
-            energy_block = []
-            energy_basis = []
-            for key in group:
-                block, basis = result_blocks[key]
-                energy_block.append(block)
-                energy_basis += list(basis)
-            energy_blocks[energy] = sp.linalg.block_diag(*energy_block), energy_basis
+        result_blocks_id_sorted = [key for key in sorted(result_blocks.keys(), key=lambda x: x[0] + x[1])]
+        blocks = [sp.linalg.block_diag(*[result_blocks[j] for j in i[1]]) for i in itertools.groupby(result_blocks_id_sorted, key=lambda x: x[0] + x[1])]
+        del result_blocks
+        basis = [sum([list(result_basis[j]) for j in i[1]], []) for i in itertools.groupby(result_blocks_id_sorted, key=lambda x: x[0] + x[1])]
+        del result_basis
 
         # sort the basis of each block in final_blocks by the basis number
+        basis_final = []
+        for energy in range(len(blocks)):
+            idx = np.lexsort(np.array([[b.num for b in basis[energy]]]))
+            blocks[energy][:] = blocks[energy][idx]
+            blocks[energy][:] = blocks[energy][:, idx]
+            basis_final += [basis[energy][i] for i in idx]
 
-        for energy in energy_blocks:
-            basis = energy_blocks[energy][1]
-            idx = np.lexsort(np.array([[b.num for b in basis]]))
-            reordered_matrix = energy_blocks[energy][0][idx]
-            reordered_matrix = reordered_matrix[:, idx]
-            energy_blocks[energy] = reordered_matrix, [basis[i] for i in idx]
+        return DensityMatrix(BSM(blocks), Basis(basis_final))
 
-        final_blocks = []
-        final_basis = []
-        for energy in sorted(energy_blocks.keys()):
-            final_blocks.append(energy_blocks[energy][0].astype(xp.complex64))
-            final_basis += energy_blocks[energy][1]
-
-        return DensityMatrix(BSM(final_blocks), Basis(final_basis))
 
     # @profile
     def ptrace_to_a_single_qbit(self, remaining_qbit):
