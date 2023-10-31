@@ -1,6 +1,5 @@
 import matplotlib.pyplot as plt
 import numpy as np
-from src.setup import use_gpu
 
 from src import density_matrix as DM
 from src.ket import canonical_basis
@@ -11,6 +10,7 @@ from src.simulation import run
 from numpy.testing import assert_almost_equal
 
 
+# this test cannot be done on the GPU because 'cupyx.scipy.sparse.linalg' has no attribute 'expm'
 class TestComprehensive:
 
     def test_pipeline(self):
