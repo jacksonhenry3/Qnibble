@@ -1,0 +1,1353 @@
+<?xml version="1.0" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg version="1.1" width="1200" height="1688" onload="init(evt)" viewBox="0 0 1200 1688" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:fg="http://github.com/jonhoo/inferno">
+    <!--Flame graph stack visualization. See https://github.com/brendangregg/FlameGraph for latest version, and http://www.brendangregg.com/flamegraphs.html for examples.-->
+    <!--NOTES: -->
+    <defs>
+        <linearGradient id="background" y1="0" y2="1" x1="0" x2="0">
+            <stop stop-color="#eeeeee" offset="5%"/>
+            <stop stop-color="#eeeeb0" offset="95%"/>
+        </linearGradient>
+    </defs>
+    <style type="text/css">
+text { font-family:monospace; font-size:16px }
+#title { text-anchor:middle; font-size:21px; }
+#matched { text-anchor:end; }
+#search { text-anchor:end; opacity:0.1; cursor:pointer; }
+#search:hover, #search.show { opacity:1; }
+#subtitle { text-anchor:middle; font-color:rgb(160,160,160); }
+#unzoom { cursor:pointer; }
+#frames > *:hover { stroke:black; stroke-width:0.5; cursor:pointer; }
+.hide { display:none; }
+.parent { opacity:0.5; }
+</style>
+    <script type="text/ecmascript"><![CDATA[
+        var nametype = 'Function:';
+        var fontsize = 16;
+        var fontwidth = 0.59;
+        var xpad = 10;
+        var inverted = true;
+        var searchcolor = 'rgb(230,0,230)';
+        var fluiddrawing = true;
+        var truncate_text_right = false;
+    ]]><![CDATA["use strict";
+var details, searchbtn, unzoombtn, matchedtxt, svg, searching, frames, known_font_width;
+function init(evt) {
+    details = document.getElementById("details").firstChild;
+    searchbtn = document.getElementById("search");
+    unzoombtn = document.getElementById("unzoom");
+    matchedtxt = document.getElementById("matched");
+    svg = document.getElementsByTagName("svg")[0];
+    frames = document.getElementById("frames");
+    known_font_width = get_monospace_width(frames);
+    total_samples = parseInt(frames.attributes.total_samples.value);
+    searching = 0;
+
+    // Use GET parameters to restore a flamegraph's state.
+    var restore_state = function() {
+        var params = get_params();
+        if (params.x && params.y)
+            zoom(find_group(document.querySelector('[*|x="' + params.x + '"][y="' + params.y + '"]')));
+        if (params.s)
+            search(params.s);
+    };
+
+    if (fluiddrawing) {
+        // Make width dynamic so the SVG fits its parent's width.
+        svg.removeAttribute("width");
+        // Edge requires us to have a viewBox that gets updated with size changes.
+        var isEdge = /Edge\/\d./i.test(navigator.userAgent);
+        if (!isEdge) {
+            svg.removeAttribute("viewBox");
+        }
+        var update_for_width_change = function() {
+            if (isEdge) {
+                svg.attributes.viewBox.value = "0 0 " + svg.width.baseVal.value + " " + svg.height.baseVal.value;
+            }
+
+            // Keep consistent padding on left and right of frames container.
+            frames.attributes.width.value = svg.width.baseVal.value - xpad * 2;
+
+            // Text truncation needs to be adjusted for the current width.
+            update_text_for_elements(frames.children);
+
+            // Keep search elements at a fixed distance from right edge.
+            var svgWidth = svg.width.baseVal.value;
+            searchbtn.attributes.x.value = svgWidth - xpad;
+            matchedtxt.attributes.x.value = svgWidth - xpad;
+        };
+        window.addEventListener('resize', function() {
+            update_for_width_change();
+        });
+        // This needs to be done asynchronously for Safari to work.
+        setTimeout(function() {
+            unzoom();
+            update_for_width_change();
+            restore_state();
+        }, 0);
+    } else {
+        restore_state();
+    }
+}
+// event listeners
+window.addEventListener("click", function(e) {
+    var target = find_group(e.target);
+    if (target) {
+        if (target.nodeName == "a") {
+            if (e.ctrlKey === false) return;
+            e.preventDefault();
+        }
+        if (target.classList.contains("parent")) unzoom();
+        zoom(target);
+
+        // set parameters for zoom state
+        var el = target.querySelector("rect");
+        if (el && el.attributes && el.attributes.y && el.attributes["fg:x"]) {
+            var params = get_params()
+            params.x = el.attributes["fg:x"].value;
+            params.y = el.attributes.y.value;
+            history.replaceState(null, null, parse_params(params));
+        }
+    }
+    else if (e.target.id == "unzoom") {
+        unzoom();
+
+        // remove zoom state
+        var params = get_params();
+        if (params.x) delete params.x;
+        if (params.y) delete params.y;
+        history.replaceState(null, null, parse_params(params));
+    }
+    else if (e.target.id == "search") search_prompt();
+}, false)
+// mouse-over for info
+// show
+window.addEventListener("mouseover", function(e) {
+    var target = find_group(e.target);
+    if (target) details.nodeValue = nametype + " " + g_to_text(target);
+}, false)
+// clear
+window.addEventListener("mouseout", function(e) {
+    var target = find_group(e.target);
+    if (target) details.nodeValue = ' ';
+}, false)
+// ctrl-F for search
+window.addEventListener("keydown",function (e) {
+    if (e.keyCode === 114 || (e.ctrlKey && e.keyCode === 70)) {
+        e.preventDefault();
+        search_prompt();
+    }
+}, false)
+// functions
+function get_params() {
+    var params = {};
+    var paramsarr = window.location.search.substr(1).split('&');
+    for (var i = 0; i < paramsarr.length; ++i) {
+        var tmp = paramsarr[i].split("=");
+        if (!tmp[0] || !tmp[1]) continue;
+        params[tmp[0]]  = decodeURIComponent(tmp[1]);
+    }
+    return params;
+}
+function parse_params(params) {
+    var uri = "?";
+    for (var key in params) {
+        uri += key + '=' + encodeURIComponent(params[key]) + '&';
+    }
+    if (uri.slice(-1) == "&")
+        uri = uri.substring(0, uri.length - 1);
+    if (uri == '?')
+        uri = window.location.href.split('?')[0];
+    return uri;
+}
+function find_child(node, selector) {
+    var children = node.querySelectorAll(selector);
+    if (children.length) return children[0];
+    return;
+}
+function find_group(node) {
+    var parent = node.parentElement;
+    if (!parent) return;
+    if (parent.id == "frames") return node;
+    return find_group(parent);
+}
+function orig_save(e, attr, val) {
+    if (e.attributes["fg:orig_" + attr] != undefined) return;
+    if (e.attributes[attr] == undefined) return;
+    if (val == undefined) val = e.attributes[attr].value;
+    e.setAttribute("fg:orig_" + attr, val);
+}
+function orig_load(e, attr) {
+    if (e.attributes["fg:orig_"+attr] == undefined) return;
+    e.attributes[attr].value = e.attributes["fg:orig_" + attr].value;
+    e.removeAttribute("fg:orig_" + attr);
+}
+function g_to_text(e) {
+    var text = find_child(e, "title").firstChild.nodeValue;
+    return (text)
+}
+function g_to_func(e) {
+    var func = g_to_text(e);
+    // if there's any manipulation we want to do to the function
+    // name before it's searched, do it here before returning.
+    return (func);
+}
+function get_monospace_width(frames) {
+    // Given the id="frames" element, return the width of text characters if
+    // this is a monospace font, otherwise return 0.
+    text = find_child(frames.children[0], "text");
+    originalContent = text.textContent;
+    text.textContent = "!";
+    bangWidth = text.getComputedTextLength();
+    text.textContent = "W";
+    wWidth = text.getComputedTextLength();
+    text.textContent = originalContent;
+    if (bangWidth === wWidth) {
+        return bangWidth;
+    } else {
+        return 0;
+    }
+}
+function update_text_for_elements(elements) {
+    // In order to render quickly in the browser, you want to do one pass of
+    // reading attributes, and one pass of mutating attributes. See
+    // https://web.dev/avoid-large-complex-layouts-and-layout-thrashing/ for details.
+
+    // Fall back to inefficient calculation, if we're variable-width font.
+    // TODO This should be optimized somehow too.
+    if (known_font_width === 0) {
+        for (var i = 0; i < elements.length; i++) {
+            update_text(elements[i]);
+        }
+        return;
+    }
+
+    var textElemNewAttributes = [];
+    for (var i = 0; i < elements.length; i++) {
+        var e = elements[i];
+        var r = find_child(e, "rect");
+        var t = find_child(e, "text");
+        var w = parseFloat(r.attributes.width.value) * frames.attributes.width.value / 100 - 3;
+        var txt = find_child(e, "title").textContent.replace(/\([^(]*\)$/,"");
+        var newX = format_percent((parseFloat(r.attributes.x.value) + (100 * 3 / frames.attributes.width.value)));
+
+        // Smaller than this size won't fit anything
+        if (w < 2 * known_font_width) {
+            textElemNewAttributes.push([newX, ""]);
+            continue;
+        }
+
+        // Fit in full text width
+        if (txt.length * known_font_width < w) {
+            textElemNewAttributes.push([newX, txt]);
+            continue;
+        }
+
+        var substringLength = Math.floor(w / known_font_width) - 2;
+        if (truncate_text_right) {
+            // Truncate the right side of the text.
+            textElemNewAttributes.push([newX, txt.substring(0, substringLength) + ".."]);
+            continue;
+        } else {
+            // Truncate the left side of the text.
+            textElemNewAttributes.push([newX, ".." + txt.substring(txt.length - substringLength, txt.length)]);
+            continue;
+        }
+    }
+
+    console.assert(textElemNewAttributes.length === elements.length, "Resize failed, please file a bug at https://github.com/jonhoo/inferno/");
+
+    // Now that we know new textContent, set it all in one go so we don't refresh a bazillion times.
+    for (var i = 0; i < elements.length; i++) {
+        var e = elements[i];
+        var values = textElemNewAttributes[i];
+        var t = find_child(e, "text");
+        t.attributes.x.value = values[0];
+        t.textContent = values[1];
+    }
+}
+
+function update_text(e) {
+    var r = find_child(e, "rect");
+    var t = find_child(e, "text");
+    var w = parseFloat(r.attributes.width.value) * frames.attributes.width.value / 100 - 3;
+    var txt = find_child(e, "title").textContent.replace(/\([^(]*\)$/,"");
+    t.attributes.x.value = format_percent((parseFloat(r.attributes.x.value) + (100 * 3 / frames.attributes.width.value)));
+
+    // Smaller than this size won't fit anything
+    if (w < 2 * fontsize * fontwidth) {
+        t.textContent = "";
+        return;
+    }
+    t.textContent = txt;
+    // Fit in full text width
+    if (t.getComputedTextLength() < w)
+        return;
+    if (truncate_text_right) {
+        // Truncate the right side of the text.
+        for (var x = txt.length - 2; x > 0; x--) {
+            if (t.getSubStringLength(0, x + 2) <= w) {
+                t.textContent = txt.substring(0, x) + "..";
+                return;
+            }
+        }
+    } else {
+        // Truncate the left side of the text.
+        for (var x = 2; x < txt.length; x++) {
+            if (t.getSubStringLength(x - 2, txt.length) <= w) {
+                t.textContent = ".." + txt.substring(x, txt.length);
+                return;
+            }
+        }
+    }
+    t.textContent = "";
+}
+// zoom
+function zoom_reset(e) {
+    if (e.tagName == "rect") {
+        e.attributes.x.value = format_percent(100 * parseInt(e.attributes["fg:x"].value) / total_samples);
+        e.attributes.width.value = format_percent(100 * parseInt(e.attributes["fg:w"].value) / total_samples);
+    }
+    if (e.childNodes == undefined) return;
+    for(var i = 0, c = e.childNodes; i < c.length; i++) {
+        zoom_reset(c[i]);
+    }
+}
+function zoom_child(e, x, zoomed_width_samples) {
+    if (e.tagName == "text") {
+        var parent_x = parseFloat(find_child(e.parentNode, "rect[x]").attributes.x.value);
+        e.attributes.x.value = format_percent(parent_x + (100 * 3 / frames.attributes.width.value));
+    } else if (e.tagName == "rect") {
+        e.attributes.x.value = format_percent(100 * (parseInt(e.attributes["fg:x"].value) - x) / zoomed_width_samples);
+        e.attributes.width.value = format_percent(100 * parseInt(e.attributes["fg:w"].value) / zoomed_width_samples);
+    }
+    if (e.childNodes == undefined) return;
+    for(var i = 0, c = e.childNodes; i < c.length; i++) {
+        zoom_child(c[i], x, zoomed_width_samples);
+    }
+}
+function zoom_parent(e) {
+    if (e.attributes) {
+        if (e.attributes.x != undefined) {
+            e.attributes.x.value = "0.0%";
+        }
+        if (e.attributes.width != undefined) {
+            e.attributes.width.value = "100.0%";
+        }
+    }
+    if (e.childNodes == undefined) return;
+    for(var i = 0, c = e.childNodes; i < c.length; i++) {
+        zoom_parent(c[i]);
+    }
+}
+function zoom(node) {
+    var attr = find_child(node, "rect").attributes;
+    var width = parseInt(attr["fg:w"].value);
+    var xmin = parseInt(attr["fg:x"].value);
+    var xmax = xmin + width;
+    var ymin = parseFloat(attr.y.value);
+    unzoombtn.classList.remove("hide");
+    var el = frames.children;
+    var to_update_text = [];
+    for (var i = 0; i < el.length; i++) {
+        var e = el[i];
+        var a = find_child(e, "rect").attributes;
+        var ex = parseInt(a["fg:x"].value);
+        var ew = parseInt(a["fg:w"].value);
+        // Is it an ancestor
+        if (!inverted) {
+            var upstack = parseFloat(a.y.value) > ymin;
+        } else {
+            var upstack = parseFloat(a.y.value) < ymin;
+        }
+        if (upstack) {
+            // Direct ancestor
+            if (ex <= xmin && (ex+ew) >= xmax) {
+                e.classList.add("parent");
+                zoom_parent(e);
+                to_update_text.push(e);
+            }
+            // not in current path
+            else
+                e.classList.add("hide");
+        }
+        // Children maybe
+        else {
+            // no common path
+            if (ex < xmin || ex >= xmax) {
+                e.classList.add("hide");
+            }
+            else {
+                zoom_child(e, xmin, width);
+                to_update_text.push(e);
+            }
+        }
+    }
+    update_text_for_elements(to_update_text);
+}
+function unzoom() {
+    unzoombtn.classList.add("hide");
+    var el = frames.children;
+    for(var i = 0; i < el.length; i++) {
+        el[i].classList.remove("parent");
+        el[i].classList.remove("hide");
+        zoom_reset(el[i]);
+    }
+    update_text_for_elements(el);
+}
+// search
+function reset_search() {
+    var el = document.querySelectorAll("#frames rect");
+    for (var i = 0; i < el.length; i++) {
+        orig_load(el[i], "fill")
+    }
+    var params = get_params();
+    delete params.s;
+    history.replaceState(null, null, parse_params(params));
+}
+function search_prompt() {
+    if (!searching) {
+        var term = prompt("Enter a search term (regexp " +
+            "allowed, eg: ^ext4_)", "");
+        if (term != null) {
+            search(term)
+        }
+    } else {
+        reset_search();
+        searching = 0;
+        searchbtn.classList.remove("show");
+        searchbtn.firstChild.nodeValue = "Search"
+        matchedtxt.classList.add("hide");
+        matchedtxt.firstChild.nodeValue = ""
+    }
+}
+function search(term) {
+    var re = new RegExp(term);
+    var el = frames.children;
+    var matches = new Object();
+    var maxwidth = 0;
+    for (var i = 0; i < el.length; i++) {
+        var e = el[i];
+        // Skip over frames which are either not visible, or below the zoomed-to frame
+        if (e.classList.contains("hide") || e.classList.contains("parent")) {
+            continue;
+        }
+        var func = g_to_func(e);
+        var rect = find_child(e, "rect");
+        if (func == null || rect == null)
+            continue;
+        // Save max width. Only works as we have a root frame
+        var w = parseInt(rect.attributes["fg:w"].value);
+        if (w > maxwidth)
+            maxwidth = w;
+        if (func.match(re)) {
+            // highlight
+            var x = parseInt(rect.attributes["fg:x"].value);
+            orig_save(rect, "fill");
+            rect.attributes.fill.value = searchcolor;
+            // remember matches
+            if (matches[x] == undefined) {
+                matches[x] = w;
+            } else {
+                if (w > matches[x]) {
+                    // overwrite with parent
+                    matches[x] = w;
+                }
+            }
+            searching = 1;
+        }
+    }
+    if (!searching)
+        return;
+    var params = get_params();
+    params.s = term;
+    history.replaceState(null, null, parse_params(params));
+
+    searchbtn.classList.add("show");
+    searchbtn.firstChild.nodeValue = "Reset Search";
+    // calculate percent matched, excluding vertical overlap
+    var count = 0;
+    var lastx = -1;
+    var lastw = 0;
+    var keys = Array();
+    for (k in matches) {
+        if (matches.hasOwnProperty(k))
+            keys.push(k);
+    }
+    // sort the matched frames by their x location
+    // ascending, then width descending
+    keys.sort(function(a, b){
+        return a - b;
+    });
+    // Step through frames saving only the biggest bottom-up frames
+    // thanks to the sort order. This relies on the tree property
+    // where children are always smaller than their parents.
+    for (var k in keys) {
+        var x = parseInt(keys[k]);
+        var w = matches[keys[k]];
+        if (x >= lastx + lastw) {
+            count += w;
+            lastx = x;
+            lastw = w;
+        }
+    }
+    // display matched percent
+    matchedtxt.classList.remove("hide");
+    var pct = 100 * count / maxwidth;
+    if (pct != 100) pct = pct.toFixed(1);
+    matchedtxt.firstChild.nodeValue = "Matched: " + pct + "%";
+}
+function format_percent(n) {
+    return n.toFixed(4) + "%";
+}
+]]></script>
+    <rect x="0" y="0" width="100%" height="1688" fill="url(#background)"/>
+    <text id="title" fill="rgb(0,0,0)" x="50.0000%" y="32.00">Peak Tracked Memory Usage (777.7 MiB), Reversed</text>
+    <text id="subtitle" x="50.0000%" y="64.00">Made with the Fil profiler. <a href="https://pythonspeed.com/fil/" style="text-decoration: underline;" target="_parent">Try it on your code!</a></text>
+    <text id="details" fill="rgb(0,0,0)" x="10" y="84.00"> </text>
+    <text id="unzoom" class="hide" fill="rgb(0,0,0)" x="10" y="32.00">Reset Zoom</text>
+    <text id="search" fill="rgb(0,0,0)" x="1190" y="32.00">Search</text>
+    <text id="matched" fill="rgb(0,0,0)" x="1190" y="1675.00"> </text>
+    <svg id="frames" x="10" width="1180" total_samples="807322598">
+        <g>
+            <title>&lt;frozen importlib._bootstrap&gt;:241 (_call_with_frames_removed) (2,815,706 bytes, 0.35%)</title>
+            <rect x="0.0202%" y="144" width="0.3488%" height="21" fill="rgb(255,241,241)" fg:x="162952" fg:w="2815706"/>
+            <text x="0.2702%" y="157.50"></text>
+        </g>
+        <g>
+            <title> (2,815,706 bytes, 0.35%)</title>
+            <rect x="0.0202%" y="166" width="0.3488%" height="21" fill="rgb(255,241,241)" fg:x="162952" fg:w="2815706"/>
+            <text x="0.2702%" y="179.50"></text>
+        </g>
+        <g>
+            <title>&lt;frozen importlib._bootstrap_external&gt;:1184 (exec_module) (1,805,587 bytes, 0.22%)</title>
+            <rect x="0.1453%" y="188" width="0.2237%" height="21" fill="rgb(255,242,242)" fg:x="1173071" fg:w="1805587"/>
+            <text x="0.3953%" y="201.50"></text>
+        </g>
+        <g>
+            <title> (1,805,587 bytes, 0.22%)</title>
+            <rect x="0.1453%" y="210" width="0.2237%" height="21" fill="rgb(255,242,242)" fg:x="1173071" fg:w="1805587"/>
+            <text x="0.3953%" y="223.50"></text>
+        </g>
+        <g>
+            <title>&lt;frozen importlib._bootstrap&gt;:688 (_load_unlocked) (1,805,587 bytes, 0.22%)</title>
+            <rect x="0.1453%" y="232" width="0.2237%" height="21" fill="rgb(255,242,242)" fg:x="1173071" fg:w="1805587"/>
+            <text x="0.3953%" y="245.50"></text>
+        </g>
+        <g>
+            <title> (1,805,587 bytes, 0.22%)</title>
+            <rect x="0.1453%" y="254" width="0.2237%" height="21" fill="rgb(255,242,242)" fg:x="1173071" fg:w="1805587"/>
+            <text x="0.3953%" y="267.50"></text>
+        </g>
+        <g>
+            <title>&lt;frozen importlib._bootstrap&gt;:1006 (_find_and_load_unlocked) (1,805,587 bytes, 0.22%)</title>
+            <rect x="0.1453%" y="276" width="0.2237%" height="21" fill="rgb(255,242,242)" fg:x="1173071" fg:w="1805587"/>
+            <text x="0.3953%" y="289.50"></text>
+        </g>
+        <g>
+            <title> (1,805,587 bytes, 0.22%)</title>
+            <rect x="0.1453%" y="298" width="0.2237%" height="21" fill="rgb(255,242,242)" fg:x="1173071" fg:w="1805587"/>
+            <text x="0.3953%" y="311.50"></text>
+        </g>
+        <g>
+            <title>&lt;frozen importlib._bootstrap&gt;:1027 (_find_and_load) (1,805,587 bytes, 0.22%)</title>
+            <rect x="0.1453%" y="320" width="0.2237%" height="21" fill="rgb(255,242,242)" fg:x="1173071" fg:w="1805587"/>
+            <text x="0.3953%" y="333.50"></text>
+        </g>
+        <g>
+            <title>from matplotlib import ( (1,708,585 bytes, 0.21%)</title>
+            <rect x="0.7963%" y="474" width="0.2116%" height="21" fill="rgb(255,243,243)" fg:x="6428362" fg:w="1708585"/>
+            <text x="1.0463%" y="487.50"></text>
+        </g>
+        <g>
+            <title>/home/jackson/miniconda3/envs/qnibble/lib/python3.10/site-packages/matplotlib/backend_bases.py:45 (&lt;module&gt;) (1,708,585 bytes, 0.21%)</title>
+            <rect x="0.7963%" y="496" width="0.2116%" height="21" fill="rgb(255,243,243)" fg:x="6428362" fg:w="1708585"/>
+            <text x="1.0463%" y="509.50"></text>
+        </g>
+        <g>
+            <title> (1,708,585 bytes, 0.21%)</title>
+            <rect x="0.7963%" y="518" width="0.2116%" height="21" fill="rgb(255,243,243)" fg:x="6428362" fg:w="1708585"/>
+            <text x="1.0463%" y="531.50"></text>
+        </g>
+        <g>
+            <title>&lt;frozen importlib._bootstrap&gt;:241 (_call_with_frames_removed) (1,708,585 bytes, 0.21%)</title>
+            <rect x="0.7963%" y="540" width="0.2116%" height="21" fill="rgb(255,243,243)" fg:x="6428362" fg:w="1708585"/>
+            <text x="1.0463%" y="553.50"></text>
+        </g>
+        <g>
+            <title> (1,708,585 bytes, 0.21%)</title>
+            <rect x="0.7963%" y="562" width="0.2116%" height="21" fill="rgb(255,243,243)" fg:x="6428362" fg:w="1708585"/>
+            <text x="1.0463%" y="575.50"></text>
+        </g>
+        <g>
+            <title>&lt;frozen importlib._bootstrap_external&gt;:883 (exec_module) (1,708,585 bytes, 0.21%)</title>
+            <rect x="0.7963%" y="584" width="0.2116%" height="21" fill="rgb(255,243,243)" fg:x="6428362" fg:w="1708585"/>
+            <text x="1.0463%" y="597.50"></text>
+        </g>
+        <g>
+            <title> (1,708,585 bytes, 0.21%)</title>
+            <rect x="0.7963%" y="606" width="0.2116%" height="21" fill="rgb(255,243,243)" fg:x="6428362" fg:w="1708585"/>
+            <text x="1.0463%" y="619.50"></text>
+        </g>
+        <g>
+            <title>&lt;frozen importlib._bootstrap&gt;:688 (_load_unlocked) (1,708,585 bytes, 0.21%)</title>
+            <rect x="0.7963%" y="628" width="0.2116%" height="21" fill="rgb(255,243,243)" fg:x="6428362" fg:w="1708585"/>
+            <text x="1.0463%" y="641.50"></text>
+        </g>
+        <g>
+            <title> (1,708,585 bytes, 0.21%)</title>
+            <rect x="0.7963%" y="650" width="0.2116%" height="21" fill="rgb(255,243,243)" fg:x="6428362" fg:w="1708585"/>
+            <text x="1.0463%" y="663.50"></text>
+        </g>
+        <g>
+            <title>&lt;frozen importlib._bootstrap&gt;:1006 (_find_and_load_unlocked) (1,708,585 bytes, 0.21%)</title>
+            <rect x="0.7963%" y="672" width="0.2116%" height="21" fill="rgb(255,243,243)" fg:x="6428362" fg:w="1708585"/>
+            <text x="1.0463%" y="685.50"></text>
+        </g>
+        <g>
+            <title> (1,708,585 bytes, 0.21%)</title>
+            <rect x="0.7963%" y="694" width="0.2116%" height="21" fill="rgb(255,243,243)" fg:x="6428362" fg:w="1708585"/>
+            <text x="1.0463%" y="707.50"></text>
+        </g>
+        <g>
+            <title>&lt;frozen importlib._bootstrap&gt;:1027 (_find_and_load) (1,708,585 bytes, 0.21%)</title>
+            <rect x="0.7963%" y="716" width="0.2116%" height="21" fill="rgb(255,243,243)" fg:x="6428362" fg:w="1708585"/>
+            <text x="1.0463%" y="729.50"></text>
+        </g>
+        <g>
+            <title>from matplotlib.backend_bases import MouseButton (1,708,585 bytes, 0.21%)</title>
+            <rect x="0.7963%" y="738" width="0.2116%" height="21" fill="rgb(255,243,243)" fg:x="6428362" fg:w="1708585"/>
+            <text x="1.0463%" y="751.50"></text>
+        </g>
+        <g>
+            <title>/home/jackson/miniconda3/envs/qnibble/lib/python3.10/site-packages/matplotlib/contour.py:13 (&lt;module&gt;) (1,708,585 bytes, 0.21%)</title>
+            <rect x="0.7963%" y="760" width="0.2116%" height="21" fill="rgb(255,243,243)" fg:x="6428362" fg:w="1708585"/>
+            <text x="1.0463%" y="773.50"></text>
+        </g>
+        <g>
+            <title> (1,708,585 bytes, 0.21%)</title>
+            <rect x="0.7963%" y="782" width="0.2116%" height="21" fill="rgb(255,243,243)" fg:x="6428362" fg:w="1708585"/>
+            <text x="1.0463%" y="795.50"></text>
+        </g>
+        <g>
+            <title>&lt;frozen importlib._bootstrap&gt;:241 (_call_with_frames_removed) (1,708,585 bytes, 0.21%)</title>
+            <rect x="0.7963%" y="804" width="0.2116%" height="21" fill="rgb(255,243,243)" fg:x="6428362" fg:w="1708585"/>
+            <text x="1.0463%" y="817.50"></text>
+        </g>
+        <g>
+            <title> (1,708,585 bytes, 0.21%)</title>
+            <rect x="0.7963%" y="826" width="0.2116%" height="21" fill="rgb(255,243,243)" fg:x="6428362" fg:w="1708585"/>
+            <text x="1.0463%" y="839.50"></text>
+        </g>
+        <g>
+            <title>&lt;frozen importlib._bootstrap_external&gt;:883 (exec_module) (1,708,585 bytes, 0.21%)</title>
+            <rect x="0.7963%" y="848" width="0.2116%" height="21" fill="rgb(255,243,243)" fg:x="6428362" fg:w="1708585"/>
+            <text x="1.0463%" y="861.50"></text>
+        </g>
+        <g>
+            <title> (1,708,585 bytes, 0.21%)</title>
+            <rect x="0.7963%" y="870" width="0.2116%" height="21" fill="rgb(255,243,243)" fg:x="6428362" fg:w="1708585"/>
+            <text x="1.0463%" y="883.50"></text>
+        </g>
+        <g>
+            <title>&lt;frozen importlib._bootstrap&gt;:688 (_load_unlocked) (1,708,585 bytes, 0.21%)</title>
+            <rect x="0.7963%" y="892" width="0.2116%" height="21" fill="rgb(255,243,243)" fg:x="6428362" fg:w="1708585"/>
+            <text x="1.0463%" y="905.50"></text>
+        </g>
+        <g>
+            <title> (1,708,585 bytes, 0.21%)</title>
+            <rect x="0.7963%" y="914" width="0.2116%" height="21" fill="rgb(255,243,243)" fg:x="6428362" fg:w="1708585"/>
+            <text x="1.0463%" y="927.50"></text>
+        </g>
+        <g>
+            <title>&lt;frozen importlib._bootstrap&gt;:1006 (_find_and_load_unlocked) (1,708,585 bytes, 0.21%)</title>
+            <rect x="0.7963%" y="936" width="0.2116%" height="21" fill="rgb(255,243,243)" fg:x="6428362" fg:w="1708585"/>
+            <text x="1.0463%" y="949.50"></text>
+        </g>
+        <g>
+            <title> (1,708,585 bytes, 0.21%)</title>
+            <rect x="0.7963%" y="958" width="0.2116%" height="21" fill="rgb(255,243,243)" fg:x="6428362" fg:w="1708585"/>
+            <text x="1.0463%" y="971.50"></text>
+        </g>
+        <g>
+            <title>&lt;frozen importlib._bootstrap&gt;:1027 (_find_and_load) (1,708,585 bytes, 0.21%)</title>
+            <rect x="0.7963%" y="980" width="0.2116%" height="21" fill="rgb(255,243,243)" fg:x="6428362" fg:w="1708585"/>
+            <text x="1.0463%" y="993.50"></text>
+        </g>
+        <g>
+            <title> (1,708,585 bytes, 0.21%)</title>
+            <rect x="0.7963%" y="1002" width="0.2116%" height="21" fill="rgb(255,243,243)" fg:x="6428362" fg:w="1708585"/>
+            <text x="1.0463%" y="1015.50"></text>
+        </g>
+        <g>
+            <title>&lt;frozen importlib._bootstrap&gt;:241 (_call_with_frames_removed) (1,708,585 bytes, 0.21%)</title>
+            <rect x="0.7963%" y="1024" width="0.2116%" height="21" fill="rgb(255,243,243)" fg:x="6428362" fg:w="1708585"/>
+            <text x="1.0463%" y="1037.50"></text>
+        </g>
+        <g>
+            <title> (1,708,585 bytes, 0.21%)</title>
+            <rect x="0.7963%" y="1046" width="0.2116%" height="21" fill="rgb(255,243,243)" fg:x="6428362" fg:w="1708585"/>
+            <text x="1.0463%" y="1059.50"></text>
+        </g>
+        <g>
+            <title>&lt;frozen importlib._bootstrap&gt;:1078 (_handle_fromlist) (1,708,585 bytes, 0.21%)</title>
+            <rect x="0.7963%" y="1068" width="0.2116%" height="21" fill="rgb(255,243,243)" fg:x="6428362" fg:w="1708585"/>
+            <text x="1.0463%" y="1081.50"></text>
+        </g>
+        <g>
+            <title>from matplotlib import _api, cbook, collections, cm, colors, contour, ticker (1,708,585 bytes, 0.21%)</title>
+            <rect x="0.7963%" y="1090" width="0.2116%" height="21" fill="rgb(255,243,243)" fg:x="6428362" fg:w="1708585"/>
+            <text x="1.0463%" y="1103.50"></text>
+        </g>
+        <g>
+            <title>/home/jackson/miniconda3/envs/qnibble/lib/python3.10/site-packages/matplotlib/colorbar.py:19 (&lt;module&gt;) (1,708,585 bytes, 0.21%)</title>
+            <rect x="0.7963%" y="1112" width="0.2116%" height="21" fill="rgb(255,243,243)" fg:x="6428362" fg:w="1708585"/>
+            <text x="1.0463%" y="1125.50"></text>
+        </g>
+        <g>
+            <title> (1,708,585 bytes, 0.21%)</title>
+            <rect x="0.7963%" y="1134" width="0.2116%" height="21" fill="rgb(255,243,243)" fg:x="6428362" fg:w="1708585"/>
+            <text x="1.0463%" y="1147.50"></text>
+        </g>
+        <g>
+            <title>&lt;frozen importlib._bootstrap&gt;:241 (_call_with_frames_removed) (1,708,585 bytes, 0.21%)</title>
+            <rect x="0.7963%" y="1156" width="0.2116%" height="21" fill="rgb(255,243,243)" fg:x="6428362" fg:w="1708585"/>
+            <text x="1.0463%" y="1169.50"></text>
+        </g>
+        <g>
+            <title> (1,708,585 bytes, 0.21%)</title>
+            <rect x="0.7963%" y="1178" width="0.2116%" height="21" fill="rgb(255,243,243)" fg:x="6428362" fg:w="1708585"/>
+            <text x="1.0463%" y="1191.50"></text>
+        </g>
+        <g>
+            <title>&lt;frozen importlib._bootstrap_external&gt;:883 (exec_module) (1,708,585 bytes, 0.21%)</title>
+            <rect x="0.7963%" y="1200" width="0.2116%" height="21" fill="rgb(255,243,243)" fg:x="6428362" fg:w="1708585"/>
+            <text x="1.0463%" y="1213.50"></text>
+        </g>
+        <g>
+            <title> (1,708,585 bytes, 0.21%)</title>
+            <rect x="0.7963%" y="1222" width="0.2116%" height="21" fill="rgb(255,243,243)" fg:x="6428362" fg:w="1708585"/>
+            <text x="1.0463%" y="1235.50"></text>
+        </g>
+        <g>
+            <title>&lt;frozen importlib._bootstrap&gt;:688 (_load_unlocked) (1,708,585 bytes, 0.21%)</title>
+            <rect x="0.7963%" y="1244" width="0.2116%" height="21" fill="rgb(255,243,243)" fg:x="6428362" fg:w="1708585"/>
+            <text x="1.0463%" y="1257.50"></text>
+        </g>
+        <g>
+            <title> (1,708,585 bytes, 0.21%)</title>
+            <rect x="0.7963%" y="1266" width="0.2116%" height="21" fill="rgb(255,243,243)" fg:x="6428362" fg:w="1708585"/>
+            <text x="1.0463%" y="1279.50"></text>
+        </g>
+        <g>
+            <title>&lt;frozen importlib._bootstrap&gt;:1006 (_find_and_load_unlocked) (1,708,585 bytes, 0.21%)</title>
+            <rect x="0.7963%" y="1288" width="0.2116%" height="21" fill="rgb(255,243,243)" fg:x="6428362" fg:w="1708585"/>
+            <text x="1.0463%" y="1301.50"></text>
+        </g>
+        <g>
+            <title> (1,708,585 bytes, 0.21%)</title>
+            <rect x="0.7963%" y="1310" width="0.2116%" height="21" fill="rgb(255,243,243)" fg:x="6428362" fg:w="1708585"/>
+            <text x="1.0463%" y="1323.50"></text>
+        </g>
+        <g>
+            <title>&lt;frozen importlib._bootstrap&gt;:1027 (_find_and_load) (1,708,585 bytes, 0.21%)</title>
+            <rect x="0.7963%" y="1332" width="0.2116%" height="21" fill="rgb(255,243,243)" fg:x="6428362" fg:w="1708585"/>
+            <text x="1.0463%" y="1345.50"></text>
+        </g>
+        <g>
+            <title>import matplotlib.colorbar (1,708,585 bytes, 0.21%)</title>
+            <rect x="0.7963%" y="1354" width="0.2116%" height="21" fill="rgb(255,243,243)" fg:x="6428362" fg:w="1708585"/>
+            <text x="1.0463%" y="1367.50"></text>
+        </g>
+        <g>
+            <title>/home/jackson/miniconda3/envs/qnibble/lib/python3.10/site-packages/matplotlib/pyplot.py:52 (&lt;module&gt;) (1,708,585 bytes, 0.21%)</title>
+            <rect x="0.7963%" y="1376" width="0.2116%" height="21" fill="rgb(255,243,243)" fg:x="6428362" fg:w="1708585"/>
+            <text x="1.0463%" y="1389.50"></text>
+        </g>
+        <g>
+            <title> (1,708,585 bytes, 0.21%)</title>
+            <rect x="0.7963%" y="1398" width="0.2116%" height="21" fill="rgb(255,243,243)" fg:x="6428362" fg:w="1708585"/>
+            <text x="1.0463%" y="1411.50"></text>
+        </g>
+        <g>
+            <title>&lt;frozen importlib._bootstrap&gt;:241 (_call_with_frames_removed) (1,708,585 bytes, 0.21%)</title>
+            <rect x="0.7963%" y="1420" width="0.2116%" height="21" fill="rgb(255,243,243)" fg:x="6428362" fg:w="1708585"/>
+            <text x="1.0463%" y="1433.50"></text>
+        </g>
+        <g>
+            <title> (1,708,585 bytes, 0.21%)</title>
+            <rect x="0.7963%" y="1442" width="0.2116%" height="21" fill="rgb(255,243,243)" fg:x="6428362" fg:w="1708585"/>
+            <text x="1.0463%" y="1455.50"></text>
+        </g>
+        <g>
+            <title>&lt;frozen importlib._bootstrap_external&gt;:883 (exec_module) (1,708,585 bytes, 0.21%)</title>
+            <rect x="0.7963%" y="1464" width="0.2116%" height="21" fill="rgb(255,243,243)" fg:x="6428362" fg:w="1708585"/>
+            <text x="1.0463%" y="1477.50"></text>
+        </g>
+        <g>
+            <title> (1,708,585 bytes, 0.21%)</title>
+            <rect x="0.7963%" y="1486" width="0.2116%" height="21" fill="rgb(255,243,243)" fg:x="6428362" fg:w="1708585"/>
+            <text x="1.0463%" y="1499.50"></text>
+        </g>
+        <g>
+            <title>&lt;frozen importlib._bootstrap&gt;:688 (_load_unlocked) (1,708,585 bytes, 0.21%)</title>
+            <rect x="0.7963%" y="1508" width="0.2116%" height="21" fill="rgb(255,243,243)" fg:x="6428362" fg:w="1708585"/>
+            <text x="1.0463%" y="1521.50"></text>
+        </g>
+        <g>
+            <title> (1,708,585 bytes, 0.21%)</title>
+            <rect x="0.7963%" y="1530" width="0.2116%" height="21" fill="rgb(255,243,243)" fg:x="6428362" fg:w="1708585"/>
+            <text x="1.0463%" y="1543.50"></text>
+        </g>
+        <g>
+            <title>&lt;frozen importlib._bootstrap&gt;:1006 (_find_and_load_unlocked) (1,708,585 bytes, 0.21%)</title>
+            <rect x="0.7963%" y="1552" width="0.2116%" height="21" fill="rgb(255,243,243)" fg:x="6428362" fg:w="1708585"/>
+            <text x="1.0463%" y="1565.50"></text>
+        </g>
+        <g>
+            <title> (1,708,585 bytes, 0.21%)</title>
+            <rect x="0.7963%" y="1574" width="0.2116%" height="21" fill="rgb(255,243,243)" fg:x="6428362" fg:w="1708585"/>
+            <text x="1.0463%" y="1587.50"></text>
+        </g>
+        <g>
+            <title>&lt;frozen importlib._bootstrap&gt;:1027 (_find_and_load) (1,708,585 bytes, 0.21%)</title>
+            <rect x="0.7963%" y="1596" width="0.2116%" height="21" fill="rgb(255,243,243)" fg:x="6428362" fg:w="1708585"/>
+            <text x="1.0463%" y="1609.50"></text>
+        </g>
+        <g>
+            <title>import matplotlib.pyplot as plt (1,708,585 bytes, 0.21%)</title>
+            <rect x="0.7963%" y="1618" width="0.2116%" height="21" fill="rgb(255,243,243)" fg:x="6428362" fg:w="1708585"/>
+            <text x="1.0463%" y="1631.50"></text>
+        </g>
+        <g>
+            <title>Scripts/PerformanceTesting.py:11 (&lt;module&gt;) (1,708,585 bytes, 0.21%)</title>
+            <rect x="0.7963%" y="1640" width="0.2116%" height="21" fill="rgb(255,243,243)" fg:x="6428362" fg:w="1708585"/>
+            <text x="1.0463%" y="1653.50"></text>
+        </g>
+        <g>
+            <title>&lt;frozen importlib._bootstrap&gt;:1078 (_handle_fromlist) (5,838,230 bytes, 0.72%)</title>
+            <rect x="0.4037%" y="452" width="0.7232%" height="21" fill="rgb(255,237,237)" fg:x="3259459" fg:w="5838230"/>
+            <text x="0.6537%" y="465.50"></text>
+        </g>
+        <g>
+            <title> (6,060,423 bytes, 0.75%)</title>
+            <rect x="0.3894%" y="386" width="0.7507%" height="21" fill="rgb(255,237,237)" fg:x="3143478" fg:w="6060423"/>
+            <text x="0.6394%" y="399.50"></text>
+        </g>
+        <g>
+            <title>&lt;frozen importlib._bootstrap&gt;:241 (_call_with_frames_removed) (5,944,442 bytes, 0.74%)</title>
+            <rect x="0.4037%" y="408" width="0.7363%" height="21" fill="rgb(255,237,237)" fg:x="3259459" fg:w="5944442"/>
+            <text x="0.6537%" y="421.50"></text>
+        </g>
+        <g>
+            <title> (5,944,442 bytes, 0.74%)</title>
+            <rect x="0.4037%" y="430" width="0.7363%" height="21" fill="rgb(255,237,237)" fg:x="3259459" fg:w="5944442"/>
+            <text x="0.6537%" y="443.50"></text>
+        </g>
+        <g>
+            <title>&lt;frozen importlib._bootstrap_external&gt;:672 (_compile_bytecode) (18,498,007 bytes, 2.29%)</title>
+            <rect x="0.3860%" y="144" width="2.2913%" height="21" fill="rgb(255,227,227)" fg:x="3116261" fg:w="18498007"/>
+            <text x="0.6360%" y="157.50"></text>
+        </g>
+        <g>
+            <title> (18,498,007 bytes, 2.29%)</title>
+            <rect x="0.3860%" y="166" width="2.2913%" height="21" fill="rgb(255,227,227)" fg:x="3116261" fg:w="18498007"/>
+            <text x="0.6360%" y="179.50"></text>
+        </g>
+        <g>
+            <title>&lt;frozen importlib._bootstrap_external&gt;:1012 (get_code) (18,498,007 bytes, 2.29%)</title>
+            <rect x="0.3860%" y="188" width="2.2913%" height="21" fill="rgb(255,227,227)" fg:x="3116261" fg:w="18498007"/>
+            <text x="0.6360%" y="201.50"></text>
+        </g>
+        <g>
+            <title> (18,498,007 bytes, 2.29%)</title>
+            <rect x="0.3860%" y="210" width="2.2913%" height="21" fill="rgb(255,227,227)" fg:x="3116261" fg:w="18498007"/>
+            <text x="0.6360%" y="223.50"></text>
+        </g>
+        <g>
+            <title>&lt;frozen importlib._bootstrap_external&gt;:879 (exec_module) (18,498,007 bytes, 2.29%)</title>
+            <rect x="0.3860%" y="232" width="2.2913%" height="21" fill="rgb(255,227,227)" fg:x="3116261" fg:w="18498007"/>
+            <text x="0.6360%" y="245.50"></text>
+        </g>
+        <g>
+            <title> (18,498,007 bytes, 2.29%)</title>
+            <rect x="0.3860%" y="254" width="2.2913%" height="21" fill="rgb(255,227,227)" fg:x="3116261" fg:w="18498007"/>
+            <text x="0.6360%" y="267.50"></text>
+        </g>
+        <g>
+            <title>&lt;frozen importlib._bootstrap&gt;:688 (_load_unlocked) (18,498,007 bytes, 2.29%)</title>
+            <rect x="0.3860%" y="276" width="2.2913%" height="21" fill="rgb(255,227,227)" fg:x="3116261" fg:w="18498007"/>
+            <text x="0.6360%" y="289.50"></text>
+        </g>
+        <g>
+            <title> (18,498,007 bytes, 2.29%)</title>
+            <rect x="0.3860%" y="298" width="2.2913%" height="21" fill="rgb(255,227,227)" fg:x="3116261" fg:w="18498007"/>
+            <text x="0.6360%" y="311.50"></text>
+        </g>
+        <g>
+            <title>&lt;frozen importlib._bootstrap&gt;:1006 (_find_and_load_unlocked) (18,498,007 bytes, 2.29%)</title>
+            <rect x="0.3860%" y="320" width="2.2913%" height="21" fill="rgb(255,227,227)" fg:x="3116261" fg:w="18498007"/>
+            <text x="0.6360%" y="333.50"></text>
+        </g>
+        <g>
+            <title> (18,498,007 bytes, 2.29%)</title>
+            <rect x="0.3860%" y="342" width="2.2913%" height="21" fill="rgb(255,227,227)" fg:x="3116261" fg:w="18498007"/>
+            <text x="0.6360%" y="355.50"></text>
+        </g>
+        <g>
+            <title>&lt;frozen importlib._bootstrap&gt;:1027 (_find_and_load) (18,498,007 bytes, 2.29%)</title>
+            <rect x="0.3860%" y="364" width="2.2913%" height="21" fill="rgb(255,227,227)" fg:x="3116261" fg:w="18498007"/>
+            <text x="0.6360%" y="377.50"></text>
+        </g>
+        <g>
+            <title> (21,625,436 bytes, 2.68%)</title>
+            <rect x="0.0002%" y="122" width="2.6787%" height="21" fill="rgb(255,225,225)" fg:x="1784" fg:w="21625436"/>
+            <text x="0.2502%" y="135.50">..</text>
+        </g>
+        <g>
+            <title>        res = zeros((n, n), v.dtype) (21,634,528 bytes, 2.68%)</title>
+            <rect x="3.5486%" y="122" width="2.6798%" height="21" fill="rgb(255,225,225)" fg:x="28648283" fg:w="21634528"/>
+            <text x="3.7986%" y="135.50">..</text>
+        </g>
+        <g>
+            <title>/home/jackson/miniconda3/envs/qnibble/lib/python3.10/site-packages/numpy/lib/twodim_base.py:299 (diag) (21,634,528 bytes, 2.68%)</title>
+            <rect x="3.5486%" y="144" width="2.6798%" height="21" fill="rgb(255,225,225)" fg:x="28648283" fg:w="21634528"/>
+            <text x="3.7986%" y="157.50">/..</text>
+        </g>
+        <g>
+            <title> (21,634,528 bytes, 2.68%)</title>
+            <rect x="3.5486%" y="166" width="2.6798%" height="21" fill="rgb(255,225,225)" fg:x="28648283" fg:w="21634528"/>
+            <text x="3.7986%" y="179.50">..</text>
+        </g>
+        <g>
+            <title>&lt;__array_function__ internals&gt;:200 (diag) (21,634,528 bytes, 2.68%)</title>
+            <rect x="3.5486%" y="188" width="2.6798%" height="21" fill="rgb(255,225,225)" fg:x="28648283" fg:w="21634528"/>
+            <text x="3.7986%" y="201.50">&lt;..</text>
+        </g>
+        <g>
+            <title>        result.append(np.diag(data[index:index + block_size])) (21,634,528 bytes, 2.68%)</title>
+            <rect x="3.5486%" y="210" width="2.6798%" height="21" fill="rgb(255,225,225)" fg:x="28648283" fg:w="21634528"/>
+            <text x="3.7986%" y="223.50">..</text>
+        </g>
+        <g>
+            <title>/mnt/c/Users/jacks/Documents/GitHub/Qnibble/src/density_matrix.py:346 (n_thermal_qbits) (21,634,528 bytes, 2.68%)</title>
+            <rect x="3.5486%" y="232" width="2.6798%" height="21" fill="rgb(255,225,225)" fg:x="28648283" fg:w="21634528"/>
+            <text x="3.7986%" y="245.50">/..</text>
+        </g>
+        <g>
+            <title>system = DM.n_thermal_qbits(pops) (21,634,528 bytes, 2.68%)</title>
+            <rect x="3.5486%" y="254" width="2.6798%" height="21" fill="rgb(255,225,225)" fg:x="28648283" fg:w="21634528"/>
+            <text x="3.7986%" y="267.50">..</text>
+        </g>
+        <g>
+            <title>Scripts/PerformanceTesting.py:30 (&lt;module&gt;) (21,634,528 bytes, 2.68%)</title>
+            <rect x="3.5486%" y="276" width="2.6798%" height="21" fill="rgb(255,225,225)" fg:x="28648283" fg:w="21634528"/>
+            <text x="3.7986%" y="289.50">S..</text>
+        </g>
+        <g>
+            <title>        return BlockSparseMatrix([b.conj().T for b in self.blocks]) (43,270,720 bytes, 5.36%)</title>
+            <rect x="6.2321%" y="122" width="5.3598%" height="21" fill="rgb(255,215,215)" fg:x="50313003" fg:w="43270720"/>
+            <text x="6.4821%" y="135.50">   ..</text>
+        </g>
+        <g>
+            <title>/mnt/c/Users/jacks/Documents/GitHub/Qnibble/src/Block_Sparse_Matrix.py:74 (&lt;listcomp&gt;) (43,270,720 bytes, 5.36%)</title>
+            <rect x="6.2321%" y="144" width="5.3598%" height="21" fill="rgb(255,215,215)" fg:x="50313003" fg:w="43270720"/>
+            <text x="6.4821%" y="157.50">/mnt..</text>
+        </g>
+        <g>
+            <title>        return BlockSparseMatrix([b.conj().T for b in self.blocks]) (43,270,720 bytes, 5.36%)</title>
+            <rect x="6.2321%" y="166" width="5.3598%" height="21" fill="rgb(255,215,215)" fg:x="50313003" fg:w="43270720"/>
+            <text x="6.4821%" y="179.50">   ..</text>
+        </g>
+        <g>
+            <title>/mnt/c/Users/jacks/Documents/GitHub/Qnibble/src/Block_Sparse_Matrix.py:74 (H) (43,270,720 bytes, 5.36%)</title>
+            <rect x="6.2321%" y="188" width="5.3598%" height="21" fill="rgb(255,215,215)" fg:x="50313003" fg:w="43270720"/>
+            <text x="6.4821%" y="201.50">/mnt..</text>
+        </g>
+        <g>
+            <title>        return DensityMatrix(self._data.H, self._basis) (43,270,720 bytes, 5.36%)</title>
+            <rect x="6.2321%" y="210" width="5.3598%" height="21" fill="rgb(255,215,215)" fg:x="50313003" fg:w="43270720"/>
+            <text x="6.4821%" y="223.50">   ..</text>
+        </g>
+        <g>
+            <title>/mnt/c/Users/jacks/Documents/GitHub/Qnibble/src/density_matrix.py:233 (H) (43,270,720 bytes, 5.36%)</title>
+            <rect x="6.2321%" y="232" width="5.3598%" height="21" fill="rgb(255,215,215)" fg:x="50313003" fg:w="43270720"/>
+            <text x="6.4821%" y="245.50">/mnt..</text>
+        </g>
+        <g>
+            <title>    dm = dm * Unitary.H (43,270,720 bytes, 5.36%)</title>
+            <rect x="6.2321%" y="254" width="5.3598%" height="21" fill="rgb(255,215,215)" fg:x="50313003" fg:w="43270720"/>
+            <text x="6.4821%" y="267.50">   ..</text>
+        </g>
+        <g>
+            <title>/mnt/c/Users/jacks/Documents/GitHub/Qnibble/src/simulation.py:96 (step) (43,270,720 bytes, 5.36%)</title>
+            <rect x="6.2321%" y="276" width="5.3598%" height="21" fill="rgb(255,215,215)" fg:x="50313003" fg:w="43270720"/>
+            <text x="6.4821%" y="289.50">/mnt..</text>
+        </g>
+        <g>
+            <title>        dm = step(dm, order, U, not generate_random_unitary) (43,270,720 bytes, 5.36%)</title>
+            <rect x="6.2321%" y="298" width="5.3598%" height="21" fill="rgb(255,215,215)" fg:x="50313003" fg:w="43270720"/>
+            <text x="6.4821%" y="311.50">   ..</text>
+        </g>
+        <g>
+            <title>/mnt/c/Users/jacks/Documents/GitHub/Qnibble/src/simulation.py:71 (run) (43,270,720 bytes, 5.36%)</title>
+            <rect x="6.2321%" y="320" width="5.3598%" height="21" fill="rgb(255,215,215)" fg:x="50313003" fg:w="43270720"/>
+            <text x="6.4821%" y="333.50">/mnt..</text>
+        </g>
+        <g>
+            <title>data, result = sim.run(system, (43,270,720 bytes, 5.36%)</title>
+            <rect x="6.2321%" y="342" width="5.3598%" height="21" fill="rgb(255,215,215)" fg:x="50313003" fg:w="43270720"/>
+            <text x="6.4821%" y="355.50">dat..</text>
+        </g>
+        <g>
+            <title>Scripts/PerformanceTesting.py:44 (&lt;module&gt;) (43,270,720 bytes, 5.36%)</title>
+            <rect x="6.2321%" y="364" width="5.3598%" height="21" fill="rgb(255,215,215)" fg:x="50313003" fg:w="43270720"/>
+            <text x="6.4821%" y="377.50">Scri..</text>
+        </g>
+        <g>
+            <title>        return Ket((self.num &lt;&lt; other.num_qbit) + other.num, self.num_qbit + other.num_qbit) (3,649,200 bytes, 0.45%)</title>
+            <rect x="11.6408%" y="122" width="0.4520%" height="21" fill="rgb(255,239,239)" fg:x="93978955" fg:w="3649200"/>
+            <text x="11.8908%" y="135.50"></text>
+        </g>
+        <g>
+            <title>/mnt/c/Users/jacks/Documents/GitHub/Qnibble/src/ket.py:29 (__add__) (3,649,200 bytes, 0.45%)</title>
+            <rect x="11.6408%" y="144" width="0.4520%" height="21" fill="rgb(255,239,239)" fg:x="93978955" fg:w="3649200"/>
+            <text x="11.8908%" y="157.50"></text>
+        </g>
+        <g>
+            <title>            res = Basis((i + j for i in res for j in other)) (3,649,200 bytes, 0.45%)</title>
+            <rect x="11.6408%" y="166" width="0.4520%" height="21" fill="rgb(255,239,239)" fg:x="93978955" fg:w="3649200"/>
+            <text x="11.8908%" y="179.50"></text>
+        </g>
+        <g>
+            <title>/mnt/c/Users/jacks/Documents/GitHub/Qnibble/src/ket.py:51 (&lt;genexpr&gt;) (3,649,200 bytes, 0.45%)</title>
+            <rect x="11.6408%" y="188" width="0.4520%" height="21" fill="rgb(255,239,239)" fg:x="93978955" fg:w="3649200"/>
+            <text x="11.8908%" y="201.50"></text>
+        </g>
+        <g>
+            <title>            res = Basis((i + j for i in res for j in other)) (3,649,200 bytes, 0.45%)</title>
+            <rect x="11.6408%" y="210" width="0.4520%" height="21" fill="rgb(255,239,239)" fg:x="93978955" fg:w="3649200"/>
+            <text x="11.8908%" y="223.50"></text>
+        </g>
+        <g>
+            <title>/mnt/c/Users/jacks/Documents/GitHub/Qnibble/src/ket.py:51 (tensor) (3,649,200 bytes, 0.45%)</title>
+            <rect x="11.6408%" y="232" width="0.4520%" height="21" fill="rgb(255,239,239)" fg:x="93978955" fg:w="3649200"/>
+            <text x="11.8908%" y="245.50"></text>
+        </g>
+        <g>
+            <title>                result_sub_space_basis = self_sub_space_basis.tensor(other_sub_space_basis) (3,649,200 bytes, 0.45%)</title>
+            <rect x="11.6408%" y="254" width="0.4520%" height="21" fill="rgb(255,239,239)" fg:x="93978955" fg:w="3649200"/>
+            <text x="11.8908%" y="267.50"></text>
+        </g>
+        <g>
+            <title>/mnt/c/Users/jacks/Documents/GitHub/Qnibble/src/density_matrix.py:138 (tensor) (3,649,200 bytes, 0.45%)</title>
+            <rect x="11.6408%" y="276" width="0.4520%" height="21" fill="rgb(255,239,239)" fg:x="93978955" fg:w="3649200"/>
+            <text x="11.8908%" y="289.50"></text>
+        </g>
+        <g>
+            <title>        result = result.tensor(dm) (3,649,200 bytes, 0.45%)</title>
+            <rect x="11.6408%" y="298" width="0.4520%" height="21" fill="rgb(255,239,239)" fg:x="93978955" fg:w="3649200"/>
+            <text x="11.8908%" y="311.50"></text>
+        </g>
+        <g>
+            <title>/mnt/c/Users/jacks/Documents/GitHub/Qnibble/src/density_matrix.py:301 (tensor) (3,649,200 bytes, 0.45%)</title>
+            <rect x="11.6408%" y="320" width="0.4520%" height="21" fill="rgb(255,239,239)" fg:x="93978955" fg:w="3649200"/>
+            <text x="11.8908%" y="333.50"></text>
+        </g>
+        <g>
+            <title>    piece = DM.tensor([sub_unitary if j == unitary_index else identity for j in range(num_qbits // chunk_size)]) (3,649,200 bytes, 0.45%)</title>
+            <rect x="11.6408%" y="342" width="0.4520%" height="21" fill="rgb(255,239,239)" fg:x="93978955" fg:w="3649200"/>
+            <text x="11.8908%" y="355.50"></text>
+        </g>
+        <g>
+            <title>Scripts/PerformanceTesting.py:39 (&lt;module&gt;) (3,649,200 bytes, 0.45%)</title>
+            <rect x="11.6408%" y="364" width="0.4520%" height="21" fill="rgb(255,239,239)" fg:x="93978955" fg:w="3649200"/>
+            <text x="11.8908%" y="377.50"></text>
+        </g>
+        <g>
+            <title>        return Ket((self.num &lt;&lt; other.num_qbit) + other.num, self.num_qbit + other.num_qbit) (4,986,752 bytes, 0.62%)</title>
+            <rect x="12.1919%" y="166" width="0.6177%" height="21" fill="rgb(255,238,238)" fg:x="98427610" fg:w="4986752"/>
+            <text x="12.4419%" y="179.50"></text>
+        </g>
+        <g>
+            <title>/mnt/c/Users/jacks/Documents/GitHub/Qnibble/src/ket.py:29 (__add__) (4,986,752 bytes, 0.62%)</title>
+            <rect x="12.1919%" y="188" width="0.6177%" height="21" fill="rgb(255,238,238)" fg:x="98427610" fg:w="4986752"/>
+            <text x="12.4419%" y="201.50"></text>
+        </g>
+        <g>
+            <title>            res = Basis((i + j for i in res for j in other)) (4,986,752 bytes, 0.62%)</title>
+            <rect x="12.1919%" y="210" width="0.6177%" height="21" fill="rgb(255,238,238)" fg:x="98427610" fg:w="4986752"/>
+            <text x="12.4419%" y="223.50"></text>
+        </g>
+        <g>
+            <title>/mnt/c/Users/jacks/Documents/GitHub/Qnibble/src/ket.py:51 (&lt;genexpr&gt;) (4,986,752 bytes, 0.62%)</title>
+            <rect x="12.1919%" y="232" width="0.6177%" height="21" fill="rgb(255,238,238)" fg:x="98427610" fg:w="4986752"/>
+            <text x="12.4419%" y="245.50"></text>
+        </g>
+        <g>
+            <title>            res = Basis((i + j for i in res for j in other)) (4,986,752 bytes, 0.62%)</title>
+            <rect x="12.1919%" y="254" width="0.6177%" height="21" fill="rgb(255,238,238)" fg:x="98427610" fg:w="4986752"/>
+            <text x="12.4419%" y="267.50"></text>
+        </g>
+        <g>
+            <title>/mnt/c/Users/jacks/Documents/GitHub/Qnibble/src/ket.py:51 (tensor) (4,986,752 bytes, 0.62%)</title>
+            <rect x="12.1919%" y="276" width="0.6177%" height="21" fill="rgb(255,238,238)" fg:x="98427610" fg:w="4986752"/>
+            <text x="12.4419%" y="289.50"></text>
+        </g>
+        <g>
+            <title>                result_sub_space_basis = self_sub_space_basis.tensor(other_sub_space_basis) (4,986,752 bytes, 0.62%)</title>
+            <rect x="12.1919%" y="298" width="0.6177%" height="21" fill="rgb(255,238,238)" fg:x="98427610" fg:w="4986752"/>
+            <text x="12.4419%" y="311.50"></text>
+        </g>
+        <g>
+            <title>/mnt/c/Users/jacks/Documents/GitHub/Qnibble/src/density_matrix.py:138 (tensor) (4,986,752 bytes, 0.62%)</title>
+            <rect x="12.1919%" y="320" width="0.6177%" height="21" fill="rgb(255,238,238)" fg:x="98427610" fg:w="4986752"/>
+            <text x="12.4419%" y="333.50"></text>
+        </g>
+        <g>
+            <title>        result = result.tensor(dm) (4,986,752 bytes, 0.62%)</title>
+            <rect x="12.1919%" y="342" width="0.6177%" height="21" fill="rgb(255,238,238)" fg:x="98427610" fg:w="4986752"/>
+            <text x="12.4419%" y="355.50"></text>
+        </g>
+        <g>
+            <title>/mnt/c/Users/jacks/Documents/GitHub/Qnibble/src/density_matrix.py:301 (tensor) (4,986,752 bytes, 0.62%)</title>
+            <rect x="12.1919%" y="364" width="0.6177%" height="21" fill="rgb(255,238,238)" fg:x="98427610" fg:w="4986752"/>
+            <text x="12.4419%" y="377.50"></text>
+        </g>
+        <g>
+            <title>    piece = DM.tensor([sub_unitary if j == unitary_index else identity for j in range(num_qbits // chunk_size)]) (4,986,752 bytes, 0.62%)</title>
+            <rect x="12.1919%" y="386" width="0.6177%" height="21" fill="rgb(255,238,238)" fg:x="98427610" fg:w="4986752"/>
+            <text x="12.4419%" y="399.50"></text>
+        </g>
+        <g>
+            <title>Scripts/PerformanceTesting.py:39 (&lt;module&gt;) (4,986,752 bytes, 0.62%)</title>
+            <rect x="12.1919%" y="408" width="0.6177%" height="21" fill="rgb(255,238,238)" fg:x="98427610" fg:w="4986752"/>
+            <text x="12.4419%" y="421.50"></text>
+        </g>
+        <g>
+            <title>        self.num = num (5,416,640 bytes, 0.67%)</title>
+            <rect x="12.1392%" y="122" width="0.6709%" height="21" fill="rgb(255,237,237)" fg:x="98002650" fg:w="5416640"/>
+            <text x="12.3892%" y="135.50"></text>
+        </g>
+        <g>
+            <title>/mnt/c/Users/jacks/Documents/GitHub/Qnibble/src/ket.py:7 (__init__) (5,416,640 bytes, 0.67%)</title>
+            <rect x="12.1392%" y="144" width="0.6709%" height="21" fill="rgb(255,237,237)" fg:x="98002650" fg:w="5416640"/>
+            <text x="12.3892%" y="157.50"></text>
+        </g>
+        <g>
+            <title>            reordered_matrix = reordered_matrix[:, idx] (519,232,512 bytes, 64.32%)</title>
+            <rect x="12.9896%" y="122" width="64.3154%" height="21" fill="rgb(255,129,129)" fg:x="104867637" fg:w="519232512"/>
+            <text x="13.2396%" y="135.50">            reordered_matrix = reordered_matrix[:, idx]..</text>
+        </g>
+        <g>
+            <title>/mnt/c/Users/jacks/Documents/GitHub/Qnibble/src/density_matrix.py:165 (tensor) (519,232,512 bytes, 64.32%)</title>
+            <rect x="12.9896%" y="144" width="64.3154%" height="21" fill="rgb(255,129,129)" fg:x="104867637" fg:w="519232512"/>
+            <text x="13.2396%" y="157.50">/mnt/c/Users/jacks/Documents/GitHub/Qnibble/src/density_matrix.py:165 (tensor)</text>
+        </g>
+        <g>
+            <title>        result = result.tensor(dm) (519,232,512 bytes, 64.32%)</title>
+            <rect x="12.9896%" y="166" width="64.3154%" height="21" fill="rgb(255,129,129)" fg:x="104867637" fg:w="519232512"/>
+            <text x="13.2396%" y="179.50">        result = result.tensor(dm)</text>
+        </g>
+        <g>
+            <title>/mnt/c/Users/jacks/Documents/GitHub/Qnibble/src/density_matrix.py:301 (tensor) (519,232,512 bytes, 64.32%)</title>
+            <rect x="12.9896%" y="188" width="64.3154%" height="21" fill="rgb(255,129,129)" fg:x="104867637" fg:w="519232512"/>
+            <text x="13.2396%" y="201.50">/mnt/c/Users/jacks/Documents/GitHub/Qnibble/src/density_matrix.py:301 (tensor)</text>
+        </g>
+        <g>
+            <title>    piece = DM.tensor([sub_unitary if j == unitary_index else identity for j in range(num_qbits // chunk_size)]) (519,232,512 bytes, 64.32%)</title>
+            <rect x="12.9896%" y="210" width="64.3154%" height="21" fill="rgb(255,129,129)" fg:x="104867637" fg:w="519232512"/>
+            <text x="13.2396%" y="223.50">    piece = DM.tensor([sub_unitary if j == unitary_index else identity for j i..</text>
+        </g>
+        <g>
+            <title>Scripts/PerformanceTesting.py:39 (&lt;module&gt;) (519,232,512 bytes, 64.32%)</title>
+            <rect x="12.9896%" y="232" width="64.3154%" height="21" fill="rgb(255,129,129)" fg:x="104867637" fg:w="519232512"/>
+            <text x="13.2396%" y="245.50">Scripts/PerformanceTesting.py:39 (&lt;module&gt;)</text>
+        </g>
+        <g>
+            <title>    dm = Unitary * dm (43,268,288 bytes, 5.36%)</title>
+            <rect x="77.3049%" y="210" width="5.3595%" height="21" fill="rgb(255,215,215)" fg:x="624100149" fg:w="43268288"/>
+            <text x="77.5549%" y="223.50">   ..</text>
+        </g>
+        <g>
+            <title>/mnt/c/Users/jacks/Documents/GitHub/Qnibble/src/simulation.py:95 (step) (43,268,288 bytes, 5.36%)</title>
+            <rect x="77.3049%" y="232" width="5.3595%" height="21" fill="rgb(255,215,215)" fg:x="624100149" fg:w="43268288"/>
+            <text x="77.5549%" y="245.50">/mnt..</text>
+        </g>
+        <g>
+            <title>        dm = step(dm, order, U, not generate_random_unitary) (43,268,288 bytes, 5.36%)</title>
+            <rect x="77.3049%" y="254" width="5.3595%" height="21" fill="rgb(255,215,215)" fg:x="624100149" fg:w="43268288"/>
+            <text x="77.5549%" y="267.50">   ..</text>
+        </g>
+        <g>
+            <title>/mnt/c/Users/jacks/Documents/GitHub/Qnibble/src/simulation.py:71 (run) (43,268,288 bytes, 5.36%)</title>
+            <rect x="77.3049%" y="276" width="5.3595%" height="21" fill="rgb(255,215,215)" fg:x="624100149" fg:w="43268288"/>
+            <text x="77.5549%" y="289.50">/mnt..</text>
+        </g>
+        <g>
+            <title>data, result = sim.run(system, (43,268,288 bytes, 5.36%)</title>
+            <rect x="77.3049%" y="298" width="5.3595%" height="21" fill="rgb(255,215,215)" fg:x="624100149" fg:w="43268288"/>
+            <text x="77.5549%" y="311.50">dat..</text>
+        </g>
+        <g>
+            <title>Scripts/PerformanceTesting.py:44 (&lt;module&gt;) (43,268,288 bytes, 5.36%)</title>
+            <rect x="77.3049%" y="320" width="5.3595%" height="21" fill="rgb(255,215,215)" fg:x="624100149" fg:w="43268288"/>
+            <text x="77.5549%" y="333.50">Scri..</text>
+        </g>
+        <g>
+            <title>    dm = dm * Unitary.H (86,536,560 bytes, 10.72%)</title>
+            <rect x="82.6644%" y="210" width="10.7190%" height="21" fill="rgb(255,200,200)" fg:x="667368437" fg:w="86536560"/>
+            <text x="82.9144%" y="223.50">    dm = d..</text>
+        </g>
+        <g>
+            <title>/mnt/c/Users/jacks/Documents/GitHub/Qnibble/src/simulation.py:96 (step) (86,536,560 bytes, 10.72%)</title>
+            <rect x="82.6644%" y="232" width="10.7190%" height="21" fill="rgb(255,200,200)" fg:x="667368437" fg:w="86536560"/>
+            <text x="82.9144%" y="245.50">/mnt/c/User..</text>
+        </g>
+        <g>
+            <title>        dm = step(dm, order, U, not generate_random_unitary) (86,536,560 bytes, 10.72%)</title>
+            <rect x="82.6644%" y="254" width="10.7190%" height="21" fill="rgb(255,200,200)" fg:x="667368437" fg:w="86536560"/>
+            <text x="82.9144%" y="267.50">        dm..</text>
+        </g>
+        <g>
+            <title>/mnt/c/Users/jacks/Documents/GitHub/Qnibble/src/simulation.py:71 (run) (86,536,560 bytes, 10.72%)</title>
+            <rect x="82.6644%" y="276" width="10.7190%" height="21" fill="rgb(255,200,200)" fg:x="667368437" fg:w="86536560"/>
+            <text x="82.9144%" y="289.50">/mnt/c/User..</text>
+        </g>
+        <g>
+            <title>data, result = sim.run(system, (86,536,560 bytes, 10.72%)</title>
+            <rect x="82.6644%" y="298" width="10.7190%" height="21" fill="rgb(255,200,200)" fg:x="667368437" fg:w="86536560"/>
+            <text x="82.9144%" y="311.50">data, resu..</text>
+        </g>
+        <g>
+            <title>Scripts/PerformanceTesting.py:44 (&lt;module&gt;) (86,536,560 bytes, 10.72%)</title>
+            <rect x="82.6644%" y="320" width="10.7190%" height="21" fill="rgb(255,200,200)" fg:x="667368437" fg:w="86536560"/>
+            <text x="82.9144%" y="333.50">Scripts/Per..</text>
+        </g>
+        <g>
+            <title>            result.append(self.blocks[i] @ other.blocks[i]) (138,401,128 bytes, 17.14%)</title>
+            <rect x="77.3049%" y="122" width="17.1432%" height="21" fill="rgb(255,187,187)" fg:x="624100149" fg:w="138401128"/>
+            <text x="77.5549%" y="135.50">            result..</text>
+        </g>
+        <g>
+            <title>/mnt/c/Users/jacks/Documents/GitHub/Qnibble/src/Block_Sparse_Matrix.py:41 (__matmul__) (138,401,128 bytes, 17.14%)</title>
+            <rect x="77.3049%" y="144" width="17.1432%" height="21" fill="rgb(255,187,187)" fg:x="624100149" fg:w="138401128"/>
+            <text x="77.5549%" y="157.50">/mnt/c/Users/jacks/..</text>
+        </g>
+        <g>
+            <title>            return DensityMatrix(self.data @ other.data, copy.copy(self.basis)) (138,401,128 bytes, 17.14%)</title>
+            <rect x="77.3049%" y="166" width="17.1432%" height="21" fill="rgb(255,187,187)" fg:x="624100149" fg:w="138401128"/>
+            <text x="77.5549%" y="179.50">            return..</text>
+        </g>
+        <g>
+            <title>/mnt/c/Users/jacks/Documents/GitHub/Qnibble/src/density_matrix.py:92 (__mul__) (138,401,128 bytes, 17.14%)</title>
+            <rect x="77.3049%" y="188" width="17.1432%" height="21" fill="rgb(255,187,187)" fg:x="624100149" fg:w="138401128"/>
+            <text x="77.5549%" y="201.50">/mnt/c/Users/jacks/..</text>
+        </g>
+        <g>
+            <title>    return ufunc.reduce(obj, axis, dtype, out, **passkwargs) (8,596,280 bytes, 1.06%)</title>
+            <rect x="93.3834%" y="210" width="1.0648%" height="21" fill="rgb(255,234,234)" fg:x="753904997" fg:w="8596280"/>
+            <text x="93.6334%" y="223.50"></text>
+        </g>
+        <g>
+            <title>/home/jackson/miniconda3/envs/qnibble/lib/python3.10/site-packages/numpy/core/fromnumeric.py:86 (_wrapreduction) (8,596,280 bytes, 1.06%)</title>
+            <rect x="93.3834%" y="232" width="1.0648%" height="21" fill="rgb(255,234,234)" fg:x="753904997" fg:w="8596280"/>
+            <text x="93.6334%" y="245.50"></text>
+        </g>
+        <g>
+            <title>    return _wrapreduction(a, np.multiply, &apos;prod&apos;, axis, dtype, out, (8,596,280 bytes, 1.06%)</title>
+            <rect x="93.3834%" y="254" width="1.0648%" height="21" fill="rgb(255,234,234)" fg:x="753904997" fg:w="8596280"/>
+            <text x="93.6334%" y="267.50"></text>
+        </g>
+        <g>
+            <title>/home/jackson/miniconda3/envs/qnibble/lib/python3.10/site-packages/numpy/core/fromnumeric.py:3076 (prod) (8,596,280 bytes, 1.06%)</title>
+            <rect x="93.3834%" y="276" width="1.0648%" height="21" fill="rgb(255,234,234)" fg:x="753904997" fg:w="8596280"/>
+            <text x="93.6334%" y="289.50"></text>
+        </g>
+        <g>
+            <title> (8,596,280 bytes, 1.06%)</title>
+            <rect x="93.3834%" y="298" width="1.0648%" height="21" fill="rgb(255,234,234)" fg:x="753904997" fg:w="8596280"/>
+            <text x="93.6334%" y="311.50"></text>
+        </g>
+        <g>
+            <title>&lt;__array_function__ internals&gt;:200 (prod) (8,596,280 bytes, 1.06%)</title>
+            <rect x="93.3834%" y="320" width="1.0648%" height="21" fill="rgb(255,234,234)" fg:x="753904997" fg:w="8596280"/>
+            <text x="93.6334%" y="333.50"></text>
+        </g>
+        <g>
+            <title>    return prod(*args, **kwargs) (8,596,280 bytes, 1.06%)</title>
+            <rect x="93.3834%" y="342" width="1.0648%" height="21" fill="rgb(255,234,234)" fg:x="753904997" fg:w="8596280"/>
+            <text x="93.6334%" y="355.50"></text>
+        </g>
+        <g>
+            <title>/home/jackson/miniconda3/envs/qnibble/lib/python3.10/site-packages/numpy/core/fromnumeric.py:3775 (product) (8,596,280 bytes, 1.06%)</title>
+            <rect x="93.3834%" y="364" width="1.0648%" height="21" fill="rgb(255,234,234)" fg:x="753904997" fg:w="8596280"/>
+            <text x="93.6334%" y="377.50"></text>
+        </g>
+        <g>
+            <title> (8,596,280 bytes, 1.06%)</title>
+            <rect x="93.3834%" y="386" width="1.0648%" height="21" fill="rgb(255,234,234)" fg:x="753904997" fg:w="8596280"/>
+            <text x="93.6334%" y="399.50"></text>
+        </g>
+        <g>
+            <title>&lt;__array_function__ internals&gt;:200 (product) (8,596,280 bytes, 1.06%)</title>
+            <rect x="93.3834%" y="408" width="1.0648%" height="21" fill="rgb(255,234,234)" fg:x="753904997" fg:w="8596280"/>
+            <text x="93.6334%" y="421.50"></text>
+        </g>
+        <g>
+            <title>unitary = np.product(unitary_list) (8,596,280 bytes, 1.06%)</title>
+            <rect x="93.3834%" y="430" width="1.0648%" height="21" fill="rgb(255,234,234)" fg:x="753904997" fg:w="8596280"/>
+            <text x="93.6334%" y="443.50"></text>
+        </g>
+        <g>
+            <title>Scripts/PerformanceTesting.py:42 (&lt;module&gt;) (8,596,280 bytes, 1.06%)</title>
+            <rect x="93.3834%" y="452" width="1.0648%" height="21" fill="rgb(255,234,234)" fg:x="753904997" fg:w="8596280"/>
+            <text x="93.6334%" y="465.50"></text>
+        </g>
+        <g>
+            <title>            self.data.blocks[i] = self.data.blocks[i][:, new_order] (43,269,024 bytes, 5.36%)</title>
+            <rect x="94.4956%" y="122" width="5.3596%" height="21" fill="rgb(255,215,215)" fg:x="762884312" fg:w="43269024"/>
+            <text x="94.7456%" y="135.50">   ..</text>
+        </g>
+        <g>
+            <title>/mnt/c/Users/jacks/Documents/GitHub/Qnibble/src/density_matrix.py:260 (relabel_basis) (43,269,024 bytes, 5.36%)</title>
+            <rect x="94.4956%" y="144" width="5.3596%" height="21" fill="rgb(255,215,215)" fg:x="762884312" fg:w="43269024"/>
+            <text x="94.7456%" y="157.50">/mnt..</text>
+        </g>
+        <g>
+            <title>    Unitary.relabel_basis(order) (43,269,024 bytes, 5.36%)</title>
+            <rect x="94.4956%" y="166" width="5.3596%" height="21" fill="rgb(255,215,215)" fg:x="762884312" fg:w="43269024"/>
+            <text x="94.7456%" y="179.50">   ..</text>
+        </g>
+        <g>
+            <title>/mnt/c/Users/jacks/Documents/GitHub/Qnibble/src/simulation.py:93 (step) (43,269,024 bytes, 5.36%)</title>
+            <rect x="94.4956%" y="188" width="5.3596%" height="21" fill="rgb(255,215,215)" fg:x="762884312" fg:w="43269024"/>
+            <text x="94.7456%" y="201.50">/mnt..</text>
+        </g>
+        <g>
+            <title>        dm = step(dm, order, U, not generate_random_unitary) (43,269,024 bytes, 5.36%)</title>
+            <rect x="94.4956%" y="210" width="5.3596%" height="21" fill="rgb(255,215,215)" fg:x="762884312" fg:w="43269024"/>
+            <text x="94.7456%" y="223.50">   ..</text>
+        </g>
+        <g>
+            <title>/mnt/c/Users/jacks/Documents/GitHub/Qnibble/src/simulation.py:71 (run) (43,269,024 bytes, 5.36%)</title>
+            <rect x="94.4956%" y="232" width="5.3596%" height="21" fill="rgb(255,215,215)" fg:x="762884312" fg:w="43269024"/>
+            <text x="94.7456%" y="245.50">/mnt..</text>
+        </g>
+        <g>
+            <title>data, result = sim.run(system, (43,269,024 bytes, 5.36%)</title>
+            <rect x="94.4956%" y="254" width="5.3596%" height="21" fill="rgb(255,215,215)" fg:x="762884312" fg:w="43269024"/>
+            <text x="94.7456%" y="267.50">dat..</text>
+        </g>
+        <g>
+            <title>Scripts/PerformanceTesting.py:44 (&lt;module&gt;) (43,269,024 bytes, 5.36%)</title>
+            <rect x="94.4956%" y="276" width="5.3596%" height="21" fill="rgb(255,215,215)" fg:x="762884312" fg:w="43269024"/>
+            <text x="94.7456%" y="289.50">Scri..</text>
+        </g>
+        <g>
+            <title>all (807,322,598 bytes, 100%)</title>
+            <rect x="0.0000%" y="100" width="100.0000%" height="21" fill="rgb(255,100,100)" fg:x="0" fg:w="807322598"/>
+            <text x="0.2500%" y="113.50"></text>
+        </g>
+    </svg>
+</svg>
