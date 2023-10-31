@@ -1,12 +1,12 @@
+import matplotlib.pyplot as plt
+import numpy as np
 from src.setup import use_gpu
-
 
 from src import density_matrix as DM
 from src.ket import canonical_basis
 from src import measurements
 
 from src.simulation import run
-
 
 from numpy.testing import assert_almost_equal
 
@@ -72,9 +72,9 @@ class TestComprehensive:
 
         Unitary = DM.tensor([DM.dm_exp(1j * dtheta * H) for _ in range(chunks)])
 
-        orders = [[0, 1, 2, 3, 4, 5, 6, 7], [0, 4, 1, 5, 2, 6, 3, 7]]
+        orders = [[[0, 1, 2, 3], [4, 5, 6, 7]], [[0, 4, 1, 5], [2, 6, 3, 7]]]
 
-        pops = run(sys, measurement_set=[measurements.pops], num_iterations=100, num_chunks=2, orders=orders, Unitaries=Unitary)[0][1:]
+        pops = run(sys, measurement_set=[measurements.pops], num_iterations=100, orders=orders, Unitaries=Unitary)[0][0][1:]
 
         UnnatiResults = [[0.102022, 0.200982, 0.298861, 0.398135, 0.152104, 0.251058, 0.348878, 0.447961], [0.105157, 0.204515, 0.296364, 0.395547, 0.153089, 0.252141, 0.347254, 0.445933],
                          [0.112636, 0.208809, 0.291704, 0.388434, 0.159891, 0.255837, 0.343439, 0.43925], [0.120093, 0.217169, 0.286156, 0.382944, 0.162301, 0.258347, 0.339119, 0.43387],
@@ -126,5 +126,13 @@ class TestComprehensive:
                          [0.265491, 0.269523, 0.280555, 0.28156, 0.259419, 0.269748, 0.281059, 0.292645], [0.266779, 0.271809, 0.278714, 0.282048, 0.262094, 0.27004, 0.278937, 0.289578],
                          [0.268044, 0.272048, 0.277827, 0.281431, 0.263129, 0.270788, 0.276704, 0.290028], [0.268819, 0.274208, 0.275737, 0.281742, 0.266384, 0.271532, 0.274764, 0.286814],
                          [0.26985, 0.274336, 0.275133, 0.281187, 0.267959, 0.272033, 0.272539, 0.286963], [0.270411, 0.276441, 0.272893, 0.28132, 0.271435, 0.273029, 0.270742, 0.283729]]
+
+        # plot the residuals
+        residuals = np.array(UnnatiResults) - pops
+        plt.plot(residuals)
+        plt.title('Difference between this code and verified results')
+        plt.xlabel('simulation step')
+        plt.ylabel('Difference in population')
+        plt.savefig('Comprehensive_Test_Residuals.png')
 
         assert_almost_equal(UnnatiResults, pops, 5)
