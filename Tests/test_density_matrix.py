@@ -17,7 +17,7 @@ def identity(n):
     return SPARSE_TYPE(sparse.identity(n, dtype=complex))
 
 
-class TestKet:
+class TestDM:
     """
     Testing the functionality of density matrices.
     The desired functionality is very specific compared to a general ket.
