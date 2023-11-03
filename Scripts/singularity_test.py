@@ -4,13 +4,13 @@ import sys as SYS;
 SYS.path.insert(0, '..')
 import os
 from collections import defaultdict
-import numpy as np
-import matplotlib.pyplot as plt
+#import numpy as np
+#import matplotlib.pyplot as plt
 from multiprocessing import Pool
 
 from src import setup
 
-setup.use_gpu()
+#setup.use_gpu()
 
 from src import (
     measurements as measure,
@@ -20,9 +20,9 @@ from src import (
     random_unitary,
     simulation)
 
-identity = DM.Identity(DM.energy_basis(6))
+identity = DM.Identity(DM.energy_basis(4))
 
-N = 12
+N = 8
 num_chunks = 2
 num_iterations = 50
 measurments = [measure.pops, measure.extractable_work_of_each_qubit]
@@ -34,17 +34,20 @@ num_samples = 10
 
 gas_samples_extractable_work = []
 gas_sample_pops = []
-gas_orderings = orders.n_random_gas_orders(num_qbits=N, chunk_sizes=[6, 6], n=num_iterations)
-line_orderings = orders.n_random_line_orders(num_qbits=N, chunk_sizes=[6, 6], n=num_iterations)
+gas_orderings = orders.n_random_gas_orders(num_qbits=N, chunk_sizes=[4, 4], n=num_iterations)
+line_orderings = orders.n_random_line_orders(num_qbits=N, chunk_sizes=[4, 4], n=num_iterations)
 messenger_orderings = orders.n_alternating_messenger_orders(num_qbits=N, n=num_iterations)
 orderings = [gas_orderings, line_orderings, messenger_orderings]
 titles = ["seven", "six", "messenger"]
 results = defaultdict(lambda: defaultdict(list))
+
+
 for i, ordering in enumerate(orderings):
+    print(i)
     results[titles[i]]["pops"] = []
     results[titles[i]]["ex_work"] = []
     for index in range(num_samples):
-        sub_unitary = random_unitary.random_unitary_in_subspace(6, 2)
+        sub_unitary = random_unitary.random_unitary_in_subspace(4, 2)
         unitary = sub_unitary.tensor(identity) * identity.tensor(sub_unitary)
 
         system = DM.n_thermal_qbits(initial_pops)
