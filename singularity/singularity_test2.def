@@ -1,0 +1,6 @@
+Bootstrap: docker
+From: cupy/cupy
+
+%post
+    # Any additional post-installation steps if needed
+pip3 install matplotlib
