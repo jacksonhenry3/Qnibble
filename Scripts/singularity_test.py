@@ -15,7 +15,7 @@ from src import (
     orders,
     random_unitary)
 
-N = 8
+N = 16
 chunk_size = 4
 num_chunks = N // chunk_size
 
@@ -39,7 +39,10 @@ for i, ordering in enumerate(orderings):
 
     for index in range(num_samples):
         sub_unitary = random_unitary.random_unitary_in_subspace(4, 2)
-        unitary = sub_unitary.tensor(identity) * identity.tensor(sub_unitary)
+        unitary = sub_unitary.tensor(identity).tensor(identity).tensor(identity) * \
+                  identity.tensor(sub_unitary).tensor(identity).tensor(identity) * \
+                  identity.tensor(identity).tensor(sub_unitary).tensor(identity) * \
+                  identity.tensor(identity).tensor(identity).tensor(sub_unitary)
 
         system = DM.n_thermal_qbits(initial_pops)
         system.change_to_energy_basis()
