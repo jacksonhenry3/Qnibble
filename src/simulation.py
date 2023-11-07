@@ -112,10 +112,10 @@ def step(dm: DM.DensityMatrix, order: list[np.ndarray], Unitary: DM.DensityMatri
 
 def save_data(data: np.ndarray, num_qbits: str, measurement: str, num_chunks: str, connectivity_type: str, run_index: str, sim_index=int, extra=""):
     if extra != "":
-        path = f"../data/num_qbits={num_qbits}_num_chunks={num_chunks}_connectivity_type={connectivity_type}_other={extra}_index={sim_index}"
+        path = f"../data/num_qbits={num_qbits}_num_chunks={num_chunks}_connectivity_type={connectivity_type}_other={extra}/index={sim_index}"
     else:
-        path = f"../data/num_qbits={num_qbits}_num_chunks={num_chunks}_connectivity_type={connectivity_type}_index={sim_index}"
+        path = f"../data/num_qbits={num_qbits}_num_chunks={num_chunks}_connectivity_type={connectivity_type}/index={sim_index}"
     if not os.path.exists(path):
-        os.mkdir(path)
+        os.makedirs(path, exist_ok=True)
     file_name = path + f"/{measurement}_{run_index}.dat"
     np.savetxt(file_name, data, header=f"{measurement} for {num_qbits} qbits with connectivity {connectivity_type} in chunks {num_chunks}")
