@@ -5,8 +5,8 @@ SYS.path.insert(0, '..')
 
 import numpy as np
 
-# from src import setup
-# setup.use_gpu()
+from src import setup
+setup.use_gpu()
 
 from src import (
     measurements as measure,
@@ -15,7 +15,7 @@ from src import (
     orders,
     random_unitary)
 
-N = 16
+N = 8
 chunk_size = 4
 num_chunks = N // chunk_size
 
@@ -39,10 +39,10 @@ for i, ordering in enumerate(orderings):
 
     for index in range(num_samples):
         sub_unitary = random_unitary.random_unitary_in_subspace(4, 2)
-        unitary = sub_unitary.tensor(identity).tensor(identity).tensor(identity) * \
-                  identity.tensor(sub_unitary).tensor(identity).tensor(identity) * \
-                  identity.tensor(identity).tensor(sub_unitary).tensor(identity) * \
-                  identity.tensor(identity).tensor(identity).tensor(sub_unitary)
+        unitary = sub_unitary.tensor(identity)*identity.tensor(sub_unitary)#.tensor(identity) * \
+                  # identity.tensor(sub_unitary).tensor(identity).tensor(identity) * \
+                  # identity.tensor(identity).tensor(sub_unitary).tensor(identity) * \
+                  # identity.tensor(identity).tensor(identity).tensor(sub_unitary)
 
         system = DM.n_thermal_qbits(initial_pops)
         system.change_to_energy_basis()
@@ -55,5 +55,5 @@ for i, ordering in enumerate(orderings):
                        )[0]
 
         if index % 1 == 0: print(index)
-        sim.save_data(np.array(data[0]).squeeze(), str(N), "pops", str(num_chunks), titles[i], run_index=str(index), sim_index=str(index), extra="")
-        sim.save_data(np.array(data[1]).squeeze(), str(N), "ex_work", str(num_chunks), titles[i], run_index=str(index), sim_index=str(index), extra="")
+        sim.save_data(np.array(data[0].get()).squeeze(), str(N), "pops", str(num_chunks), titles[i], run_index=str(index), sim_index=str(index), extra="")
+        sim.save_data(np.array(data[1].get()).squeeze(), str(N), "ex_work", str(num_chunks), titles[i], run_index=str(index), sim_index=str(index), extra="")
