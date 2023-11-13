@@ -121,7 +121,14 @@ class DensityMatrix:
         return pop
 
     def ptrace(self, qbits):
+
+        """
+        trace out the given qbits
+        """
         # Add a check that all indices are valid no repeats etc.
+        assert all([0 <= qbit < self.number_of_qbits for qbit in qbits]), f"qbits {qbits} are not valid for a {self.number_of_qbits} qbit system"
+        assert list(set(qbits)) == qbits, f"qbits {qbits} are not valid for a {self.number_of_qbits} qbit system"
+
         result = self
         for qbit_index in sorted(qbits)[::-1]:
             result = result._ptrace(qbit_index)
