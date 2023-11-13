@@ -206,3 +206,22 @@ def monogamy_of_mutual_information(dm: DensityMatrix, sub_system_qbits_a: list[i
     dm_c = dm.ptrace(sub_system_qbits_a + sub_system_qbits_b)
     s = entropy
     return s(dm_abc) + s(dm_a) + s(dm_b) + s(dm_c) - s(dm_ab) - s(dm_ac) - s(dm_bc)
+
+
+# subaddativity
+def subaddativity(dm: DensityMatrix, sub_system_qbits_a: list[int], sub_system_qbits_b: list[int]) -> float:
+    dm_ab = dm
+    dm_a = dm.ptrace(sub_system_qbits_b)
+    dm_b = dm.ptrace(sub_system_qbits_a)
+    s = entropy
+    return -s(dm_ab) + s(dm_a) + s(dm_b)
+
+
+def strong_subaddativity(dm: DensityMatrix, sub_system_qbits_a: list[int], sub_system_qbits_b: list[int], sub_system_qbits_c: list[int]) -> float:
+
+    dm_ab = dm.ptrace(sub_system_qbits_c)
+    dm_bc = dm.ptrace(sub_system_qbits_a)
+    dm_a = dm.ptrace(sub_system_qbits_b + sub_system_qbits_c)
+    dm_c = dm.ptrace(sub_system_qbits_a + sub_system_qbits_b)
+    s = entropy
+    return s(dm_ab) + s(dm_bc) - s(dm_a) - s(dm_c)
