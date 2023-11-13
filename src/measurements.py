@@ -102,6 +102,7 @@ def change_in_extractable_work(T_initial: float, dm_initial: DensityMatrix, T_fi
     return extractable_work(T_final, dm_final) - extractable_work(T_initial, dm_initial)
 
 
+# von neumann entropy
 def entropy(dm: DensityMatrix) -> float:
     # if dm.number_of_qbits <= 2:
     result = -dm_trace(dm * dm_log(dm))
@@ -192,3 +193,16 @@ def relative_entropy_of_every_pair(dm: DensityMatrix):
             dm2 = DM.qbit(dm.ptrace_to_a_single_qbit(j))
             result.append((D(dm1, dm2), i, j))
     return result
+
+
+# monogamy of Mutual Information
+def monogamy_of_mutual_information(dm: DensityMatrix, sub_system_qbits_a: list[int], sub_system_qbits_b: list[int], sub_system_qbits_c: list[int]) -> float:
+    dm_abc = dm
+    dm_ab = dm.ptrace(sub_system_qbits_c)
+    dm_ac = dm.ptrace(sub_system_qbits_b)
+    dm_bc = dm.ptrace(sub_system_qbits_a)
+    dm_a = dm.ptrace(sub_system_qbits_b + sub_system_qbits_c)
+    dm_b = dm.ptrace(sub_system_qbits_a + sub_system_qbits_c)
+    dm_c = dm.ptrace(sub_system_qbits_a + sub_system_qbits_b)
+    s = entropy
+    return s(dm_abc) + s(dm_a) + s(dm_b) + s(dm_c) - s(dm_ab) - s(dm_ac) - s(dm_bc)
