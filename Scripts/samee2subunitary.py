@@ -15,14 +15,14 @@ from src import (
     orders,
     random_unitary)
 
-_, N, order, index = sys.argv
+_, N, num_iterations, order, index = sys.argv
 N = int(N)
+num_iterations = int(num_iterations)
+
 chunk_size = 4
 num_chunks = N // chunk_size
 
 identity = DM.Identity(DM.energy_basis(chunk_size))
-
-num_iterations = 50
 
 initial_pops = [.2 for _ in range(N)]
 initial_pops[4] = .4
@@ -49,7 +49,7 @@ data = sim.run(system,
                num_iterations=num_iterations,
                orders=ordering,
                Unitaries=unitary,
-               verbose=True
+               verbose=.1
                )[0]
 
 sim.save_data(np.array(data[0]).squeeze(), str(N), "pops", str(num_chunks), order, run_index=str(index), sim_index=str(index), extra="")
