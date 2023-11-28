@@ -20,9 +20,9 @@ def n_random_c5_orders(num_qbits: int, n: int) -> list[np.ndarray]:
     return result
 
 
-def n_random_c6_orders(num_qbits: int, chunk_sizes: list[int], n: int) -> list[np.ndarray]:
-    assert sum(chunk_sizes) == num_qbits, "chunk sizes must add up to the number of qbits"
-    split_indices = np.cumsum(chunk_sizes)[:-1]
+def n_random_c6_orders(num_qbits: int, n: int) -> list[np.ndarray]:
+    assert num_qbits % 4 == 0, "n must be divisible by 4"
+    split_indices = [4 * i for i in range(1, num_qbits // 4)]
 
     result = []
     for _ in range(n):
@@ -67,9 +67,9 @@ def n_random_c7_orders(num_qbits: int, n: int) -> list[np.ndarray]:
     return result
 
 
-def n_random_gas_orders(num_qbits: int, chunk_sizes: list[int], n: int) -> list[np.ndarray]:
-    assert sum(chunk_sizes) == num_qbits, "chunk sizes must add up to the number of qbits"
-    split_indices = np.cumsum(chunk_sizes)[:-1]
+def n_random_gas_orders(num_qbits: int, n: int) -> list[np.ndarray]:
+    assert num_qbits % 4 == 0, "n must be divisible by 4"
+    split_indices = [4 * i for i in range(1, num_qbits // 4)]
     return [np.split(rng.permutation(num_qbits), split_indices) for _ in range(n)]
 
 
@@ -84,4 +84,9 @@ def n_alternating_messenger_orders(num_qbits: int, n: int) -> list[np.ndarray]:
     second_order[[0, -1]] = second_order[[-1, 0]]
     second_order = second_order.reshape((num_qbits // 4, 4))
 
-    return [first_order if i % 2 == 0 else second_order for i in range(n)]
+    result = []
+    for _ in range(n):
+        order = rng.choice([first_order, second_order])
+        result.append(np.array([rng.permutation(chunk) for chunk in order]))
+
+    return result
