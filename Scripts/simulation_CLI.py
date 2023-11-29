@@ -36,7 +36,8 @@ index = args.index
 
 # load the connectivity using numpy
 print(ordering_path)
-ordering = np.load(ordering_path)
+with open(ordering_path, 'rb') as file:
+    ordering = np.load(file)
 
 # load the unitary using pickle
 with open(unitary_path, 'rb') as file:
