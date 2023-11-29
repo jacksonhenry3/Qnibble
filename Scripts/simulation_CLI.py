@@ -5,6 +5,7 @@ import sys, argparse, pickle
 sys.path.insert(0, '..')
 
 import numpy as np
+print(np.__version__)
 
 from src import (
     measurements as measure,
@@ -35,7 +36,7 @@ index = args.index
 
 # load the connectivity using numpy
 print(ordering_path)
-ordering = np.load(ordering_path, allow_pickle=True)
+ordering = np.load(ordering_path)
 
 # load the unitary using pickle
 with open(unitary_path, 'rb') as file:
