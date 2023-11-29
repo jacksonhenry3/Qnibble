@@ -34,7 +34,8 @@ num_steps = args.num_steps
 index = args.index
 
 # load the connectivity using numpy
-ordering = np.load(ordering_path)
+print(ordering_path)
+ordering = np.load(ordering_path, allow_pickle=True)
 
 # load the unitary using pickle
 with open(unitary_path, 'rb') as file:
