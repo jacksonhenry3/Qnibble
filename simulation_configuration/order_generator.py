@@ -21,8 +21,8 @@ for i in range(100):
         # use numpy to save the orders as npy files so they can be easily read as numpy arrays
         base_path = f"../simulation_configuration/{num_qbits}qbits/orders/"
 
-        np.save(base_path + f"gas_{i}.npy", gas_orderings) #if not os.path.exists(base_path + f"gas_{i}.npy") else print(f"path already exists, skipping gas {num_qbits} qbits")
-        np.save(base_path + f"c5_{i}.npy", c5_orderings) #if not os.path.exists(base_path + f"c5_{i}.npy") else print(f"path already exists, skipping c5 {num_qbits} qbits")
-        np.save(base_path + f"c6_{i}.npy", c6_orderings) #if not os.path.exists(base_path + f"c6_{i}.npy") else print(f"path already exists, skipping c6 {num_qbits} qbits")
-        np.save(base_path + f"c7_{i}.npy", c7_orderings) #if not os.path.exists(base_path + f"c7_{i}.npy") else print(f"path already exists, skipping c7 {num_qbits} qbits")
-        np.save(base_path + f"messenger_{i}.npy", messenger_orderings) #if not os.path.exists(base_path + f"messenger_{i}.npy") else print(f"path already exists, skipping messenger {num_qbits} qbits")
+        np.save(base_path + f"gas_{i}.npy", gas_orderings, allow_pickle=False) #if not os.path.exists(base_path + f"gas_{i}.npy") else print(f"path already exists, skipping gas {num_qbits} qbits")
+        np.save(base_path + f"c5_{i}.npy", c5_orderings, allow_pickle=False) #if not os.path.exists(base_path + f"c5_{i}.npy") else print(f"path already exists, skipping c5 {num_qbits} qbits")
+        np.save(base_path + f"c6_{i}.npy", c6_orderings, allow_pickle=False) #if not os.path.exists(base_path + f"c6_{i}.npy") else print(f"path already exists, skipping c6 {num_qbits} qbits")
+        np.save(base_path + f"c7_{i}.npy", c7_orderings, allow_pickle=False) #if not os.path.exists(base_path + f"c7_{i}.npy") else print(f"path already exists, skipping c7 {num_qbits} qbits")
+        np.save(base_path + f"messenger_{i}.npy", messenger_orderings, allow_pickle=False) #if not os.path.exists(base_path + f"messenger_{i}.npy") else print(f"path already exists, skipping messenger {num_qbits} qbits")
