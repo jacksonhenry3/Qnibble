@@ -121,7 +121,7 @@ data = sim.run(system,
                verbose=.1
                )[0]
 
-path = f"../data/{num_qbits}_{ordering_type}_{unitary_seed}{unitary_reused}{unitary_energy_subspace}COMPARISON"
+path = f"../data/{num_qbits}_{ordering_type}_{unitary_seed}{unitary_reused}{unitary_energy_subspace}"
 print(f"simulation complete, extracting and saving data to : {path}\n")
 
 ordering_seed = str(ordering_seed).zfill(3)
