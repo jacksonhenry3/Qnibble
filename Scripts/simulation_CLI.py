@@ -26,7 +26,6 @@ parser.add_argument('--unitary_reused', '-ur', type=bool, help='weather to use t
 parser.add_argument('--chunk_size', '-cs', type=int, default=4, help='Chunk size')
 parser.add_argument('--num_steps', '-ns', type=int, help='Number of steps')
 parser.add_argument('--pops', '-p', help='Initial populations')
-parser.add_argument('--index', '-i', type=int, help='Index value')
 
 args = parser.parse_args()
 
@@ -43,15 +42,13 @@ num_qbits = len(initial_pops)
 
 assert num_qbits % chunk_size == 0, "Chunk size must divide number of qubits"
 num_chunks = num_qbits // chunk_size
-index = args.index
-index = str(index).zfill(3)
 
 print("====================================")
 # confirm the argument values
 print(f"chunk size: {chunk_size}")
 print(f"num steps: {num_steps}")
 print(f"initial pops: {initial_pops}")
-print(f"index: {index}")
+
 print(f"unitary reused: {unitary_reused}")
 print(f"unitary energy subspace: {unitary_energy_subspace}")
 print(f"unitary seed: {unitary_seed}")
@@ -124,9 +121,10 @@ data = sim.run(system,
                verbose=.1
                )[0]
 
-path = f"../data/{num_qbits}_{ordering_type}_{unitary_seed}{unitary_reused}{unitary_energy_subspace}"
+path = f"../data/{num_qbits}_{ordering_type}_{unitary_seed}{unitary_reused}{unitary_energy_subspace}COMPARISON"
 print(f"simulation complete, extracting and saving data to : {path}\n")
 
+ordering_seed = str(ordering_seed).zfill(3)
 pops = np.array(data[0]).squeeze()
 if not os.path.exists(path):
     os.makedirs(path)
