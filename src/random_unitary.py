@@ -80,7 +80,7 @@ def random_hamiltonian(num_qbits: int, seed=None):
 def random_unitary_in_subspace(num_qbits: int, energy_subspace: int, seed=None):
     rng = np.random.default_rng(seed)
 
-    blocks = [np.array([[1]])] + [np.eye((comb(num_qbits, e))) if e is not energy_subspace else unitary_group.rvs(comb(num_qbits, e), seed=rng) for e in range(1, num_qbits)] + [np.array([[1]])]
+    blocks = [np.array([[1]])] + [np.eye((comb(num_qbits, e))) if e is not energy_subspace else unitary_group.rvs(comb(num_qbits, e), random_state=rng) for e in range(1, num_qbits)] + [np.array([[1]])]
     m = sp.linalg.block_diag(*blocks)
     # m = sp.linalg.fractional_matrix_power(m, dt)
     # m[m < 10 ** -5] = 0
@@ -100,7 +100,7 @@ def random_energy_preserving_unitary(num_qbits: int, seed=None) -> DM.DensityMat
     """
 
     rng = np.random.default_rng(seed)
-    blocks = [np.array([[1. + 0j]])] + [unitary_group.rvs(comb(num_qbits, i), seed=rng) for i in range(1, num_qbits)] + [np.array([[1. + 0j]])]
+    blocks = [np.array([[1. + 0j]])] + [unitary_group.rvs(comb(num_qbits, i), random_state=rng) for i in range(1, num_qbits)] + [np.array([[1. + 0j]])]
     m = sp.linalg.block_diag(*blocks)
     # m = sp.linalg.fractional_matrix_power(m, dt)
     # m[m < 10 ** -5] = 0

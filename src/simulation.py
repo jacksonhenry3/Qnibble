@@ -60,7 +60,8 @@ def run(dm: DM.DensityMatrix, measurement_set, num_iterations: int, orders, qbit
 
         progress = i / num_iterations
         if verbose and int(progress * 1000) % int(verbose * 1000) == 0:
-            print(progress)
+            percent = str(int(progress * 100)).zfill(2)
+            print(f"{percent}%")
 
 
 
