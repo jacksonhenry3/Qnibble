@@ -75,7 +75,7 @@ def n_random_gas_orders(num_qbits: int, n: int, seed=None) -> list[np.ndarray]:
     return [np.split(rng.permutation(num_qbits), split_indices) for _ in range(n)]
 
 
-def n_alternating_messenger_orders(num_qbits: int, n: int, seed=None) -> list[np.ndarray]:
+def n_random_messenger_orders(num_qbits: int, n: int, seed=None) -> list[np.ndarray]:
     """
     The first and last qbit will be the messenger qbits
     """
