@@ -76,7 +76,6 @@ elif ordering_type == "messenger":
 
 print("ordering generated\n")
 
-
 basis = DM.energy_basis(chunk_size)
 identity = DM.Identity(basis)
 
@@ -125,21 +124,17 @@ data = sim.run(system,
                verbose=.1
                )[0]
 
-
-
-
-
-path = f"../data/{num_qbits}_{ordering_seed}{ordering_type}_{unitary_seed}{unitary_reused}{unitary_energy_subspace}"
+path = f"../data/{num_qbits}_{ordering_type}_{unitary_seed}{unitary_reused}{unitary_energy_subspace}"
 print(f"simulation complete, extracting and saving data to : {path}\n")
 
 pops = np.array(data[0]).squeeze()
 if not os.path.exists(path):
     os.makedirs(path)
-np.savetxt(f"{path}/pops{index}.dat", pops, header=f"pops for {num_qbits} qbits with connectivity {ordering_type} and unitary {unitary}")
+np.savetxt(f"{path}/pops{ordering_seed}.dat", pops, header=f"pops for {num_qbits} qbits with connectivity {ordering_type} and unitary {unitary}")
 
 ex_work = np.array(data[1]).squeeze()
 if not os.path.exists(path):
     os.makedirs(path)
-np.savetxt(f"{path}/exwork{index}.dat", ex_work, header=f"ex_work for {num_qbits} qbits with connectivity {ordering_type} and unitary {unitary}")
+np.savetxt(f"{path}/exwork{ordering_seed}.dat", ex_work, header=f"ex_work for {num_qbits} qbits with connectivity {ordering_type} and unitary {unitary}")
 
 print("data saved, exiting")
