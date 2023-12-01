@@ -33,7 +33,9 @@ parser.add_argument('--num_steps', '-ns', type=int, help='Number of steps')
 parser.add_argument('--pops', '-p', help='Initial populations')
 
 args = parser.parse_args()
-
+print("unparsed arguments:")
+print(args)
+print()
 # Access the parsed arguments
 ordering_type = args.ordering_type
 ordering_seed = args.ordering_seed
