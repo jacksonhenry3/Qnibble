@@ -1,3 +1,8 @@
+"""
+example usage:
+python .\simulation_CLI.py --ordering_type c5 --ordering_seed 0  --unitary_seed 0 --unitary_energy_subspace 2 --chunk_size 4 --num_steps 100 --pops .2,.2,.2,.4,.2,.2,.2,.2
+"""
+
 # Add directory above current directory to path
 import os.path
 import sys, argparse
