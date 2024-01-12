@@ -13,3 +13,4 @@ profiles_and_meta_data/
 /data/
 /Scripts/.pytest_cache/
 /Notebooks/.ipynb_checkpoints/
+/src/__pycache__/
