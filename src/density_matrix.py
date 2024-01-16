@@ -15,6 +15,7 @@ import numpy as np
 
 xp = setup.xp
 sp = setup.sp
+
 SPARSE_TYPE = setup.SPARSE_TYPE
 
 from scipy.sparse import coo_matrix
@@ -86,10 +87,17 @@ class DensityMatrix:
         raise TypeError(f"multiplication between {self} and {other} (type {type(other)} is not defined")
 
     def __pow__(self, power: int):
-        result = Identity(self.basis)
-        for _ in range(power):
-            result *= self
-        return result
+        # CONVERT TO DENSE MATRIX for fractional powers
+        # if power is an integer use repeated multiplication
+        if isinstance(power, int):
+            result = self
+            for _ in range(power - 1):
+                result = result * self
+            return result
+        else:
+            new_data = sp.linalg.fractional_matrix_power(self.data.toarray(), power)
+            result = DensityMatrix(SPARSE_TYPE(new_data), self.basis)
+            return result
 
     def __neg__(self):
         return DensityMatrix(-self.data, self.basis)
