@@ -26,7 +26,7 @@ def n_random_c6_orders(num_qbits: int, n: int, seed=None) -> list[np.ndarray]:
 
     result = []
     for _ in range(n):
-        order = np.split(np.roll(np.arange(num_qbits), np.random.randint(num_qbits)), split_indices)
+        order = np.split(np.roll(np.arange(num_qbits), rng.integers(num_qbits)), split_indices)
         permuted_order = [rng.permutation(chunk) for chunk in order]
         result.append(np.array(permuted_order))
 
@@ -62,7 +62,7 @@ def n_random_c7_orders(num_qbits: int, n: int, seed=None) -> list[np.ndarray]:
                   ]
     result = []
     for _ in range(n):
-        order = np.array([np.random.permutation(chunk) for chunk in rng.choice(groups)])
+        order = np.array([rng.permutation(chunk) for chunk in rng.choice(groups)])
         result.append(order)
 
     return result
