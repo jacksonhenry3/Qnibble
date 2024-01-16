@@ -22,11 +22,6 @@ from src import (
 
 def execute(ordering_type, ordering_seed, unitary_energy_subspace, unitary_seed, chunk_size, num_steps, initial_pops, evolution_generation_type="unitary"):
 
-    # supresses all the print statements in the simulation if not run from the command line
-    if __name__ != "__main__":
-        from io import StringIO
-        # redirect stdout to a string buffer
-        sys.stdout = StringIO()
 
     num_qbits = len(initial_pops)
 
@@ -132,10 +127,6 @@ def execute(ordering_type, ordering_seed, unitary_energy_subspace, unitary_seed,
         os.makedirs(path)
     np.savetxt(f"{path}/exwork{ordering_seed}.dat", ex_work, header=f"ex_work for {num_qbits} qbits with connectivity {ordering_type} and unitary {unitary}")
     print("data saved, exiting")
-
-    # reset stdout
-    if __name__ != "__main__":
-        sys.stdout = sys.__stdout__
 
 
     return (pops, ex_work)
