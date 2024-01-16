@@ -13,6 +13,23 @@ from scipy.stats import unitary_group
 SPARSE_TYPE = setup.SPARSE_TYPE
 
 
+def random_hamiltonian(num_qbits: int, seed=None):
+    """
+    Args:
+        num_qbits: number of qubits
+        seed (optional): the seed for the random number generator.
+    Returns: a random hamiltonian with the given number of qubits in the energy basis that preserves energy
+    """
+    rng = np.random.default_rng(seed)
+
+    blocks = [np.array([[0]])] + [rng.random((comb(num_qbits, e), comb(num_qbits, e))) for e in range(1, num_qbits)] + [np.array([[0]])]
+    m = sp.linalg.block_diag(*blocks)
+    np.fill_diagonal(m, 0)
+
+    m = m + m.conj().T
+    return DM.DensityMatrix(DM.SPARSE_TYPE(m, dtype=np.complex64), energy_basis(num_qbits))
+
+
 def random_hamiltonian_in_subspace(num_qbits: int, energy_subspace: int, seed=None):
     """
     Args:
@@ -24,7 +41,8 @@ def random_hamiltonian_in_subspace(num_qbits: int, energy_subspace: int, seed=No
     rng = np.random.default_rng(seed)
 
     blocks = [np.array([[0]])] + [
-        np.zeros((comb(num_qbits, e), comb(num_qbits, e))) if e is not energy_subspace else rng.random((comb(num_qbits, e), comb(num_qbits, e))) * 1j + rng.random((comb(num_qbits, e), comb(num_qbits, e)))
+        np.zeros((comb(num_qbits, e), comb(num_qbits, e))) if e is not energy_subspace else rng.random((comb(num_qbits, e), comb(num_qbits, e))) * 1j + rng.random(
+            (comb(num_qbits, e), comb(num_qbits, e)))
         for e in range(1, num_qbits)] + [
                  np.array([[0]])]
 
@@ -57,30 +75,18 @@ def random_hamiltonian_in_subspace_coppying_mathematica(num_qbits: int, energy_s
     # sum over all the hamiltonians for each pair of indices
     m = sum([rng.random() * hamiltonian(indices[i1], indices[i2], num_qbits) for i1 in range(len(indices)) for i2 in range(i1)])
 
-    return DM.DensityMatrix(DM.SPARSE_TYPE(m, dtype=np.complex64), canonical_basis(num_qbits))
+    result = DM.DensityMatrix(DM.SPARSE_TYPE(m, dtype=np.complex64), canonical_basis(num_qbits))
 
+    result.change_to_energy_basis()
 
-def random_hamiltonian(num_qbits: int, seed=None):
-    """
-    Args:
-        num_qbits: number of qubits
-        seed (optional): the seed for the random number generator.
-    Returns: a random hamiltonian with the given number of qubits in the energy basis that preserves energy
-    """
-    rng = np.random.default_rng(seed)
-
-    blocks = [np.array([[0]])] + [rng.random((comb(num_qbits, e), comb(num_qbits, e))) for e in range(1, num_qbits)] + [np.array([[0]])]
-    m = sp.linalg.block_diag(*blocks)
-    np.fill_diagonal(m, 0)
-
-    m = m + m.conj().T
-    return DM.DensityMatrix(DM.SPARSE_TYPE(m, dtype=np.complex64), energy_basis(num_qbits))
+    return result
 
 
 def random_unitary_in_subspace(num_qbits: int, energy_subspace: int, seed=None):
     rng = np.random.default_rng(seed)
 
-    blocks = [np.array([[1]])] + [np.eye((comb(num_qbits, e))) if e is not energy_subspace else unitary_group.rvs(comb(num_qbits, e), random_state=rng) for e in range(1, num_qbits)] + [np.array([[1]])]
+    blocks = [np.array([[1]])] + [np.eye((comb(num_qbits, e))) if e is not energy_subspace else unitary_group.rvs(comb(num_qbits, e), random_state=rng) for e in range(1, num_qbits)] + [
+        np.array([[1]])]
     m = sp.linalg.block_diag(*blocks)
     # m = sp.linalg.fractional_matrix_power(m, dt)
     # m[m < 10 ** -5] = 0
