@@ -20,7 +20,8 @@ from src import (
     random_unitary)
 
 
-def execute(ordering_type, ordering_seed, unitary_energy_subspace, unitary_seed, chunk_size, num_steps, initial_pops, evolution_generation_type="unitary"):
+def execute(ordering_type, ordering_seed, unitary_energy_subspace, unitary_seed, chunk_size, num_steps, initial_pops,
+            evolution_generation_type="unitary"):
     num_qbits = len(initial_pops)
 
     assert num_qbits % chunk_size == 0, "Chunk size must divide number of qubits"
@@ -63,21 +64,29 @@ def execute(ordering_type, ordering_seed, unitary_energy_subspace, unitary_seed,
         # match evolution_generation_type: unitary, hamiltonian, hamiltonian_old
         match evolution_generation_type:
             case "unitary":
-                sub_unitary = random_unitary.random_unitary_in_subspace(num_qbits=chunk_size, energy_subspace=unitary_energy_subspace, seed=unitary_rng)
+                sub_unitary = random_unitary.random_unitary_in_subspace(num_qbits=chunk_size,
+                                                                        energy_subspace=unitary_energy_subspace,
+                                                                        seed=unitary_rng)
             case "unitary.05":
-                sub_unitary = random_unitary.random_unitary_in_subspace(num_qbits=chunk_size, energy_subspace=unitary_energy_subspace, seed=unitary_rng)
+                sub_unitary = random_unitary.random_unitary_in_subspace(num_qbits=chunk_size,
+                                                                        energy_subspace=unitary_energy_subspace,
+                                                                        seed=unitary_rng)
                 sub_unitary = sub_unitary ** .05
             case "hamiltonian":
-                sub_hamiltonian = random_unitary.random_hamiltonian_in_subspace(num_qbits=chunk_size, energy_subspace=unitary_energy_subspace, seed=unitary_rng)
+                sub_hamiltonian = random_unitary.random_hamiltonian_in_subspace(num_qbits=chunk_size,
+                                                                                energy_subspace=unitary_energy_subspace,
+                                                                                seed=unitary_rng)
                 sub_unitary = DM.dm_exp(sub_hamiltonian * -1j * .1)
             case "hamiltonian_old":
-                sub_hamiltonian = random_unitary.random_hamiltonian_in_subspace_coppying_mathematica(num_qbits=chunk_size, energy_subspace=unitary_energy_subspace, seed=unitary_rng)
+                sub_hamiltonian = random_unitary.random_hamiltonian_in_subspace_coppying_mathematica(
+                    num_qbits=chunk_size, energy_subspace=unitary_energy_subspace, seed=unitary_rng)
                 sub_unitary = DM.dm_exp(sub_hamiltonian * -1j * .1)
             case _:
                 # throw an explanatory error
                 raise ValueError(f"evolution_generation_type {evolution_generation_type} not recognized")
 
-        composite_unitaries = [DM.tensor([sub_unitary if i == j else identity for i in range(num_chunks)]) for j in range(num_chunks)]
+        composite_unitaries = [DM.tensor([sub_unitary if i == j else identity for i in range(num_chunks)]) for j in
+                               range(num_chunks)]
         unitary = np.prod(composite_unitaries)
     else:
         # match evolution_generation_type: unitary, hamiltonian, hamiltonian_old
@@ -92,19 +101,22 @@ def execute(ordering_type, ordering_seed, unitary_energy_subspace, unitary_seed,
                 sub_unitary = DM.dm_exp(hamiltonian * -1j * .1)
             case "hamiltonian_old":
                 # throw an incompatible error
-                raise ValueError(f"evolution_generation_type {evolution_generation_type} not yet compatible with unitary_energy_subspace")
+                raise ValueError(
+                    f"evolution_generation_type {evolution_generation_type} not yet compatible with unitary_energy_subspace")
             case _:
                 # throw an explanatory error
                 raise ValueError(f"evolution_generation_type {evolution_generation_type} not recognized")
 
-        composite_unitaries = [DM.tensor([sub_unitary if i == j else identity for i in range(num_chunks)]) for j in range(num_chunks)]
+        composite_unitaries = [DM.tensor([sub_unitary if i == j else identity for i in range(num_chunks)]) for j in
+                               range(num_chunks)]
         unitary = np.prod(composite_unitaries)
 
     if __name__ == "__main__": print("unitary generated\n")
     if __name__ == "__main__": print("constructing system")
     system = DM.n_thermal_qbits(initial_pops)
     system.change_to_energy_basis()
-    measurements = [measure.pops, measure.extractable_work_of_each_qubit, measure.mutual_information_of_every_pair]
+    measurements = [measure.two_qbit_dm_of_every_pair]
+    # measurements = [measure.pops, measure.extractable_work_of_each_qubit, measure.mutual_information_of_every_pair]
     if __name__ == "__main__": print("running simulation")
     data = sim.run(system,
                    measurement_set=measurements,
@@ -115,20 +127,21 @@ def execute(ordering_type, ordering_seed, unitary_energy_subspace, unitary_seed,
                    )[0]
     path = f"../data/{num_qbits}_{ordering_type}_{unitary_seed}{unitary_energy_subspace}"
     if __name__ == "__main__": print(f"simulation complete, extracting and saving data to : {path}\n")
-    ordering_seed = str(ordering_seed).zfill(3)
-    pops = np.array(data[0]).squeeze()
-    if not os.path.exists(path):
-        os.makedirs(path)
-    np.savetxt(f"{path}/pops{ordering_seed}.dat", pops, header=f"pops for {num_qbits} qbits with connectivity {ordering_type} and unitary {unitary}")
-    ex_work = np.array(data[1]).squeeze()
+    # ordering_seed = str(ordering_seed).zfill(3)
 
-    np.savetxt(f"{path}/exwork{ordering_seed}.dat", ex_work, header=f"ex_work for {num_qbits} qbits with connectivity {ordering_type} and unitary {unitary}")
+    # pops = np.array(data[0]).squeeze()
+    # if not os.path.exists(path):
+    #   os.makedirs(path)
+    # np.savetxt(f"{path}/pops{ordering_seed}.dat", pops, header=f"pops for {num_qbits} qbits with connectivity {ordering_type} and unitary {unitary}")
+    # ex_work = np.array(data[1]).squeeze()
 
-    MI = np.array(data[2]).squeeze()
+    # np.savetxt(f"{path}/exwork{ordering_seed}.dat", ex_work, header=f"ex_work for {num_qbits} qbits with connectivity {ordering_type} and unitary {unitary}")
+
+    twoQdm = np.array(data[0]).squeeze()
     # np.savetxt(f"{path}/mutual_information{ordering_seed}.dat", MI, header=f"mutual information  for {num_qbits} qbits with connectivity {ordering_type} and unitary {unitary}")
-    if __name__ == "__main__": print("data saved, exiting")
+    # if __name__ == "__main__": print("data saved, exiting")
 
-    return (pops, ex_work,MI )
+    return (twoQdm)
 
 
 if __name__ == "__main__":
@@ -138,7 +151,8 @@ if __name__ == "__main__":
     # Add arguments based on your requirements
     parser.add_argument('--ordering_type', '-o', help='Type of ordering to use [gas,messenger,c5,c6,c7]', default='gas')
     parser.add_argument('--ordering_seed', '-os', type=int, help='the seed for generating the ordering', default=None)
-    parser.add_argument('--unitary_energy_subspace', '-ues', type=int, help='(optional) the energy subspace for the subunitary to be in', default=None)
+    parser.add_argument('--unitary_energy_subspace', '-ues', type=int,
+                        help='(optional) the energy subspace for the subunitary to be in', default=None)
     parser.add_argument('--unitary_seed', '-us', type=int, help='unitary seed', default=None)
     parser.add_argument('--chunk_size', '-cs', type=int, default=4, help='Chunk size')
     parser.add_argument('--num_steps', '-ns', type=int, help='Number of steps')
