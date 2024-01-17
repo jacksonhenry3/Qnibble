@@ -21,24 +21,22 @@ from src import (
 
 
 def execute(ordering_type, ordering_seed, unitary_energy_subspace, unitary_seed, chunk_size, num_steps, initial_pops, evolution_generation_type="unitary"):
-
-
     num_qbits = len(initial_pops)
 
     assert num_qbits % chunk_size == 0, "Chunk size must divide number of qubits"
     num_chunks = num_qbits // chunk_size
-    print("====================================")
+    if __name__ == "__main__": print("====================================")
     # confirm the argument values
-    print(f"chunk size: {chunk_size}")
-    print(f"num steps: {num_steps}")
-    print(f"initial pops: {initial_pops}")
-    print(f"unitary energy subspace: {unitary_energy_subspace}")
-    print(f"unitary seed: {unitary_seed}")
-    print(f"ordering seed: {ordering_seed}")
-    print("====================================")
+    if __name__ == "__main__": print(f"chunk size: {chunk_size}")
+    if __name__ == "__main__": print(f"num steps: {num_steps}")
+    if __name__ == "__main__": print(f"initial pops: {initial_pops}")
+    if __name__ == "__main__": print(f"unitary energy subspace: {unitary_energy_subspace}")
+    if __name__ == "__main__": print(f"unitary seed: {unitary_seed}")
+    if __name__ == "__main__": print(f"ordering seed: {ordering_seed}")
+    if __name__ == "__main__": print("====================================")
     unitary_rng = np.random.default_rng(unitary_seed)
-    print()
-    print(f"generating {ordering_type} ordering")
+    if __name__ == "__main__": print()
+    if __name__ == "__main__": print(f"generating {ordering_type} ordering")
     match ordering_type:
         case "gas":
             ordering = orders.n_random_gas_orders(num_qbits=num_qbits, n=num_steps, seed=ordering_seed)
@@ -54,10 +52,10 @@ def execute(ordering_type, ordering_seed, unitary_energy_subspace, unitary_seed,
             # throw an explanatory error
             raise ValueError(f"ordering type {ordering_type} not recognized")
 
-    print("ordering generated\n")
+    if __name__ == "__main__": print("ordering generated\n")
     basis = DM.energy_basis(chunk_size)
     identity = DM.Identity(basis)
-    print("generating unitary")
+    if __name__ == "__main__": print("generating unitary")
     if unitary_energy_subspace:
 
         unitary_energy_subspace = int(unitary_energy_subspace)
@@ -68,7 +66,7 @@ def execute(ordering_type, ordering_seed, unitary_energy_subspace, unitary_seed,
                 sub_unitary = random_unitary.random_unitary_in_subspace(num_qbits=chunk_size, energy_subspace=unitary_energy_subspace, seed=unitary_rng)
             case "unitary.05":
                 sub_unitary = random_unitary.random_unitary_in_subspace(num_qbits=chunk_size, energy_subspace=unitary_energy_subspace, seed=unitary_rng)
-                sub_unitary = sub_unitary**.05
+                sub_unitary = sub_unitary ** .05
             case "hamiltonian":
                 sub_hamiltonian = random_unitary.random_hamiltonian_in_subspace(num_qbits=chunk_size, energy_subspace=unitary_energy_subspace, seed=unitary_rng)
                 sub_unitary = DM.dm_exp(sub_hamiltonian * -1j * .1)
@@ -88,7 +86,7 @@ def execute(ordering_type, ordering_seed, unitary_energy_subspace, unitary_seed,
                 sub_unitary = random_unitary.random_energy_preserving_unitary(num_qbits=num_qbits, seed=unitary_rng)
             case "unitary.05":
                 sub_unitary = random_unitary.random_energy_preserving_unitary(num_qbits=num_qbits, seed=unitary_rng)
-                sub_unitary = sub_unitary**.05
+                sub_unitary = sub_unitary ** .05
             case "hamiltonian":
                 hamiltonian = random_unitary.random_hamiltonian(num_qbits=num_qbits, seed=unitary_rng)
                 sub_unitary = DM.dm_exp(hamiltonian * -1j * .1)
@@ -102,21 +100,21 @@ def execute(ordering_type, ordering_seed, unitary_energy_subspace, unitary_seed,
         composite_unitaries = [DM.tensor([sub_unitary if i == j else identity for i in range(num_chunks)]) for j in range(num_chunks)]
         unitary = np.prod(composite_unitaries)
 
-    print("unitary generated\n")
-    print("constructing system")
+    if __name__ == "__main__": print("unitary generated\n")
+    if __name__ == "__main__": print("constructing system")
     system = DM.n_thermal_qbits(initial_pops)
     system.change_to_energy_basis()
-    measurements = [measure.pops, measure.extractable_work_of_each_qubit]
-    print("running simulation")
+    measurements = [measure.pops, measure.extractable_work_of_each_qubit, measure.mutual_information_of_every_pair]
+    if __name__ == "__main__": print("running simulation")
     data = sim.run(system,
                    measurement_set=measurements,
                    num_iterations=num_steps,
                    orders=ordering,
                    Unitaries=unitary,
-                   verbose=.1
+                   verbose=0
                    )[0]
     path = f"../data/{num_qbits}_{ordering_type}_{unitary_seed}{unitary_energy_subspace}"
-    print(f"simulation complete, extracting and saving data to : {path}\n")
+    if __name__ == "__main__": print(f"simulation complete, extracting and saving data to : {path}\n")
     ordering_seed = str(ordering_seed).zfill(3)
     pops = np.array(data[0]).squeeze()
     if not os.path.exists(path):
@@ -126,10 +124,9 @@ def execute(ordering_type, ordering_seed, unitary_energy_subspace, unitary_seed,
     if not os.path.exists(path):
         os.makedirs(path)
     np.savetxt(f"{path}/exwork{ordering_seed}.dat", ex_work, header=f"ex_work for {num_qbits} qbits with connectivity {ordering_type} and unitary {unitary}")
-    print("data saved, exiting")
+    if __name__ == "__main__": print("data saved, exiting")
 
-
-    return (pops, ex_work)
+    return (pops, ex_work, data[2])
 
 
 if __name__ == "__main__":
