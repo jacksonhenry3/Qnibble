@@ -108,7 +108,6 @@ def entropy(dm: DensityMatrix) -> float:
     # result = -dm_trace(dm * dm_log(dm))
     # return float(xp.real(result))
 
-
     if dm.number_of_qbits == 1:
         eigen_vals = dm.data.diagonal()
         from_eigen = -np.sum(eigen_vals * np.log(eigen_vals))
@@ -123,8 +122,10 @@ def entropy(dm: DensityMatrix) -> float:
         from_eigen = (
                 a1 * np.log(a1) +
                 d4 * np.log(d4) +
-                0.5 * (b2 + c3 - np.sqrt(b2 ** 2 + 4 * b3 * c2 - 2 * b2 * c3 + c3 ** 2)) * np.log(0.5 * (b2 + c3 - np.sqrt(b2 ** 2 + 4 * b3 * c2 - 2 * b2 * c3 + c3 ** 2))) +
-                0.5 * (b2 + c3 + np.sqrt(b2 ** 2 + 4 * b3 * c2 - 2 * b2 * c3 + c3 ** 2)) * np.log(0.5 * (b2 + c3 + np.sqrt(b2 ** 2 + 4 * b3 * c2 - 2 * b2 * c3 + c3 ** 2)))
+                0.5 * (b2 + c3 - np.sqrt(b2 ** 2 + 4 * b3 * c2 - 2 * b2 * c3 + c3 ** 2)) * np.log(
+            0.5 * (b2 + c3 - np.sqrt(b2 ** 2 + 4 * b3 * c2 - 2 * b2 * c3 + c3 ** 2))) +
+                0.5 * (b2 + c3 + np.sqrt(b2 ** 2 + 4 * b3 * c2 - 2 * b2 * c3 + c3 ** 2)) * np.log(
+            0.5 * (b2 + c3 + np.sqrt(b2 ** 2 + 4 * b3 * c2 - 2 * b2 * c3 + c3 ** 2)))
         )
 
     else:
@@ -132,7 +133,8 @@ def entropy(dm: DensityMatrix) -> float:
         # leading to a precision loss of ~10-6
         # See https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.linalg.eigs.html for details
         if setup.using_gpu:
-            eigen_vals = scipy.sparse.linalg.eigsh(dm.data.get(), k=2 ** dm.number_of_qbits - 3, which="LM", return_eigenvectors=False)
+            eigen_vals = scipy.sparse.linalg.eigsh(dm.data.get(), k=2 ** dm.number_of_qbits - 3, which="LM",
+                                                   return_eigenvectors=False)
             from_eigen = -np.sum(eigen_vals * np.log(eigen_vals))
         else:
             eigen_vals = sp.sparse.linalg.eigsh(dm.data, k=2 ** dm.number_of_qbits - 3, return_eigenvectors=False)
@@ -198,8 +200,18 @@ def mutual_information_of_every_pair(dm: DensityMatrix):
     result = {}
     for i in range(n):
         for j in range(i + 1, n):
-            result[(i,j)] = mutual_information(dm, [i], [j])
+            result[(i, j)] = mutual_information(dm, [i], [j])
     return np.array(result)
+
+
+def two_qbit_dm_of_every_pair(dm: DensityMatrix) -> dict:
+    n = dm.number_of_qbits
+    result = {}
+    for i in range(n):
+        for j in range(i + 1, n):
+            everything_thats_not_system = tuple(set(range(dm.basis.num_qubits)) - {i, j})
+            result[(i, j)] = dm.ptrace(everything_thats_not_system)
+    return result
 
 
 def relative_entropy_of_every_pair(dm: DensityMatrix):
@@ -214,7 +226,8 @@ def relative_entropy_of_every_pair(dm: DensityMatrix):
 
 
 # monogamy of Mutual Information
-def monogamy_of_mutual_information(dm: DensityMatrix, sub_system_qbits_a: list[int], sub_system_qbits_b: list[int], sub_system_qbits_c: list[int]) -> float:
+def monogamy_of_mutual_information(dm: DensityMatrix, sub_system_qbits_a: list[int], sub_system_qbits_b: list[int],
+                                   sub_system_qbits_c: list[int]) -> float:
     dm_abc = dm
     dm_ab = dm.ptrace(sub_system_qbits_c)
     dm_ac = dm.ptrace(sub_system_qbits_b)
@@ -235,7 +248,8 @@ def subaddativity(dm: DensityMatrix, sub_system_qbits_a: list[int], sub_system_q
     return -s(dm_ab) + s(dm_a) + s(dm_b)
 
 
-def strong_subaddativity(dm: DensityMatrix, sub_system_qbits_a: list[int], sub_system_qbits_b: list[int], sub_system_qbits_c: list[int]) -> float:
+def strong_subaddativity(dm: DensityMatrix, sub_system_qbits_a: list[int], sub_system_qbits_b: list[int],
+                         sub_system_qbits_c: list[int]) -> float:
     dm_ab = dm.ptrace(sub_system_qbits_c)
     dm_bc = dm.ptrace(sub_system_qbits_a)
     dm_a = dm.ptrace(sub_system_qbits_b + sub_system_qbits_c)
