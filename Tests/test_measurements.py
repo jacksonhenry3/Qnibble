@@ -1,5 +1,6 @@
 """Tests that basis kets are working properly"""
 from src import measurements as mes, density_matrix as DM
+import numpy as np
 
 
 class TestMeasurements:
@@ -26,7 +27,7 @@ class TestMeasurements:
     def test_D(self):
         dm_1, dm_2 = DM.qbit(.4), DM.qbit(.1)
         assert mes.D(dm_1, dm_1) == 0
-        assert mes.D(dm_1, dm_2) == 0.3112387179154056+0j
+        assert mes.D(dm_1, dm_2) == 0.3112387179154056 + 0j
 
     def test_extractable_work(self):
         T = .4
@@ -41,9 +42,10 @@ class TestMeasurements:
         dm_2 = DM.qbit(mes.pop_from_temp(T_2))
         assert mes.change_in_extractable_work(T_1, dm_1, T_2, dm_2) == 0
         assert mes.change_in_extractable_work(T_1, dm_1, T_1, dm_1) == 0
-        assert mes.change_in_extractable_work(T_1, dm_1, T_2, dm_1) == (0.023494211239722607+0j)
+        assert mes.change_in_extractable_work(T_1, dm_1, T_2, dm_1) == (0.023494211239722607 + 0j)
         assert mes.change_in_extractable_work(T_2, dm_1, T_1, dm_2) != 0
 
     def test_entropy(self):
         dm = DM.qbit(.3)
-        assert mes.entropy(dm) == (0.6108643121554707+0j)
+
+        assert np.isclose(mes.entropy(dm), 0.6108643121554707 + 0j)
