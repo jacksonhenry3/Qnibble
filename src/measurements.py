@@ -105,21 +105,39 @@ def change_in_extractable_work(T_initial: float, dm_initial: DensityMatrix, T_fi
 # von neumann entropy
 def entropy(dm: DensityMatrix) -> float:
     # if dm.number_of_qbits <= 2:
-    result = -dm_trace(dm * dm_log(dm))
-    return float(xp.real(result))
+    # result = -dm_trace(dm * dm_log(dm))
+    # return float(xp.real(result))
 
-    # This method can't find all eigenvalues becouse of the algorithm it uses, but it does find all but the smallest two,
-    # leading to a precision loss of ~10-6
-    # See https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.linalg.eigs.html for details
-    # eigen_vals = sp.sparse.linalg.eigsh(dm.data,k=2**dm.number_of_qbits-3, which="LM",return_eigenvectors = False)
 
-    # if setup.using_gpu:
-    # eigen_vals = scipy.sparse.linalg.eigsh(dm.data.get(), k=2 ** dm.number_of_qbits - 3, which="LM", return_eigenvectors=False)
-    # from_eigen = -np.sum(eigen_vals * np.log(eigen_vals))
-    # # else:
-    # #     eigen_vals = sp.sparse.linalg.eigsh(dm.data, k=2 ** dm.number_of_qbits - 3, return_eigenvectors=False)
-    # #     from_eigen = -np.sum(eigen_vals * np.log(eigen_vals))
-    # return from_eigen
+    if dm.number_of_qbits == 1:
+        eigen_vals = dm.data.diagonal()
+        from_eigen = -np.sum(eigen_vals * np.log(eigen_vals))
+    elif dm.number_of_qbits == 2:
+        a1 = dm.data[0, 0]
+        b2 = dm.data[1, 1]
+        b3 = dm.data[1, 2]
+        c2 = dm.data[2, 1]
+        c3 = dm.data[2, 2]
+        d4 = (1 - a1 - b2 - c3)
+
+        from_eigen = (
+                a1 * np.log(a1) +
+                d4 * np.log(d4) +
+                0.5 * (b2 + c3 - np.sqrt(b2 ** 2 + 4 * b3 * c2 - 2 * b2 * c3 + c3 ** 2)) * np.log(0.5 * (b2 + c3 - np.sqrt(b2 ** 2 + 4 * b3 * c2 - 2 * b2 * c3 + c3 ** 2))) +
+                0.5 * (b2 + c3 + np.sqrt(b2 ** 2 + 4 * b3 * c2 - 2 * b2 * c3 + c3 ** 2)) * np.log(0.5 * (b2 + c3 + np.sqrt(b2 ** 2 + 4 * b3 * c2 - 2 * b2 * c3 + c3 ** 2)))
+        )
+
+    else:
+        # This method can't find all eigenvalues becouse of the algorithm it uses, but it does find all but the smallest two,
+        # leading to a precision loss of ~10-6
+        # See https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.linalg.eigs.html for details
+        if setup.using_gpu:
+            eigen_vals = scipy.sparse.linalg.eigsh(dm.data.get(), k=2 ** dm.number_of_qbits - 3, which="LM", return_eigenvectors=False)
+            from_eigen = -np.sum(eigen_vals * np.log(eigen_vals))
+        else:
+            eigen_vals = sp.sparse.linalg.eigsh(dm.data, k=2 ** dm.number_of_qbits - 3, return_eigenvectors=False)
+            from_eigen = -np.sum(eigen_vals * np.log(eigen_vals))
+    return np.real(from_eigen)
 
 
 def concurrence(dm: DensityMatrix) -> float:
@@ -163,25 +181,25 @@ def mutual_information_with_environment(dm: DensityMatrix, sub_system_qbits: lis
 
 
 def mutual_information(dm: DensityMatrix, sub_system_qbits_a: list[int], sub_system_qbits_b: list[int]) -> float:
-    everything_thats_not_system_a = list(set(range(dm.basis.num_qubits)) - set(sub_system_qbits_a))
+    everything_thats_not_system_a = tuple(set(range(dm.basis.num_qubits)) - set(sub_system_qbits_a))
     sub_system_a = dm.ptrace(everything_thats_not_system_a)
 
-    everything_thats_not_system_b = list(set(range(dm.basis.num_qubits)) - set(sub_system_qbits_b))
+    everything_thats_not_system_b = tuple(set(range(dm.basis.num_qubits)) - set(sub_system_qbits_b))
     sub_system_b = dm.ptrace(everything_thats_not_system_b)
 
     sub_system_qbits_ab = sub_system_qbits_a + sub_system_qbits_b
-    everything_thats_not_system_ab = list(set(range(dm.basis.num_qubits)) - set(sub_system_qbits_ab))
+    everything_thats_not_system_ab = tuple(set(range(dm.basis.num_qubits)) - set(sub_system_qbits_ab))
     sub_system_ab = dm.ptrace(everything_thats_not_system_ab)
     return entropy(sub_system_a) + entropy(sub_system_b) - entropy(sub_system_ab)
 
 
 def mutual_information_of_every_pair(dm: DensityMatrix):
     n = dm.number_of_qbits
-    result = []
+    result = {}
     for i in range(n):
         for j in range(i + 1, n):
-            result.append((mutual_information(dm, [i], [j]), i, j))
-    return result
+            result[(i,j)] = mutual_information(dm, [i], [j])
+    return np.array(result)
 
 
 def relative_entropy_of_every_pair(dm: DensityMatrix):
@@ -218,7 +236,6 @@ def subaddativity(dm: DensityMatrix, sub_system_qbits_a: list[int], sub_system_q
 
 
 def strong_subaddativity(dm: DensityMatrix, sub_system_qbits_a: list[int], sub_system_qbits_b: list[int], sub_system_qbits_c: list[int]) -> float:
-
     dm_ab = dm.ptrace(sub_system_qbits_c)
     dm_bc = dm.ptrace(sub_system_qbits_a)
     dm_a = dm.ptrace(sub_system_qbits_b + sub_system_qbits_c)
