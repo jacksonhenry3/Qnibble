@@ -83,12 +83,12 @@ def execute(ordering_type, ordering_seed, unitary_energy_subspace, unitary_seed,
         # match evolution_generation_type: unitary, hamiltonian, hamiltonian_old
         match evolution_generation_type:
             case "unitary":
-                sub_unitary = random_unitary.random_energy_preserving_unitary(num_qbits=num_qbits, seed=unitary_rng)
+                sub_unitary = random_unitary.random_energy_preserving_unitary(num_qbits=chunk_size, seed=unitary_rng)
             case "unitary.05":
-                sub_unitary = random_unitary.random_energy_preserving_unitary(num_qbits=num_qbits, seed=unitary_rng)
+                sub_unitary = random_unitary.random_energy_preserving_unitary(num_qbits=chunk_size, seed=unitary_rng)
                 sub_unitary = sub_unitary ** .05
             case "hamiltonian":
-                hamiltonian = random_unitary.random_hamiltonian(num_qbits=num_qbits, seed=unitary_rng)
+                hamiltonian = random_unitary.random_hamiltonian(num_qbits=chunk_size, seed=unitary_rng)
                 sub_unitary = DM.dm_exp(hamiltonian * -1j * .1)
             case "hamiltonian_old":
                 # throw an incompatible error
@@ -111,7 +111,7 @@ def execute(ordering_type, ordering_seed, unitary_energy_subspace, unitary_seed,
                    num_iterations=num_steps,
                    orders=ordering,
                    Unitaries=unitary,
-                   verbose=0
+                   verbose=.1
                    )[0]
     path = f"../data/{num_qbits}_{ordering_type}_{unitary_seed}{unitary_energy_subspace}"
     if __name__ == "__main__": print(f"simulation complete, extracting and saving data to : {path}\n")
@@ -121,12 +121,14 @@ def execute(ordering_type, ordering_seed, unitary_energy_subspace, unitary_seed,
         os.makedirs(path)
     np.savetxt(f"{path}/pops{ordering_seed}.dat", pops, header=f"pops for {num_qbits} qbits with connectivity {ordering_type} and unitary {unitary}")
     ex_work = np.array(data[1]).squeeze()
-    if not os.path.exists(path):
-        os.makedirs(path)
+
     np.savetxt(f"{path}/exwork{ordering_seed}.dat", ex_work, header=f"ex_work for {num_qbits} qbits with connectivity {ordering_type} and unitary {unitary}")
+
+    MI = np.array(data[2]).squeeze()
+    # np.savetxt(f"{path}/mutual_information{ordering_seed}.dat", MI, header=f"mutual information  for {num_qbits} qbits with connectivity {ordering_type} and unitary {unitary}")
     if __name__ == "__main__": print("data saved, exiting")
 
-    return (pops, ex_work, data[2])
+    return (pops, ex_work,MI )
 
 
 if __name__ == "__main__":
