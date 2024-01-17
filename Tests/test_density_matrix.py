@@ -103,12 +103,14 @@ class TestDM:
         assert dm.dm_trace(dm_2) == np.trace(data_2.toarray())
 
     def test_dm_partial_trace(self):
-        dm_1, dm_2 = dm.n_thermal_qbits([.1, .2,.3]), dm.n_thermal_qbits([.3, .02])
+        dm_1, dm_2 = dm.n_thermal_qbits([.1, .2, .3]), dm.n_thermal_qbits([.3, .02])
         dm_1.change_to_energy_basis()
         U1, U2 = random_unitary.random_energy_preserving_unitary(3), random_unitary.random_energy_preserving_unitary(2)
         # dm_1.change_to_energy_basis()
         dm_1 = U1 * dm_1 * U1.H
         dm_2 = U2 * dm_2 * U2.H
         total = dm_1.tensor(dm_2)
-        res = total.ptrace([0, 1,2])
+        total.change_to_energy_basis()
+        res = total.ptrace((0, 1, 2))
         assert dm_2 == res
+

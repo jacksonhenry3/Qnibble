@@ -10,7 +10,7 @@ from matplotlib import colors
 import copy
 import warnings
 from functools import reduce, lru_cache
-
+from itertools import product
 import numpy as np
 
 xp = setup.xp
@@ -24,29 +24,36 @@ from scipy.linalg import logm
 
 
 @lru_cache
-def _ptrace_mask(n: int, qbits: list[int]) -> SPARSE_TYPE:
+def _ptrace_mask(n:int, basis_ints:tuple[int] , qbits: tuple[int]) -> SPARSE_TYPE:
+    """Caching will work better if qbits is a sorted tuple"""
     """Returns a mask for the partial trace of a density matrix"""
 
     # create a numpy array of x and y indices
-    x, y = xp.indices((2 ** n, 2 ** n))
+    x, y = np.meshgrid(basis_ints, basis_ints)
+
 
     # if qbit is an integer
     if type(qbits) == int:
-        qbit = qbits
-        mask0 = SPARSE_TYPE(xp.bitwise_and(~x, 2 ** (n - qbit - 1)) * xp.bitwise_and(~y, 2 ** (n - qbit - 1)) != 0)
-        mask1 = SPARSE_TYPE(xp.bitwise_and(x, 2 ** (n - qbit - 1)) * xp.bitwise_and(y, 2 ** (n - qbit - 1)) != 0)
-
-        return [mask0, mask1]
+        qbits = [qbits]
 
     masks = []
-    # loop over all qbits and
     for qbit in qbits:
-        print(qbit)
-        masks.append(_ptrace_mask(n, qbit))
+        mask0 = xp.bitwise_and(~x, 2 ** (n - qbit - 1)) * xp.bitwise_and(~y, 2 ** (n - qbit - 1)) != 0
+        mask1 = xp.bitwise_and(x, 2 ** (n - qbit - 1)) * xp.bitwise_and(y, 2 ** (n - qbit - 1)) != 0
+        masks.append([mask0, mask1])
 
-    res = itertools.product(*masks)
-    res = [reduce(lambda x, y: x * y, r) for r in res]
-    return res
+    all_combinations = list(product(*masks))
+
+    mask_coordinates = []
+    for combination in all_combinations:
+        # bitwise and each matrix in the combination sequentially
+        result = combination[0]
+        for matrix in combination[1:]:
+            result = xp.bitwise_and(result, matrix)
+        mask_coordinates.append(np.argwhere(result))
+
+    # rather than returning a list of boolean masks, we should try to return indices for each mask.
+    return mask_coordinates
 
 
 class DensityMatrix:
@@ -117,7 +124,6 @@ class DensityMatrix:
         res_basis = resultant_basis or res_basis
         return DensityMatrix(res_data, res_basis)
 
-    # @profile
     def ptrace_to_a_single_qbit(self, remaining_qbit):
         n = self.number_of_qbits
         qbit_val = 2 ** (n - remaining_qbit - 1)
@@ -126,6 +132,7 @@ class DensityMatrix:
         pop = xp.sum(diags[nums & qbit_val != 0])
         # assert that pop is between 0 and 1
         # assert 0 <= pop <= 1, f"Population of qbit {remaining_qbit} is {pop}"
+
         return pop
 
     def ptrace(self, qbits):
@@ -133,31 +140,37 @@ class DensityMatrix:
         """
         trace out the given qbits
         """
+
+        if qbits == []:
+            return self
+
+        if len(qbits) == 1:
+            return self.ptrace_to_a_single_qbit(qbits[0])
+
         # Add a check that all indices are valid no repeats etc.
         assert all([0 <= qbit < self.number_of_qbits for qbit in qbits]), f"qbits {qbits} are not valid for a {self.number_of_qbits} qbit system"
-        assert list(set(qbits)) == qbits, f"qbits {qbits} are not valid for a {self.number_of_qbits} qbit system"
+        # This could fail if set stops preserving order,
+        assert list(set(qbits)) == list(qbits), f"qbits {qbits} are not valid for a {self.number_of_qbits} qbit system"
 
-        result = self
-        for qbit_index in sorted(qbits)[::-1]:
-            result = result._ptrace(qbit_index)
+        # self.change_to_canonical_basis()
+        basis_ints = tuple(map(lambda a: a.num, self.basis))
+        masks = _ptrace_mask(self.number_of_qbits, basis_ints, qbits)
+        size = 2 ** (self.number_of_qbits - len(qbits))
+
+        # the below line is slow becouse it winds up calling ndarray.nonzero A LOT
+        # new_data = np.sum([self.data[mask].reshape(size, size) for mask in masks], axis=0)
+
+        # new_data = np.sum([self.data[np.nonzero(mask)].reshape(size, size) for mask in masks], axis=0)
+        new_data_list = []
+        for mask in masks:
+            selected_data = self.data[tuple(mask.T)].reshape(size, size)
+            new_data_list.append(selected_data)
+
+        new_data = np.sum(new_data_list, axis=0)
+
+        basis = canonical_basis(self.number_of_qbits - len(qbits))
+        result = DensityMatrix(new_data, basis)
         return result
-
-    def _ptrace(self, qbit):
-
-        #TODO create composite masks for multiple qbits
-
-        n = self.number_of_qbits
-
-        # create a numpy array of x and y indices
-        x, y = xp.indices((2 ** n, 2 ** n))
-        mask0 = xp.bitwise_and(~x, 2 ** (n - qbit - 1)) * xp.bitwise_and(~y, 2 ** (n - qbit - 1)) != 0
-        mask1 = xp.bitwise_and(x, 2 ** (n - qbit - 1)) * xp.bitwise_and(y, 2 ** (n - qbit - 1)) != 0
-
-        half_size = 2 ** (n - 1)
-
-        new_data = self.data[mask0].reshape(half_size, half_size) + self.data[mask1].reshape(half_size, half_size)
-        res = DensityMatrix(new_data, canonical_basis(n - 1))
-        return res
 
     def qbit_basis(self) -> xp.ndarray:
         n = self.number_of_qbits

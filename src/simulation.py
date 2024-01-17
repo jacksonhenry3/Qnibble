@@ -26,7 +26,7 @@ def run(dm: DM.DensityMatrix, measurement_set, num_iterations: int, orders, qbit
     """
 
     if qbits_to_measure == "all":
-        qbits_to_measure = list(range(dm.number_of_qbits))
+        qbits_to_measure = tuple(range(dm.number_of_qbits))
 
     qbits_to_trace_out = list(set(range(dm.number_of_qbits)) - set(qbits_to_measure))
 
