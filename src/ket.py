@@ -50,7 +50,7 @@ import functools
 #
 
 class Ket:
-    def __init__(self, num, num_qbit):
+    def __init__(self, num:int, num_qbit:int):
         self.num = num
         self.num_qbit = num_qbit
 

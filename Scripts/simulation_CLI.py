@@ -5,7 +5,7 @@ python .\simulation_CLI.py --ordering_type c5 --ordering_seed 0  --unitary_seed 
 
 # Add directory above current directory to path
 import os.path
-import sys, argparse
+import sys, argparse, h5py
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -20,12 +20,28 @@ from src import (
     random_unitary)
 
 
+
 def execute(ordering_type, ordering_seed, unitary_energy_subspace, unitary_seed, chunk_size, num_steps, initial_pops,
             evolution_generation_type="unitary", sample_frequency=5):
+    """
+    file_name: name of the file to save the data to (without the .hdf5 extension) example: "ZestyGodzilla"
+    connectivity: the type of connectivity to use for the ordering. options: "gas", "c5", "c6", "c7", ("messenger" has some issues)
+    ordering_seed: the seed to use for the ordering
+    unitary_energy_subspace: the energy subspace to use for the unitary evolution
+    unitary_seed: the seed to use for the unitary evolution
+    num_steps: the number of steps to take
+    initial_pops: the initial populations of the qubits
+    chunk_size: the size of the chunks to use for the unitary evolution
+    evolution_generation_type: the type of evolution to use. options: "unitary","unitary.05","hamiltonian", "hamiltonian_old", for both hamiltonians the dtheta is .1
+    verbosity: the verbosity of progress reports. .1 is every 10%, .01 is every 1%, etc.
+    """
+
     num_qbits = len(initial_pops)
 
     assert num_qbits % chunk_size == 0, "Chunk size must divide number of qubits"
     num_chunks = num_qbits // chunk_size
+
+    # the if __name__ == "__main__": statements make the statements only run if this file is run directly, not if it is imported.
     if __name__ == "__main__": print("====================================")
     # confirm the argument values
     if __name__ == "__main__": print(f"chunk size: {chunk_size}")
@@ -37,8 +53,8 @@ def execute(ordering_type, ordering_seed, unitary_energy_subspace, unitary_seed,
     if __name__ == "__main__": print("====================================")
     unitary_rng = np.random.default_rng(unitary_seed)
     if __name__ == "__main__": print()
-    if __name__ == "__main__": print(f"generating {ordering_type} ordering")
-    match ordering_type:
+    if __name__ == "__main__": print(f"generating {connectivity} ordering")
+    match connectivity:
         case "gas":
             ordering = orders.n_random_gas_orders(num_qbits=num_qbits, n=num_steps, seed=ordering_seed)
         case "c5":
@@ -51,7 +67,7 @@ def execute(ordering_type, ordering_seed, unitary_energy_subspace, unitary_seed,
             ordering = orders.n_random_messenger_orders(num_qbits=num_qbits, n=num_steps, seed=ordering_seed)
         case _:
             # throw an explanatory error
-            raise ValueError(f"ordering type {ordering_type} not recognized")
+            raise ValueError(f"ordering type {connectivity} not recognized")
 
     if __name__ == "__main__": print("ordering generated\n")
     basis = DM.energy_basis(chunk_size)
@@ -118,32 +134,48 @@ def execute(ordering_type, ordering_seed, unitary_energy_subspace, unitary_seed,
     measurements = [measure.two_qbit_dm_of_every_pair, measure.three_qbit_dm_of_every_triplet]
     # measurements = [measure.pops, measure.extractable_work_of_each_qubit, measure.mutual_information_of_every_pair]
     if __name__ == "__main__": print("running simulation")
+
     data = sim.run(system,
                    measurement_set=measurements,
                    num_iterations=num_steps,
                    orders=ordering,
                    sample_frequency=sample_frequency,
                    Unitaries=unitary,
-                   verbose=.1
+                   verbose=verbosity,
                    )
     data = [data[0], data[2]]
-    path = f"../data/{num_qbits}_{ordering_type}_{unitary_seed}{unitary_energy_subspace}"
+    path = f"../data/{num_qbits}qubits_{connectivity}_unitary={unitary_seed}_UnitaryEnergySubspace={unitary_energy_subspace}"
+    
     if __name__ == "__main__": print(f"simulation complete, extracting and saving data to : {path}\n")
-    # ordering_seed = str(ordering_seed).zfill(3)
+    twoQdm = np.array(data[0]).squeeze()
 
-    # pops = np.array(data[0]).squeeze()
-    # if not os.path.exists(path):
-    #   os.makedirs(path)
-    # np.savetxt(f"{path}/pops{ordering_seed}.dat", pops, header=f"pops for {num_qbits} qbits with connectivity {ordering_type} and unitary {unitary}")
-    # ex_work = np.array(data[1]).squeeze()
-
-    # np.savetxt(f"{path}/exwork{ordering_seed}.dat", ex_work, header=f"ex_work for {num_qbits} qbits with connectivity {ordering_type} and unitary {unitary}")
-
-    #results = np.array(data).squeeze()
-    # np.savetxt(f"{path}/mutual_information{ordering_seed}.dat", MI, header=f"mutual information  for {num_qbits} qbits with connectivity {ordering_type} and unitary {unitary}")
-    # if __name__ == "__main__": print("data saved, exiting")
-
+    save_data(file_name=file_name, data=twoQdm, connectivity=connectivity, unitary_energy_subspace=unitary_energy_subspace, unitary_seed=unitary_seed, ordering_seed=ordering_seed)
+    if __name__ == "__main__": print("data saved, exiting")
     return data
+
+def save_data(file_name: str, data, connectivity, unitary_energy_subspace, unitary_seed, ordering_seed):
+    file = h5py.File(file_name + ".hdf5", "a")
+
+    num_qbits = int(1 / 2 * (1 + np.sqrt(1 + 8 * len(data[0]))))
+
+    group_name = f"{num_qbits} qubits/{connectivity} connectivity/unitary energy subspace {unitary_energy_subspace}/unitary seed {unitary_seed}/ordering seed {ordering_seed}"
+    if group_name not in file:
+        file.create_group(group_name)
+    group = file[group_name]
+
+    for i, d in enumerate(data):
+        # check if the group already exists
+        group_name = f'{i}'
+        sub_index = 0
+        while group_name in group:
+            group_name = f'{i}({sub_index})'
+            sub_index += 1
+
+        time_slice = group.create_group(group_name, d)
+        for key, value in d.items():
+            time_slice.create_dataset(str(key), data=value.data.toarray())
+
+    file.close()
 
 
 if __name__ == "__main__":
@@ -151,6 +183,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='This is the CLI to run simulations')
 
     # Add arguments based on your requirements
+    parser.add_argument('--output_file_name', '-f', help='Name of the output file')
     parser.add_argument('--ordering_type', '-o', help='Type of ordering to use [gas,messenger,c5,c6,c7]', default='gas')
     parser.add_argument('--ordering_seed', '-os', type=int, help='the seed for generating the ordering', default=None)
     parser.add_argument('--unitary_energy_subspace', '-ues', type=int,
@@ -163,6 +196,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # Access the parsed arguments
+    file_name = args.output_file_name
     ordering_type = args.ordering_type
     ordering_seed = args.ordering_seed
     unitary_energy_subspace = args.unitary_energy_subspace
@@ -171,4 +205,11 @@ if __name__ == "__main__":
     chunk_size = args.chunk_size
     initial_pops = [float(p) for p in args.pops.split(",")]
 
-    execute(ordering_type, ordering_seed, unitary_energy_subspace, unitary_seed, chunk_size, num_steps, initial_pops)
+    execute(file_name=file_name,
+            connectivity=ordering_type,
+            ordering_seed=ordering_seed,
+            unitary_energy_subspace=unitary_energy_subspace,
+            unitary_seed=unitary_seed,
+            num_steps=num_steps,
+            chunk_size=chunk_size,
+            initial_pops=initial_pops)

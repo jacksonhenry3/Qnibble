@@ -208,7 +208,7 @@ def two_qbit_dm_of_every_pair(dm: DensityMatrix) -> dict:
     result = {}
     for i in range(n):
         for j in range(i + 1, n):
-            everything_thats_not_system = tuple(set(range(dm.basis.num_qubits)) - {i, j})
+            everything_thats_not_system = frozenset(range(dm.basis.num_qubits)) - frozenset({i, j})
             result[(i, j)] = dm.ptrace(everything_thats_not_system)
     return result
 
@@ -264,3 +264,24 @@ def strong_subaddativity(dm: DensityMatrix, sub_system_qbits_a: list[int], sub_s
     dm_c = dm.ptrace(sub_system_qbits_a + sub_system_qbits_b)
     s = entropy
     return s(dm_ab) + s(dm_bc) - s(dm_a) - s(dm_c)
+
+
+# Measurements that operate on dictionaries
+
+def mutual_information_of_every_pair_dict(dm_dict: dict):
+    result = {}
+    for qbit_pair in dm_dict:
+        result[qbit_pair] = mutual_information(dm_dict[qbit_pair], [0], [1])
+    return result
+
+def strong_subaddativity_of_every_triplet_dict(dm_dict: dict):
+    result = {}
+    for qbit_triplet in dm_dict:
+        result[qbit_triplet] = strong_subaddativity(dm_dict[qbit_triplet], [0], [1], [2])
+    return result
+
+def monogamy_of_mutual_information_of_every_triplet_dict(dm_dict: dict):
+    result = {}
+    for qbit_triplet in dm_dict:
+        result[qbit_triplet] = monogamy_of_mutual_information(dm_dict[qbit_triplet], [0], [1], [2])
+    return result
