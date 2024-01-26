@@ -256,3 +256,12 @@ def strong_subaddativity(dm: DensityMatrix, sub_system_qbits_a: list[int], sub_s
     dm_c = dm.ptrace(sub_system_qbits_a + sub_system_qbits_b)
     s = entropy
     return s(dm_ab) + s(dm_bc) - s(dm_a) - s(dm_c)
+
+
+# Measurements that operate on dictionaries
+
+def mutual_information_of_every_pair_dict(dm_dict: dict):
+    result = {}
+    for qbit_pair in dm_dict:
+        result[qbit_pair] = mutual_information(dm_dict[qbit_pair], [0], [1])
+    return result
