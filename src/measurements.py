@@ -258,7 +258,12 @@ def strong_subaddativity(dm: DensityMatrix, sub_system_qbits_a: list[int], sub_s
     return s(dm_ab) + s(dm_bc) - s(dm_a) - s(dm_c)
 
 
-# Measurements that operate on dictionaries
+"""
+=====================================================================================
+Measurements that operate on dictionaries of density matrices
+=====================================================================================
+"""
+
 
 def mutual_information_of_every_pair_dict(dm_dict: dict):
     result = {}
@@ -266,11 +271,13 @@ def mutual_information_of_every_pair_dict(dm_dict: dict):
         result[qbit_pair] = mutual_information(dm_dict[qbit_pair], [0], [1])
     return result
 
+
 def strong_subaddativity_of_every_triplet_dict(dm_dict: dict):
     result = {}
     for qbit_triplet in dm_dict:
         result[qbit_triplet] = strong_subaddativity(dm_dict[qbit_triplet], [0], [1], [2])
     return result
+
 
 def monogamy_of_mutual_information_of_every_triplet_dict(dm_dict: dict):
     result = {}
