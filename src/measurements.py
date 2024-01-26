@@ -80,15 +80,6 @@ def extractable_work(T: float, dm: DensityMatrix):
     dm.change_to_energy_basis()
     return float(np.real(T * D(dm, reference_dm)))
 
-#defining extractable work to use a dictionary of 2 Q matrices
-def extractable_work_from_dict(T: float, dict_of_dm: dict):
-    pop = pop_from_temp(T)
-    reference_dm = n_thermal_qbits([pop for _ in range(dm.number_of_qbits)])
-    reference_dm.change_to_energy_basis()
-    dm.change_to_energy_basis()
-    return float(np.real(T * D(dm, reference_dm)))
-
-
 def extractable_work_of_a_single_qbit(T: float, pop: float):
     ref_pop = pop_from_temp(T)
     return float(np.real(T * D_single_qbits(pop, ref_pop)))
@@ -221,6 +212,15 @@ def two_qbit_dm_of_every_pair(dm: DensityMatrix) -> dict:
             result[(i, j)] = dm.ptrace(everything_thats_not_system)
     return result
 
+def three_qbit_dm_of_every_triplet(dm: DensityMatrix) -> dict:
+    n = dm.number_of_qbits
+    result = {}
+    for i in range(n):
+        for j in range(i + 1, n):
+            for k in range(j + 1, n):
+             everything_thats_not_system = tuple(set(range(dm.basis.num_qubits)) - {i, j,k})
+             result[(i, j,k)] = dm.ptrace(everything_thats_not_system)
+    return result
 
 def relative_entropy_of_every_pair(dm: DensityMatrix):
     n = dm.number_of_qbits

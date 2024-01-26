@@ -115,7 +115,7 @@ def execute(ordering_type, ordering_seed, unitary_energy_subspace, unitary_seed,
     if __name__ == "__main__": print("constructing system")
     system = DM.n_thermal_qbits(initial_pops)
     system.change_to_energy_basis()
-    measurements = [measure.two_qbit_dm_of_every_pair]
+    measurements = [measure.two_qbit_dm_of_every_pair, measure.three_qbit_dm_of_every_triplet]
     # measurements = [measure.pops, measure.extractable_work_of_each_qubit, measure.mutual_information_of_every_pair]
     if __name__ == "__main__": print("running simulation")
     data = sim.run(system,
