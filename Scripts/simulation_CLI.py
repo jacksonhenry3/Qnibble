@@ -134,46 +134,49 @@ def execute(file_name: str, connectivity, ordering_seed, unitary_energy_subspace
     # measurements = [measure.pops, measure.extractable_work_of_each_qubit, measure.mutual_information_of_every_pair]
     if __name__ == "__main__": print("running simulation")
 
-    data = sim.run(system,
-                   measurement_set=measurements,
-                   num_iterations=num_steps,
-                   orders=ordering,
-                   sample_frequency=sample_frequency,
-                   Unitaries=unitary,
-                   verbose=verbosity,
-                   )
-    data = [data[0], data[2]]
+    pops, two_qubit_dms = sim.run(system,
+                                  num_iterations=num_steps,
+                                  orders=ordering,
+                                  sample_frequency=sample_frequency,
+                                  Unitaries=unitary,
+                                  verbose=verbosity,
+                                  )[0]
+
     path = f"../data/{num_qbits}qubits_{connectivity}_unitary={unitary_seed}_UnitaryEnergySubspace={unitary_energy_subspace}"
 
     if __name__ == "__main__": print(f"simulation complete, extracting and saving data to : {path}\n")
-    twoQdm = np.array(data[0]).squeeze()
-
-    save_data(file_name=file_name, data=twoQdm, connectivity=connectivity, unitary_energy_subspace=unitary_energy_subspace, unitary_seed=unitary_seed, ordering_seed=ordering_seed)
+    save_data(file_name=file_name, data=two_qubit_dms, connectivity=connectivity, unitary_energy_subspace=unitary_energy_subspace, unitary_seed=unitary_seed, ordering_seed=ordering_seed,
+              measurment="two_qubit_dms", num_qubits=num_qbits)
+    save_data(file_name=file_name, data=pops, connectivity=connectivity, unitary_energy_subspace=unitary_energy_subspace, unitary_seed=unitary_seed, ordering_seed=ordering_seed,
+              measurment="pops", num_qubits=num_qbits)
     if __name__ == "__main__": print("data saved, exiting")
-    return data
+    return pops, two_qubit_dms
 
 
-def save_data(file_name: str, data, connectivity, unitary_energy_subspace, unitary_seed, ordering_seed):
+def save_data(file_name: str, data, connectivity, unitary_energy_subspace, unitary_seed, ordering_seed, measurment, num_qubits):
     file = h5py.File(file_name + ".hdf5", "a")
 
-    num_qbits = int(1 / 2 * (1 + np.sqrt(1 + 8 * len(data[0]))))
-
-    group_name = f"{num_qbits} qubits/{connectivity} connectivity/unitary energy subspace {unitary_energy_subspace}/unitary seed {unitary_seed}/ordering seed {ordering_seed}"
+    group_name = f"{num_qubits} qubits/{connectivity} connectivity/unitary energy subspace {unitary_energy_subspace}/unitary seed {unitary_seed}/ordering seed {ordering_seed}/{measurment}"
     if group_name not in file:
         file.create_group(group_name)
     group = file[group_name]
 
-    for i, d in enumerate(data):
+    for time_index in data:
         # check if the group already exists
-        group_name = f'{i}'
+        group_name = f'{time_index}'
         sub_index = 0
         while group_name in group:
-            group_name = f'{i}({sub_index})'
+            group_name = f'{time_index}({sub_index})'
             sub_index += 1
 
-        time_slice = group.create_group(group_name, d)
-        for key, value in d.items():
-            time_slice.create_dataset(str(key), data=value.data.toarray())
+        time_slice = group.create_group(group_name)
+        for key, value in data[time_index].items():
+
+            # if the value is a scalar
+            if np.isscalar(value):
+                time_slice.create_dataset(str(key), data=value)
+            else:
+                time_slice.create_dataset(str(key), data=value.data.toarray())
 
     file.close()
 
