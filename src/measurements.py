@@ -265,3 +265,15 @@ def mutual_information_of_every_pair_dict(dm_dict: dict):
     for qbit_pair in dm_dict:
         result[qbit_pair] = mutual_information(dm_dict[qbit_pair], [0], [1])
     return result
+
+def strong_subaddativity_of_every_triplet_dict(dm_dict: dict):
+    result = {}
+    for qbit_triplet in dm_dict:
+        result[qbit_triplet] = strong_subaddativity(dm_dict[qbit_triplet], [0], [1], [2])
+    return result
+
+def monogamy_of_mutual_information_of_every_triplet_dict(dm_dict: dict):
+    result = {}
+    for qbit_triplet in dm_dict:
+        result[qbit_triplet] = monogamy_of_mutual_information(dm_dict[qbit_triplet], [0], [1], [2])
+    return result
