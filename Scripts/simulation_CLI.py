@@ -20,8 +20,9 @@ from src import (
     random_unitary)
 
 
-def execute(file_name: str, connectivity, ordering_seed, unitary_energy_subspace, unitary_seed, num_steps, initial_pops, chunk_size=4,
-            evolution_generation_type="unitary", verbosity=.1):
+
+def execute(ordering_type, ordering_seed, unitary_energy_subspace, unitary_seed, chunk_size, num_steps, initial_pops,
+            evolution_generation_type="unitary", sample_frequency=5):
     """
     file_name: name of the file to save the data to (without the .hdf5 extension) example: "ZestyGodzilla"
     connectivity: the type of connectivity to use for the ordering. options: "gas", "c5", "c6", "c7", ("messenger" has some issues)
@@ -130,7 +131,7 @@ def execute(file_name: str, connectivity, ordering_seed, unitary_energy_subspace
     if __name__ == "__main__": print("constructing system")
     system = DM.n_thermal_qbits(initial_pops)
     system.change_to_energy_basis()
-    measurements = [measure.two_qbit_dm_of_every_pair]
+    measurements = [measure.two_qbit_dm_of_every_pair, measure.three_qbit_dm_of_every_triplet]
     # measurements = [measure.pops, measure.extractable_work_of_each_qubit, measure.mutual_information_of_every_pair]
     if __name__ == "__main__": print("running simulation")
 
@@ -138,19 +139,19 @@ def execute(file_name: str, connectivity, ordering_seed, unitary_energy_subspace
                    measurement_set=measurements,
                    num_iterations=num_steps,
                    orders=ordering,
+                   sample_frequency=sample_frequency,
                    Unitaries=unitary,
                    verbose=verbosity,
-                   )[0]
-
+                   )
+    data = [data[0], data[2]]
     path = f"../data/{num_qbits}qubits_{connectivity}_unitary={unitary_seed}_UnitaryEnergySubspace={unitary_energy_subspace}"
-
+    
     if __name__ == "__main__": print(f"simulation complete, extracting and saving data to : {path}\n")
     twoQdm = np.array(data[0]).squeeze()
 
     save_data(file_name=file_name, data=twoQdm, connectivity=connectivity, unitary_energy_subspace=unitary_energy_subspace, unitary_seed=unitary_seed, ordering_seed=ordering_seed)
-
-    return twoQdm
-
+    if __name__ == "__main__": print("data saved, exiting")
+    return data
 
 def save_data(file_name: str, data, connectivity, unitary_energy_subspace, unitary_seed, ordering_seed):
     file = h5py.File(file_name + ".hdf5", "a")
