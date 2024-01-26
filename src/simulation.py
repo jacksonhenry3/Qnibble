@@ -1,4 +1,6 @@
 import numpy as np
+
+import src.measurements as measurements
 from src.setup import xp
 
 import os
@@ -8,7 +10,10 @@ from src.random_unitary import random_energy_preserving_unitary
 import copy
 
 
-def run(dm: DM.DensityMatrix, measurement_set, num_iterations: int, orders, qbits_to_measure="all", Unitaries=None, verbose=False):
+def run(dm: DM.DensityMatrix, measurement_set, num_iterations: int, sample_frequency: int, orders,
+        qbits_to_measure="all",
+        Unitaries=None,
+        verbose=False):
     """
     Args:
         dm: the density matrix to evolve
@@ -33,6 +38,8 @@ def run(dm: DM.DensityMatrix, measurement_set, num_iterations: int, orders, qbit
     if type(measurement_set) != list:
         measurement_set = [measurement_set]
 
+
+    pops_values = [measurements.pops(dm)]
     measurement_values = [measurement(dm.ptrace(qbits_to_trace_out)) for measurement in measurement_set]
 
     generate_random_unitary = False
@@ -70,13 +77,19 @@ def run(dm: DM.DensityMatrix, measurement_set, num_iterations: int, orders, qbit
             U = Unitaries[i % num_unitaries]
 
         dm = step(dm, order, U, not generate_random_unitary)
+        # Does one qubit measurements on the entire qubit density matrix at each step
+        pops_values = xp.vstack((pops_values, measurements.pops(dm)))
 
-        measurement_values = [xp.vstack((measurement_values[i], measurement(dm.ptrace(qbits_to_trace_out)))) for i, measurement in enumerate(measurement_set)]
+        # checks if the iteration number is multiple of 5 and only does measurements of two qubit density matrix on those steps
+        if i % sample_frequency == 0:
+            measurement_values = [xp.vstack((measurement_values[i], measurement(dm.ptrace(qbits_to_trace_out)))) for
+                                  i, measurement in enumerate(measurement_set)]
 
-    return measurement_values, dm
+    return measurement_values, dm, pops_values
 
 
-def step(dm: DM.DensityMatrix, order: list[np.ndarray], Unitary: DM.DensityMatrix, unitary_reused=False) -> DM.DensityMatrix:
+def step(dm: DM.DensityMatrix, order: list[np.ndarray], Unitary: DM.DensityMatrix,
+         unitary_reused=False) -> DM.DensityMatrix:
     """
     Args:
         dm: the density matrix to evolve
@@ -106,7 +119,8 @@ def step(dm: DM.DensityMatrix, order: list[np.ndarray], Unitary: DM.DensityMatri
     return dm
 
 
-def save_data(data: np.ndarray, num_qbits: str, measurement: str, num_chunks: str, connectivity_type: str, run_index: str, sim_index=int, extra=""):
+def save_data(data: np.ndarray, num_qbits: str, measurement: str, num_chunks: str, connectivity_type: str,
+              run_index: str, sim_index=int, extra=""):
     if extra != "":
         path = f"../data/num_qbits={num_qbits}_num_chunks={num_chunks}_connectivity_type={connectivity_type}_other={extra}/index={sim_index}"
     else:
@@ -114,4 +128,5 @@ def save_data(data: np.ndarray, num_qbits: str, measurement: str, num_chunks: st
     if not os.path.exists(path):
         os.makedirs(path, exist_ok=True)
     file_name = path + f"/{measurement}_{run_index}.dat"
-    np.savetxt(file_name, data, header=f"{measurement} for {num_qbits} qbits with connectivity {connectivity_type} in chunks {num_chunks}")
+    np.savetxt(file_name, data,
+               header=f"{measurement} for {num_qbits} qbits with connectivity {connectivity_type} in chunks {num_chunks}")
