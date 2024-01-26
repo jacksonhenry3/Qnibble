@@ -24,13 +24,12 @@ from scipy.linalg import logm
 
 
 @lru_cache
-def _ptrace_mask(n:int, basis_ints:tuple[int] , qbits: tuple[int]) -> SPARSE_TYPE:
+def _ptrace_mask(n: int, basis_ints: tuple[int], qbits: tuple[int]) -> SPARSE_TYPE:
     """Caching will work better if qbits is a sorted tuple"""
     """Returns a mask for the partial trace of a density matrix"""
 
     # create a numpy array of x and y indices
     x, y = np.meshgrid(basis_ints, basis_ints)
-
 
     # if qbit is an integer
     if type(qbits) == int:
@@ -135,13 +134,13 @@ class DensityMatrix:
 
         return pop
 
-    def ptrace(self, qbits, resultant_dm = True):
+    def ptrace(self, qbits, resultant_dm=True):
 
         """
         trace out the given qbits
         """
 
-        if qbits == []:
+        if len(qbits) == 0:
             return self
 
         # Add a check that all indices are valid no repeats etc.
