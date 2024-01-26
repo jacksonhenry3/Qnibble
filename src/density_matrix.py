@@ -135,7 +135,7 @@ class DensityMatrix:
 
         return pop
 
-    def ptrace(self, qbits):
+    def ptrace(self, qbits, resultant_dm = True):
 
         """
         trace out the given qbits
@@ -143,9 +143,6 @@ class DensityMatrix:
 
         if qbits == []:
             return self
-
-        if len(qbits) == 1:
-            return self.ptrace_to_a_single_qbit(qbits[0])
 
         # Add a check that all indices are valid no repeats etc.
         assert all([0 <= qbit < self.number_of_qbits for qbit in qbits]), f"qbits {qbits} are not valid for a {self.number_of_qbits} qbit system"
@@ -162,11 +159,15 @@ class DensityMatrix:
 
         # new_data = np.sum([self.data[np.nonzero(mask)].reshape(size, size) for mask in masks], axis=0)
         new_data_list = []
+        data = self.data.toarray()
         for mask in masks:
-            selected_data = self.data[tuple(mask.T)].reshape(size, size)
+            selected_data = data[tuple(mask.T)].reshape(size, size)
             new_data_list.append(selected_data)
 
         new_data = np.sum(new_data_list, axis=0)
+
+        if not resultant_dm:
+            return new_data
 
         basis = canonical_basis(self.number_of_qbits - len(qbits))
         result = DensityMatrix(new_data, basis)
