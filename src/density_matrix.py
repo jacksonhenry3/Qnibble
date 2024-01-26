@@ -144,7 +144,6 @@ class DensityMatrix:
         if qbits == []:
             return self
 
-
         # Add a check that all indices are valid no repeats etc.
         assert all([0 <= qbit < self.number_of_qbits for qbit in qbits]), f"qbits {qbits} are not valid for a {self.number_of_qbits} qbit system"
         # This could fail if set stops preserving order,
