@@ -21,7 +21,7 @@ from src import (
 
 
 def execute(ordering_type, ordering_seed, unitary_energy_subspace, unitary_seed, chunk_size, num_steps, initial_pops,
-            evolution_generation_type="unitary"):
+            evolution_generation_type="unitary", sample_frequency=5):
     num_qbits = len(initial_pops)
 
     assert num_qbits % chunk_size == 0, "Chunk size must divide number of qubits"
@@ -122,9 +122,11 @@ def execute(ordering_type, ordering_seed, unitary_energy_subspace, unitary_seed,
                    measurement_set=measurements,
                    num_iterations=num_steps,
                    orders=ordering,
+                   sample_frequency=sample_frequency,
                    Unitaries=unitary,
                    verbose=.1
-                   )[0]
+                   )
+    data = [data[0], data[2]]
     path = f"../data/{num_qbits}_{ordering_type}_{unitary_seed}{unitary_energy_subspace}"
     if __name__ == "__main__": print(f"simulation complete, extracting and saving data to : {path}\n")
     # ordering_seed = str(ordering_seed).zfill(3)
@@ -137,11 +139,11 @@ def execute(ordering_type, ordering_seed, unitary_energy_subspace, unitary_seed,
 
     # np.savetxt(f"{path}/exwork{ordering_seed}.dat", ex_work, header=f"ex_work for {num_qbits} qbits with connectivity {ordering_type} and unitary {unitary}")
 
-    twoQdm = np.array(data[0]).squeeze()
+    #results = np.array(data).squeeze()
     # np.savetxt(f"{path}/mutual_information{ordering_seed}.dat", MI, header=f"mutual information  for {num_qbits} qbits with connectivity {ordering_type} and unitary {unitary}")
     # if __name__ == "__main__": print("data saved, exiting")
 
-    return (twoQdm)
+    return data
 
 
 if __name__ == "__main__":

@@ -80,6 +80,14 @@ def extractable_work(T: float, dm: DensityMatrix):
     dm.change_to_energy_basis()
     return float(np.real(T * D(dm, reference_dm)))
 
+#defining extractable work to use a dictionary of 2 Q matrices
+def extractable_work_from_dict(T: float, dict_of_dm: dict):
+    pop = pop_from_temp(T)
+    reference_dm = n_thermal_qbits([pop for _ in range(dm.number_of_qbits)])
+    reference_dm.change_to_energy_basis()
+    dm.change_to_energy_basis()
+    return float(np.real(T * D(dm, reference_dm)))
+
 
 def extractable_work_of_a_single_qbit(T: float, pop: float):
     ref_pop = pop_from_temp(T)
