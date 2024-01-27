@@ -157,15 +157,14 @@ def save_data(file_name: str, data, connectivity, unitary_energy_subspace, unita
     path_to_data = os.path.relpath('data')
 
     while not os.path.isdir(path_to_data):
-        print(f"path {path_to_data} does not exist, going up one level")
         path_to_data = os.path.join('..', path_to_data)
-    print(f"found data directory at {path_to_data}")
+
 
     os.makedirs(f"{path_to_data}/{file_name}", exist_ok=True)
     file_name = f"{path_to_data}/{file_name}/{file_name}-{num_qubits}_qubits-{connectivity}_connectivity-unitary_energy_subspace_{unitary_energy_subspace}-unitary_seed_{unitary_seed}-ordering_seed_{ordering_seed}"
     group_name = f"{num_qubits} qubits/{connectivity} connectivity/unitary energy subspace {unitary_energy_subspace}/unitary seed {unitary_seed}/ordering seed {ordering_seed}/{measurment}"
 
-    # print(f"saving data to {file_name}")
+    print(f"saving data to {file_name}")
     file = h5py.File(file_name + ".hdf5", "a")
     if group_name not in file:
         file.create_group(group_name)
