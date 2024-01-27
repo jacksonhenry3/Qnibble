@@ -4,13 +4,6 @@ import os
 # get list of all files in directory
 directory = "../data/testing_gdf5"
 
-file_list = []
-for filename in os.listdir(directory):
-    if filename.endswith(".hdf5"):
-        file_list.append(os.path.join(directory, filename))
-    else:
-        continue
-
 
 def merge_groups(group1, group2, group_out):
     # Merge datasets
@@ -30,12 +23,21 @@ def merge_groups(group1, group2, group_out):
                     group_out.create_group(gr)
                 merge_groups(group1[gr], group2[gr], group_out[gr])
 
-def merge_hdf5_files(file_list, output_file):
+
+def merge_hdf5_files(directory):
+    file_list = []
+    for filename in os.listdir(directory):
+        if filename.endswith(".hdf5"):
+            file_list.append(os.path.join(directory, filename))
+        else:
+            continue
+
+    # extract the last part of the directory name
+    output_file = directory + "/" + directory.split('/')[-1] + '.hdf5'
     with h5py.File(output_file, 'w') as fo:
         for file in file_list:
             with h5py.File(file, 'r') as fi:
                 merge_groups(fi, fo, fo)
 
-
-# Usage
-merge_hdf5_files(file_list, "../data/testing_gdf5/merged.hdf5")
+    #     close the files
+    fo.close()
