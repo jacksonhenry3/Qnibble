@@ -1,6 +1,6 @@
 """
 example usage:
-python .\simulation_CLI.py --ordering_type c5 --ordering_seed 0  --unitary_seed 0 --unitary_energy_subspace 2 --chunk_size 4 --num_steps 100 --pops .2,.2,.2,.4,.2,.2,.2,.2
+python .\simulation_CLI.py --output_file_name an_example_run --ordering_type c5 --ordering_seed 0  --unitary_seed 0 --unitary_energy_subspace 2 --chunk_size 4 --num_steps 100 --pops .2,.2,.2,.4,.2,.2,.2,.2
 """
 
 # Add directory above current directory to path
@@ -142,9 +142,9 @@ def execute(file_name: str, connectivity, ordering_seed, unitary_energy_subspace
                                   verbose=verbosity,
                                   )[0]
 
-    path = f"../data/{num_qbits}qubits_{connectivity}_unitary={unitary_seed}_UnitaryEnergySubspace={unitary_energy_subspace}"
 
-    if __name__ == "__main__": print(f"simulation complete, extracting and saving data to : {path}\n")
+
+
     save_data(file_name=file_name, data=two_qubit_dms, connectivity=connectivity, unitary_energy_subspace=unitary_energy_subspace, unitary_seed=unitary_seed, ordering_seed=ordering_seed,
               measurment="two_qubit_dms", num_qubits=num_qbits)
     save_data(file_name=file_name, data=pops, connectivity=connectivity, unitary_energy_subspace=unitary_energy_subspace, unitary_seed=unitary_seed, ordering_seed=ordering_seed,
@@ -161,7 +161,11 @@ def save_data(file_name: str, data, connectivity, unitary_energy_subspace, unita
 
 
     os.makedirs(f"{path_to_data}/{file_name}", exist_ok=True)
-    file_name = f"{path_to_data}/{file_name}/{file_name}-{num_qubits}_qubits-{connectivity}_connectivity-unitary_energy_subspace_{unitary_energy_subspace}-unitary_seed_{unitary_seed}-ordering_seed_{ordering_seed}"
+    file_name = os.path.join(path_to_data, file_name, f"{file_name}-{num_qubits}_qubits-{connectivity}_connectivity-unitary_energy_subspace_{unitary_energy_subspace}-unitary_seed_{unitary_seed}-ordering_seed_{ordering_seed}")
+
+    print(f"simulation complete, extracting and saving data to : {file_name}")
+
+
     group_name = f"{num_qubits} qubits/{connectivity} connectivity/unitary energy subspace {unitary_energy_subspace}/unitary seed {unitary_seed}/ordering seed {ordering_seed}/{measurment}"
 
     file = h5py.File(file_name + ".hdf5", "a")
