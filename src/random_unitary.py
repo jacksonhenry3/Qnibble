@@ -135,8 +135,9 @@ def haar_random_unitary():
     theta = sin_sampler.rvs(size=1)[0]  # Sample theta from our new distribution
     c = np.cos(theta / 2)
     s = np.sin(theta / 2)
-    data = np.array([[np.exp(-1j * (phi + omega) / 2) * c, -np.exp(-1j * (phi - omega) / 2) * s],
+    data = np.array([[np.exp(-1j * (phi + omega) / 2) * c, -np.exp(1j * (phi - omega) / 2) * s],
                      [np.exp(-1j * (phi - omega) / 2) * s, np.exp(1j * (phi + omega) / 2) * c]])
+
 
 
     m = sp.linalg.block_diag(np.array([[1]]),data,np.array([[1]]))
