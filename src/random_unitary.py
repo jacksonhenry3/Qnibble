@@ -142,5 +142,3 @@ def haar_random_unitary():
     m = sp.linalg.block_diag(np.array([[1]]),data,np.array([[1]]))
     print(m)
     return DM.DensityMatrix(DM.SPARSE_TYPE(m, dtype=np.complex64), energy_basis(2))
-
-haar_random_unitary().plot()
