@@ -12,6 +12,20 @@ from scipy.stats import unitary_group
 
 SPARSE_TYPE = setup.SPARSE_TYPE
 
+from scipy.stats import rv_continuous
+
+
+# code from pennylane
+# https://pennylane.ai/qml/demos/tutorial_haar_measure/
+class sin_prob_dist(rv_continuous):
+    def _pdf(self, theta):
+        # The 0.5 is so that the distribution is normalized
+        return 0.5 * np.sin(theta)
+
+
+# Samples of theta should be drawn from between 0 and pi
+sin_sampler = sin_prob_dist(a=0, b=np.pi)
+
 
 def random_hamiltonian(num_qbits: int, seed=None):
     """
@@ -111,3 +125,22 @@ def random_energy_preserving_unitary(num_qbits: int, seed=None) -> DM.DensityMat
     # m = sp.linalg.fractional_matrix_power(m, dt)
     # m[m < 10 ** -5] = 0
     return DM.DensityMatrix(SPARSE_TYPE(m), energy_basis(num_qbits))
+
+
+def haar_random_unitary():
+    """
+    based off of pennylanes tutorial on haar random unitaries, this only generates a random unitary in the 2 qubit subspace
+    """
+    phi, omega = 2 * np.pi * np.random.uniform(size=2)  # Sample phi and omega as normal
+    theta = sin_sampler.rvs(size=1)[0]  # Sample theta from our new distribution
+    c = np.cos(theta / 2)
+    s = np.sin(theta / 2)
+    data = np.array([[np.exp(-1j * (phi + omega) / 2) * c, -np.exp(-1j * (phi - omega) / 2) * s],
+                     [np.exp(-1j * (phi - omega) / 2) * s, np.exp(1j * (phi + omega) / 2) * c]])
+
+
+    m = sp.linalg.block_diag(np.array([[1]]),data,np.array([[1]]))
+    print(m)
+    return DM.DensityMatrix(DM.SPARSE_TYPE(m, dtype=np.complex64), energy_basis(2))
+
+haar_random_unitary().plot()
