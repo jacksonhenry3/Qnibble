@@ -157,8 +157,8 @@ class DensityMatrix:
         possible_x = [i for i, x in enumerate(nums) if (((x & qbit_vals[0]) == 0) and ((x & qbit_vals[1]) != 0))]
         possible_y = [i for i, y in enumerate(nums) if (((y & qbit_vals[0]) != 0) and ((y & qbit_vals[1]) == 0))]
 
-        d = self.data.toarray()
-        correlation = d[possible_x, possible_y].sum()
+
+        correlation = self.data[possible_x, possible_y].sum()
         # correlation = np.sum([d[i, j] for i, j in zip(possible_x, possible_y)])
         # construct a sparse matrix with the data
         data = np.diag([zerozeroelement, oneoneelement, twotwoelement, threethreeelement])
