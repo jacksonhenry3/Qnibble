@@ -80,6 +80,7 @@ def extractable_work(T: float, dm: DensityMatrix):
     dm.change_to_energy_basis()
     return float(np.real(T * D(dm, reference_dm)))
 
+
 def extractable_work_of_a_single_qbit(T: float, pop: float):
     ref_pop = pop_from_temp(T)
     return float(np.real(T * D_single_qbits(pop, ref_pop)))
@@ -94,6 +95,20 @@ def extractable_work_of_each_qubit(dm: DensityMatrix):
         temp_list.pop(i)
         T = np.mean(temp_list)
         result.append(extractable_work_of_a_single_qbit(T, dm.ptrace_to_a_single_qbit(i)))
+    return result
+
+
+def extractable_work_of_each_qubit_from_pops(pops: list):
+    # TODO this breaks when initial state is non-thermal
+    n = len(pops)
+    result = []
+
+    for i in range(n):
+        # this can be made faster by not regenerating this list every time
+        temp_list = [temp_from_pop(p) for p in pops]
+        temp_list.pop(i)
+        T = np.mean(temp_list)
+        result.append(extractable_work_of_a_single_qbit(T, pops[i]))
     return result
 
 
@@ -208,9 +223,11 @@ def two_qbit_dm_of_every_pair(dm: DensityMatrix) -> dict:
     result = {}
     for i in range(n):
         for j in range(i + 1, n):
-            everything_thats_not_system = frozenset(range(dm.basis.num_qubits)) - frozenset({i, j})
-            result[(i, j)] = dm.ptrace(everything_thats_not_system)
+            # everything_thats_not_system = frozenset(range(dm.basis.num_qubits)) - frozenset({i, j})
+            # result[(i, j)] = dm.ptrace(everything_thats_not_system)
+            result[(i, j)] = dm.ptrace_to_2_qubits((i, j))
     return result
+
 
 def three_qbit_dm_of_every_triplet(dm: DensityMatrix) -> dict:
     n = dm.number_of_qbits
@@ -218,9 +235,10 @@ def three_qbit_dm_of_every_triplet(dm: DensityMatrix) -> dict:
     for i in range(n):
         for j in range(i + 1, n):
             for k in range(j + 1, n):
-             everything_thats_not_system = tuple(set(range(dm.basis.num_qubits)) - {i, j,k})
-             result[(i, j,k)] = dm.ptrace(everything_thats_not_system)
+                everything_thats_not_system = tuple(set(range(dm.basis.num_qubits)) - {i, j, k})
+                result[(i, j, k)] = dm.ptrace(everything_thats_not_system)
     return result
+
 
 def relative_entropy_of_every_pair(dm: DensityMatrix):
     n = dm.number_of_qbits
@@ -266,7 +284,12 @@ def strong_subaddativity(dm: DensityMatrix, sub_system_qbits_a: list[int], sub_s
     return s(dm_ab) + s(dm_bc) - s(dm_a) - s(dm_c)
 
 
-# Measurements that operate on dictionaries
+"""
+=====================================================================================
+Measurements that operate on dictionaries of density matrices
+=====================================================================================
+"""
+
 
 def mutual_information_of_every_pair_dict(dm_dict: dict):
     result = {}
@@ -274,11 +297,13 @@ def mutual_information_of_every_pair_dict(dm_dict: dict):
         result[qbit_pair] = mutual_information(dm_dict[qbit_pair], [0], [1])
     return result
 
+
 def strong_subaddativity_of_every_triplet_dict(dm_dict: dict):
     result = {}
     for qbit_triplet in dm_dict:
         result[qbit_triplet] = strong_subaddativity(dm_dict[qbit_triplet], [0], [1], [2])
     return result
+
 
 def monogamy_of_mutual_information_of_every_triplet_dict(dm_dict: dict):
     result = {}

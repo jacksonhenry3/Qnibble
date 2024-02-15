@@ -1,6 +1,6 @@
 import numpy as np
 
-import src.measurements as measurements
+import src.measurements as measure
 from src.setup import xp
 
 import os
@@ -10,8 +10,7 @@ from src.random_unitary import random_energy_preserving_unitary
 import copy
 
 
-def run(dm: DM.DensityMatrix, measurement_set, num_iterations: int, sample_frequency: int, orders,
-        qbits_to_measure="all",
+def run(dm: DM.DensityMatrix, num_iterations: int, sample_frequency: int, orders,
         Unitaries=None,
         verbose=False):
     """
@@ -30,17 +29,8 @@ def run(dm: DM.DensityMatrix, measurement_set, num_iterations: int, sample_frequ
 
     """
 
-    if qbits_to_measure == "all":
-        qbits_to_measure = tuple(range(dm.number_of_qbits))
-
-    qbits_to_trace_out = list(set(range(dm.number_of_qbits)) - set(qbits_to_measure))
-
-    if type(measurement_set) != list:
-        measurement_set = [measurement_set]
-
-
-    pops_values = [measurements.pops(dm)]
-    measurement_values = [measurement(dm.ptrace(qbits_to_trace_out)) for measurement in measurement_set]
+    pops_values = {0: {index: pop for index, pop in enumerate(measure.pops(dm))}}
+    two_qubit_dms = {0: measure.two_qbit_dm_of_every_pair(dm)}
 
     generate_random_unitary = False
 
@@ -55,7 +45,7 @@ def run(dm: DM.DensityMatrix, measurement_set, num_iterations: int, sample_frequ
         generate_random_unitary = True
         print("using random unitaries")
 
-    for i in range(num_iterations):
+    for i in range(1, num_iterations):
         order = orders[i % len(orders)]
         chunk_sizes = [len(chunk) for chunk in order]
         leftovers = dm.number_of_qbits % np.sum(chunk_sizes)
@@ -78,14 +68,13 @@ def run(dm: DM.DensityMatrix, measurement_set, num_iterations: int, sample_frequ
 
         dm = step(dm, order, U, not generate_random_unitary)
         # Does one qubit measurements on the entire qubit density matrix at each step
-        pops_values = xp.vstack((pops_values, measurements.pops(dm)))
+        pops_values[i] = {index: pop for index, pop in enumerate(measure.pops(dm))}
 
         # checks if the iteration number is multiple of 5 and only does measurements of two qubit density matrix on those steps
         if i % sample_frequency == 0:
-            measurement_values = [xp.vstack((measurement_values[i], measurement(dm.ptrace(qbits_to_trace_out)))) for
-                                  i, measurement in enumerate(measurement_set)]
+            two_qubit_dms[i] = measure.two_qbit_dm_of_every_pair(dm)
 
-    return measurement_values, dm, pops_values
+    return (pops_values, two_qubit_dms), dm
 
 
 def step(dm: DM.DensityMatrix, order: list[np.ndarray], Unitary: DM.DensityMatrix,

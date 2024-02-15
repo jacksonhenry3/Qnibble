@@ -24,13 +24,12 @@ from scipy.linalg import logm
 
 
 @lru_cache
-def _ptrace_mask(n:int, basis_ints:tuple[int] , qbits: tuple[int]) -> SPARSE_TYPE:
+def _ptrace_mask(n: int, basis_ints: tuple[int], qbits: tuple[int]) -> SPARSE_TYPE:
     """Caching will work better if qbits is a sorted tuple"""
     """Returns a mask for the partial trace of a density matrix"""
 
     # create a numpy array of x and y indices
     x, y = np.meshgrid(basis_ints, basis_ints)
-
 
     # if qbit is an integer
     if type(qbits) == int:
@@ -135,19 +134,59 @@ class DensityMatrix:
 
         return pop
 
-    def ptrace(self, qbits, resultant_dm = True):
+    def ptrace_to_2_qubits(self, remaining_qubits: list):
+        n = self.basis.num_qubits
+        # qubits that will be traced out
+        trace_out = [i for i in range(n) if i not in remaining_qubits]
+
+        # binary masks for the qubits that will remain
+        qbit_vals = [2 ** (n - remaining_qbit - 1) for remaining_qbit in remaining_qubits]
+
+        # total binary mask for the qubits that will be traced out
+        remaining_mask = sum([2 ** (n - q - 1) for q in trace_out])
+
+        diags = self.data.diagonal()
+
+        nums = np.array([b.num for b in self.basis])
+
+        threethreeelement = np.sum(diags[(np.logical_and(((nums & qbit_vals[0]) != 0), (nums & qbit_vals[1]) != 0))])
+        twotwoelement = np.sum(diags[(np.logical_and(((nums & qbit_vals[0]) != 0), (nums & qbit_vals[1]) == 0))])
+        oneoneelement = np.sum(diags[(np.logical_and(((nums & qbit_vals[0]) == 0), (nums & qbit_vals[1]) != 0))])
+        zerozeroelement = np.sum(diags[(np.logical_and(((nums & qbit_vals[0]) == 0), (nums & qbit_vals[1]) == 0))])
+
+        possible_x = [i for i, x in enumerate(nums) if (((x & qbit_vals[0]) == 0) and ((x & qbit_vals[1]) != 0))]
+        possible_y = [i for i, y in enumerate(nums) if (((y & qbit_vals[0]) != 0) and ((y & qbit_vals[1]) == 0))]
+
+
+        correlation = self.data[possible_x, possible_y].sum()
+        # correlation = np.sum([d[i, j] for i, j in zip(possible_x, possible_y)])
+        # construct a sparse matrix with the data
+        data = np.diag([zerozeroelement, oneoneelement, twotwoelement, threethreeelement])
+        data[1, 2] = correlation
+        data[2, 1] = np.conjugate(correlation)
+
+        data = SPARSE_TYPE(data)
+        basis = energy_basis(2)
+
+        return DensityMatrix(data, basis)
+
+    def ptrace(self, qbits, resultant_dm=True):
 
         """
         trace out the given qbits
         """
 
-        if qbits == []:
+        if len(qbits) == 0:
             return self
 
         # Add a check that all indices are valid no repeats etc.
         assert all([0 <= qbit < self.number_of_qbits for qbit in qbits]), f"qbits {qbits} are not valid for a {self.number_of_qbits} qbit system"
         # This could fail if set stops preserving order,
         assert list(set(qbits)) == list(qbits), f"qbits {qbits} are not valid for a {self.number_of_qbits} qbit system"
+
+        # if self.number_of_qbits-len(qbits):
+        #     remaining_qbits = [i for i in range(self.number_of_qbits) if i not in qbits]
+        #     return self.ptrace_to_2_qubits(remaining_qbits)
 
         # self.change_to_canonical_basis()
         basis_ints = tuple(map(lambda a: a.num, self.basis))
@@ -158,13 +197,8 @@ class DensityMatrix:
         # new_data = np.sum([self.data[mask].reshape(size, size) for mask in masks], axis=0)
 
         # new_data = np.sum([self.data[np.nonzero(mask)].reshape(size, size) for mask in masks], axis=0)
-        new_data_list = []
         data = self.data.toarray()
-        for mask in masks:
-            selected_data = data[tuple(mask.T)].reshape(size, size)
-            new_data_list.append(selected_data)
-
-        new_data = np.sum(new_data_list, axis=0)
+        new_data = np.sum([data[tuple(mask.T)].reshape(size, size) for mask in masks], axis=0)
 
         if not resultant_dm:
             return new_data
