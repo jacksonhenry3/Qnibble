@@ -110,7 +110,17 @@ class TestDM:
         dm_1 = U1 * dm_1 * U1.H
         dm_2 = U2 * dm_2 * U2.H
         total = dm_1.tensor(dm_2)
-        total.change_to_energy_basis()
+        # total.change_to_energy_basis()
         res = total.ptrace((0, 1, 2))
         assert dm_2 == res
 
+    def test_2q_partial_trace(self):
+        dm_1 = dm.n_thermal_qbits([.1, .2, .3, .4])
+        dm_2 = dm.n_thermal_qbits([.1, .2])
+        res = dm_1.ptrace_to_2_qubits((0, 1))
+        assert res == dm_2
+
+        U = random_unitary.random_energy_preserving_unitary(4)
+        dm_1.change_to_energy_basis()
+        dm_1 = U * dm_1 * U.H
+        assert dm_1.ptrace_to_2_qubits((0, 1)) == dm_1.ptrace((2, 3))
