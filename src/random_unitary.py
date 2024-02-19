@@ -127,18 +127,19 @@ def random_energy_preserving_unitary(num_qbits: int, seed=None) -> DM.DensityMat
     return DM.DensityMatrix(SPARSE_TYPE(m), energy_basis(num_qbits))
 
 
-def haar_random_unitary():
+def haar_random_unitary(theta_divisor=1,phi_divisor=1,omega_divisor=1, seed=None) -> DM.DensityMatrix:
     """
     based off of pennylanes tutorial on haar random unitaries, this only generates a random unitary in the 2 qubit subspace
     """
-    phi, omega = 2 * np.pi * np.random.uniform(size=2)  # Sample phi and omega as normal
-    theta = sin_sampler.rvs(size=1)[0]  # Sample theta from our new distribution
+
+    rng = np.random.default_rng(seed)
+    phi, omega = 2 * np.pi * rng.uniform(size=2)  # Sample phi and omega as normal
+    theta = sin_sampler.rvs(size=1, random_state=rng)[0] / theta_divisor  # Sample theta from our new distribution
+
     c = np.cos(theta / 2)
     s = np.sin(theta / 2)
     data = np.array([[np.exp(-1j * (phi + omega) / 2) * c, -np.exp(1j * (phi - omega) / 2) * s],
                      [np.exp(-1j * (phi - omega) / 2) * s, np.exp(1j * (phi + omega) / 2) * c]])
 
-
-
-    m = sp.linalg.block_diag(np.array([[1]]),data,np.array([[1]]))
+    m = sp.linalg.block_diag(np.array([[1]]), data, np.array([[1]]))
     return DM.DensityMatrix(DM.SPARSE_TYPE(m, dtype=np.complex64), energy_basis(2))
