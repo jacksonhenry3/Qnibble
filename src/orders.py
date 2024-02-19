@@ -2,7 +2,7 @@ import numpy as np
 import numpy.random
 
 
-def n_random_c5_orders(num_qbits: int, n: int, seed=None) -> list[np.ndarray]:
+def n_random_c5_orders(num_qbits: int, n: int, seed=None, chunk_size=4) -> list[np.ndarray]:
     assert num_qbits % 4 == 0, "n must be divisible by 4"
     assert num_qbits >= 8, "n must be at least 8"
     rng = np.random.default_rng(seed)
@@ -16,10 +16,18 @@ def n_random_c5_orders(num_qbits: int, n: int, seed=None) -> list[np.ndarray]:
         order = rng.choice(orders)
         result.append(np.array([rng.permuted(chunk) for chunk in order]))
 
+    if chunk_size == 2:
+        s = list(np.array(result).shape)
+        s[1] *= 2
+        s[2] //= 2
+        result = np.reshape(result, s)
+
+
+
     return result
 
 
-def n_random_c6_orders(num_qbits: int, n: int, seed=None) -> list[np.ndarray]:
+def n_random_c6_orders(num_qbits: int, n: int, seed=None, chunk_size=4) -> list[np.ndarray]:
     assert num_qbits % 4 == 0, "n must be divisible by 4"
     rng = np.random.default_rng(seed)
     split_indices = [4 * i for i in range(1, num_qbits // 4)]
@@ -30,10 +38,18 @@ def n_random_c6_orders(num_qbits: int, n: int, seed=None) -> list[np.ndarray]:
         permuted_order = [rng.permutation(chunk) for chunk in order]
         result.append(np.array(permuted_order))
 
+    if chunk_size == 2:
+        s = list(np.array(result).shape)
+        s[1] *= 2
+        s[2] //= 2
+        result = np.reshape(result, s)
+
+
+
     return result
 
 
-def n_random_c7_orders(num_qbits: int, n: int, seed=None) -> list[np.ndarray]:
+def n_random_c7_orders(num_qbits: int, n: int, seed=None, chunk_size=4) -> list[np.ndarray]:
     assert num_qbits % 4 == 0, "n must be divisible by 4"
     assert num_qbits >= 8, "n must be at least 12"
     rng = np.random.default_rng(seed)
@@ -65,13 +81,21 @@ def n_random_c7_orders(num_qbits: int, n: int, seed=None) -> list[np.ndarray]:
         order = np.array([rng.permutation(chunk) for chunk in rng.choice(groups)])
         result.append(order)
 
+    if chunk_size == 2:
+        s = list(np.array(result).shape)
+        s[1] *= 2
+        s[2] //= 2
+        result = np.reshape(result, s)
+
+
+
     return result
 
 
-def n_random_gas_orders(num_qbits: int, n: int, seed=None) -> list[np.ndarray]:
+def n_random_gas_orders(num_qbits: int, n: int, chunk_size=4, seed=None) -> list[np.ndarray]:
     rng = np.random.default_rng(seed)
-    assert num_qbits % 4 == 0, "n must be divisible by 4"
-    split_indices = [4 * i for i in range(1, num_qbits // 4)]
+    assert num_qbits % chunk_size == 0, "n must be divisible by chunk_size"
+    split_indices = [chunk_size * i for i in range(1, num_qbits // chunk_size)]
     return [np.split(rng.permutation(num_qbits), split_indices) for _ in range(n)]
 
 
