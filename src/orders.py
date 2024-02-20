@@ -89,10 +89,6 @@ def all_c7_orders(num_qbits: int, chunk_size=4) -> list[np.ndarray]:
     return result
 
 
-def all_gas_orders(num_qbits: int, chunk_size=4) -> list[np.ndarray]:
-
-
-
 def n_random_c5_orders(num_qbits: int, n: int, seed=None, chunk_size=4) -> list[np.ndarray]:
     assert num_qbits % 4 == 0, "n must be divisible by 4"
     assert num_qbits >= 8, "n must be at least 8"
