@@ -7,11 +7,11 @@ import os
 
 import src.density_matrix as DM
 from src.random_unitary import random_energy_preserving_unitary
-import copy
 
 
-def run(dm: DM.DensityMatrix, num_iterations: int, sample_frequency: int, orders,
+def run(dm: DM.DensityMatrix, num_iterations: int, order_rule, first_order, sub_unitary, connectivity,
         Unitaries=None,
+
         verbose=False):
     """
     Args:
@@ -22,7 +22,7 @@ def run(dm: DM.DensityMatrix, num_iterations: int, sample_frequency: int, orders
         Unitaries: either a list of DMs to be used to evolve the system, if there are fewer unitaries than iterations they will be used cyclically.
                        or: a single unitary to be used at each step
                        or: None, in which case random unitaries will be generated at each step.
-        orders: A list of qbit orders at each iteration step. If there are fewer orders than steps they will be used cyclically.
+        order_rule: a function that takes (past_order, prev_pops, pops, two_qubit_dms_previous, two_qubit_dms_current, connectivity, sub_unitary), see example in order_rules.py
         verbose: a float or false. if it is a float between zero and 1 progress will be reported every verbose percent. i.e verbose =.1 will give ten progress reports
 
     Returns: measurement results and A density matrix that has been evolved by the given hamiltonians for the given step sizes.
@@ -46,7 +46,10 @@ def run(dm: DM.DensityMatrix, num_iterations: int, sample_frequency: int, orders
         print("using random unitaries")
 
     for i in range(1, num_iterations):
-        order = orders[i % len(orders)]
+        if i == 1:
+            order = first_order
+            previous_order = first_order
+
         chunk_sizes = [len(chunk) for chunk in order]
         leftovers = dm.number_of_qbits % np.sum(chunk_sizes)
         if leftovers:
@@ -70,9 +73,11 @@ def run(dm: DM.DensityMatrix, num_iterations: int, sample_frequency: int, orders
         # Does one qubit measurements on the entire qubit density matrix at each step
         pops_values[i] = {index: pop for index, pop in enumerate(measure.pops(dm))}
 
-        # checks if the iteration number is multiple of 5 and only does measurements of two qubit density matrix on those steps
-        if i % sample_frequency == 0:
-            two_qubit_dms[i] = measure.two_qbit_dm_of_every_pair(dm)
+        two_qubit_dms[i] = measure.two_qbit_dm_of_every_pair(dm)
+
+        # the next
+        # (past_order, prev_pops, pops, two_qubit_dms_previous, two_qubit_dms_current, connectivity, sub_unitary):
+        order = order_rule(previous_order, pops_values[i - 1], pops_values[i], two_qubit_dms[i - 1], two_qubit_dms[i], connectivity, sub_unitary)
 
     return (pops_values, two_qubit_dms), dm
 

@@ -2,6 +2,93 @@ import numpy as np
 import numpy.random
 
 
+def all_c5_orders(num_qbits: int, chunk_size=4) -> list[np.ndarray]:
+    assert num_qbits % 4 == 0, "n must be divisible by 4"
+    assert num_qbits >= 8, "n must be at least 8"
+    a = np.arange(num_qbits).reshape(2, num_qbits // 2)
+    possible_order_1 = np.array([(a[:, i: i + 2]).flatten() for i in range(0, num_qbits // 2, 2)])
+    a = np.roll(a, 1, axis=1)
+    possible_order_2 = np.array([(a[:, i: i + 2]).flatten() for i in range(0, num_qbits // 2, 2)])
+    orders = [possible_order_1, possible_order_2]
+
+    if chunk_size == 2:
+        new_orders = []
+        for order in orders:
+            s = list(order.shape)
+            s[0] *= 2
+            s[1] //= 2
+            new_orders.append(order.reshape(s))
+        orders = new_orders
+
+    return orders
+
+
+def all_c6_orders(num_qbits: int, chunk_size=4) -> list[np.ndarray]:
+    assert num_qbits % 4 == 0, "n must be divisible by 4"
+    assert num_qbits >= 8, "n must be at least 8"
+    a = np.arange(num_qbits).reshape(2, num_qbits // 2)
+
+    split_indices = [4 * i for i in range(1, num_qbits // 4)]
+    orders = []
+    for i in range(4):
+        a = np.roll(a, 1, axis=1)
+        possible_order = np.split(np.roll(np.arange(num_qbits), i), split_indices)
+        orders.append(possible_order)
+
+    if chunk_size == 2:
+        new_orders = []
+        for order in orders:
+            s = list(order.shape)
+            s[0] *= 2
+            s[1] //= 2
+            new_orders.append(order.reshape(s))
+        orders = new_orders
+
+    return orders
+
+
+def all_c7_orders(num_qbits: int, chunk_size=4) -> list[np.ndarray]:
+    assert num_qbits % 4 == 0, "n must be divisible by 4"
+    assert num_qbits >= 8, "n must be at least 12"
+
+    if num_qbits == 8:
+        # groups = [vv, H, _H]
+        groups = [[[0, 2, 1, 3], [4, 6, 5, 7]], [[0, 2, 4, 6], [1, 3, 5, 7]], [[4, 6, 1, 3], [0, 2, 5, 7]]]
+    elif num_qbits == 12:
+        # groups = [vvv, vH, _vH, Hv] This system doesnt include cross horiozontal terms, ive added them on the end
+        groups = [[[0, 2, 1, 3], [4, 6, 5, 7], [8, 10, 11, 9]],
+                  [[0, 2, 1, 3], [4, 6, 8, 10], [5, 7, 9, 11]],
+                  [[0, 2, 9, 11], [1, 3, 8, 10], [4, 6, 5, 7]],
+                  [[0, 2, 4, 6], [1, 3, 5, 7], [8, 10, 9, 11]],
+                  [[1, 3, 5, 7], [4, 6, 8, 10], [9, 11, 0, 2]],
+                  [[0, 2, 4, 6], [5, 7, 9, 11], [8, 10, 1, 3]]
+                  ]
+    elif num_qbits == 16:
+        # groups = [vvvv, vvH, vHv, Hvv, _vvH, HH, _HH]
+        groups = [[[0, 2, 1, 3], [4, 6, 5, 7], [8, 10, 9, 11], [12, 14, 13, 15]],
+                  [[0, 2, 1, 3], [4, 6, 5, 7], [8, 10, 12, 14], [9, 11, 13, 15]],
+                  [[0, 2, 1, 3], [4, 6, 8, 10], [5, 7, 9, 11], [12, 14, 13, 15]],
+                  [[0, 2, 4, 6], [1, 3, 5, 7], [8, 10, 9, 11], [12, 14, 13, 15]],
+                  [[0, 2, 13, 15], [1, 3, 12, 14], [4, 6, 5, 7], [8, 10, 9, 11]],
+                  [[0, 2, 4, 6], [1, 3, 5, 7], [8, 10, 12, 14], [9, 11, 13, 15]],
+                  [[0, 2, 13, 15], [1, 3, 12, 14], [4, 6, 8, 10], [5, 7, 9, 11]]
+                  ]
+    else:
+        raise NotImplementedError("n must be 8, 12 or 16")
+    result = groups
+
+    if chunk_size == 2:
+        new_result = []
+        for group in result:
+            s = list(group.shape)
+            s[0] *= 2
+            s[1] //= 2
+            new_result.append(group.reshape(s))
+        result = new_result
+
+    return result
+
+
 def n_random_c5_orders(num_qbits: int, n: int, seed=None, chunk_size=4) -> list[np.ndarray]:
     assert num_qbits % 4 == 0, "n must be divisible by 4"
     assert num_qbits >= 8, "n must be at least 8"
@@ -22,8 +109,6 @@ def n_random_c5_orders(num_qbits: int, n: int, seed=None, chunk_size=4) -> list[
         s[2] //= 2
         result = np.reshape(result, s)
 
-
-
     return result
 
 
@@ -43,8 +128,6 @@ def n_random_c6_orders(num_qbits: int, n: int, seed=None, chunk_size=4) -> list[
         s[1] *= 2
         s[2] //= 2
         result = np.reshape(result, s)
-
-
 
     return result
 
@@ -86,8 +169,6 @@ def n_random_c7_orders(num_qbits: int, n: int, seed=None, chunk_size=4) -> list[
         s[1] *= 2
         s[2] //= 2
         result = np.reshape(result, s)
-
-
 
     return result
 
