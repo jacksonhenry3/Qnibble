@@ -24,7 +24,7 @@ def execute(file_name: str, connectivity, order_rule_name, unitary_energy_subspa
     """
     file_name: name of the file to save the data to (without the .hdf5 extension) example: "ZestyGodzilla"
     connectivity: the type of connectivity to use for the ordering. options: "gas", "c5", "c6", "c7"
-    order_rule_name: the seed to use for the ordering
+    order_rule_name: a string represneting which order rule to use
     unitary_energy_subspace: the energy subspace to use for the unitary evolution
     unitary_seed: the seed to use for the unitary evolution
     num_steps: the number of steps to take
@@ -57,6 +57,8 @@ def execute(file_name: str, connectivity, order_rule_name, unitary_energy_subspa
     match order_rule_name:
         case 'random':
             order_rule = order_rules.random
+        case 'greedy':
+            order_rule = order_rules.greedy
         case _:
             raise ValueError(f"order_rule_name {order_rule_name} not recognized")
 
