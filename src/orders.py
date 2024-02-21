@@ -24,6 +24,7 @@ def all_c5_orders(num_qbits: int, chunk_size=4) -> list[np.ndarray]:
 
     return orders
 
+
 @cache
 def all_c6_orders(num_qbits: int, chunk_size=4) -> list[np.ndarray]:
     assert num_qbits % 4 == 0, "n must be divisible by 4"
@@ -47,6 +48,7 @@ def all_c6_orders(num_qbits: int, chunk_size=4) -> list[np.ndarray]:
         orders = new_orders
 
     return orders
+
 
 @cache
 def all_c7_orders(num_qbits: int, chunk_size=4) -> list[np.ndarray]:

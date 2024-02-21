@@ -61,8 +61,10 @@ def greedy(past_order, prev_pops, pops, two_qubit_dms_previous, two_qubit_dms_cu
 
     for order in all_orders:
         chunked_dms = [dm.ptrace(tuple(all_qubits - set(chunk))) for chunk in order]
+
         score = 0
         for sub_dm in chunked_dms:
+            sub_dm.change_to_energy_basis()
             updated_sub_dm = sub_unitary * sub_dm * sub_unitary.H
 
 
