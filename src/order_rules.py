@@ -1,5 +1,6 @@
 import src.density_matrix as DM
 import src.orders as orders
+from src import measurements as measure
 
 
 def random(past_order, prev_pops, pops, two_qubit_dms_previous, two_qubit_dms_current, connectivity, sub_unitary, dm):
@@ -46,7 +47,7 @@ def greedy(past_order, prev_pops, pops, two_qubit_dms_previous, two_qubit_dms_cu
     num_qubits = len(pops)
     chunk_size = 4
 
-    # this is innefecient, dont need to recalculate every time
+    # this is inefficient, dont need to recalculate every time
     match connectivity:
         case 'c5':
             all_orders = orders.all_c5_orders(num_qbits=num_qubits, chunk_size=chunk_size)
@@ -59,15 +60,27 @@ def greedy(past_order, prev_pops, pops, two_qubit_dms_previous, two_qubit_dms_cu
 
     all_qubits = set([i for i in range(num_qubits)])
 
-    for order in all_orders:
-        chunked_dms = [dm.ptrace(tuple(all_qubits - set(chunk))) for chunk in order]
 
-        score = 0
+    qpopth=0.2
+    score_board=[]
+    for order in all_orders:
+        dist=[]
+        pops_of_updated_sub_dm=[]
+        chunked_dms = [dm.ptrace(tuple(all_qubits - set(chunk))) for chunk in order]
         for sub_dm in chunked_dms:
             sub_dm.change_to_energy_basis()
             updated_sub_dm = sub_unitary * sub_dm * sub_unitary.H
+            pops_of_updated_sub_dm.append(measure.pops(updated_sub_dm))
+        pops_of_updated_sub_dm = np.array(pops_of_updated_sub_dm).flatten()
+        for qpop in pops_of_updated_sub_dm:
+            dist.append(abs(qpop-qpopth))
+        score_card = [order,sum(dist)]
+        score_board.append(score_card)
 
-
-
-
-    return order
+    current_max_score = 0
+    current_order = None
+    for order,score in score_board:
+        if score>current_max_score:
+            current_max_score = score
+            current_order = order
+    return current_order
