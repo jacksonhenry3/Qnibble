@@ -1,7 +1,9 @@
 import numpy as np
 import numpy.random
+from functools import cache
 
 
+@cache
 def all_c5_orders(num_qbits: int, chunk_size=4) -> list[np.ndarray]:
     assert num_qbits % 4 == 0, "n must be divisible by 4"
     assert num_qbits >= 8, "n must be at least 8"
@@ -22,7 +24,7 @@ def all_c5_orders(num_qbits: int, chunk_size=4) -> list[np.ndarray]:
 
     return orders
 
-
+@cache
 def all_c6_orders(num_qbits: int, chunk_size=4) -> list[np.ndarray]:
     assert num_qbits % 4 == 0, "n must be divisible by 4"
     assert num_qbits >= 8, "n must be at least 8"
@@ -46,7 +48,7 @@ def all_c6_orders(num_qbits: int, chunk_size=4) -> list[np.ndarray]:
 
     return orders
 
-
+@cache
 def all_c7_orders(num_qbits: int, chunk_size=4) -> list[np.ndarray]:
     assert num_qbits % 4 == 0, "n must be divisible by 4"
     assert num_qbits >= 8, "n must be at least 12"
