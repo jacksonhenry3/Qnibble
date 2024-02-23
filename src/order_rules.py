@@ -1,6 +1,7 @@
 import src.density_matrix as DM
 import src.orders as orders
 from src import measurements as measure
+import numpy as np
 
 
 def random(past_order, prev_pops, pops, two_qubit_dms_previous, two_qubit_dms_current, connectivity, sub_unitary, dm):
@@ -61,11 +62,11 @@ def greedy(past_order, prev_pops, pops, two_qubit_dms_previous, two_qubit_dms_cu
     all_qubits = set([i for i in range(num_qubits)])
 
 
-    qpopth=0.2
+    qpopth=0.25
     score_board=[]
     for order in all_orders:
         dist=[]
-        pops_of_updated_sub_dm=[]
+        pops_of_updated_sub_dm = []
         chunked_dms = [dm.ptrace(tuple(all_qubits - set(chunk))) for chunk in order]
         for sub_dm in chunked_dms:
             sub_dm.change_to_energy_basis()
@@ -74,13 +75,13 @@ def greedy(past_order, prev_pops, pops, two_qubit_dms_previous, two_qubit_dms_cu
         pops_of_updated_sub_dm = np.array(pops_of_updated_sub_dm).flatten()
         for qpop in pops_of_updated_sub_dm:
             dist.append(abs(qpop-qpopth))
-        score_card = [order,sum(dist)]
+        score_card = [order, sum(dist)]
         score_board.append(score_card)
 
     current_max_score = 0
     current_order = None
-    for order,score in score_board:
-        if score>current_max_score:
+    for order, score in score_board:
+        if score > current_max_score:
             current_max_score = score
             current_order = order
     return current_order
