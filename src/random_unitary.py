@@ -133,11 +133,13 @@ def haar_random_unitary(theta_divisor=1,phi_divisor=1,omega_divisor=1, seed=None
     """
 
     rng = np.random.default_rng(seed)
-    phi, omega = 2 * np.pi * rng.uniform(size=2)  # Sample phi and omega as normal
-    theta = sin_sampler.rvs(size=1, random_state=rng)[0] / theta_divisor  # Sample theta from our new distribution
+    phi=0
+    omega=0
+    #phi, omega = 2 * np.pi * rng.uniform(size=2)  # Sample phi and omega as normal
+    #theta = sin_sampler.rvs(size=1, random_state=rng)[0] / theta_divisor  # Sample theta from our new distribution
 
-    c = np.cos(theta / 2)
-    s = np.sin(theta / 2)
+    c = np.cos(np.pi / 4)
+    s = np.sin(np.pi / 4)
     data = np.array([[np.exp(-1j * (phi + omega) / 2) * c, -np.exp(1j * (phi - omega) / 2) * s],
                      [np.exp(-1j * (phi - omega) / 2) * s, np.exp(1j * (phi + omega) / 2) * c]])
 

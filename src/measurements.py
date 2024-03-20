@@ -134,12 +134,12 @@ def entropy(dm: DensityMatrix) -> float:
         d4 = (1 - a1 - b2 - c3)
 
         from_eigen = (
-                a1 * np.log(a1) +
-                d4 * np.log(d4) +
-                0.5 * (b2 + c3 - np.sqrt(b2 ** 2 + 4 * b3 * c2 - 2 * b2 * c3 + c3 ** 2)) * np.log(
-            0.5 * (b2 + c3 - np.sqrt(b2 ** 2 + 4 * b3 * c2 - 2 * b2 * c3 + c3 ** 2))) +
-                0.5 * (b2 + c3 + np.sqrt(b2 ** 2 + 4 * b3 * c2 - 2 * b2 * c3 + c3 ** 2)) * np.log(
-            0.5 * (b2 + c3 + np.sqrt(b2 ** 2 + 4 * b3 * c2 - 2 * b2 * c3 + c3 ** 2)))
+                -a1 * np.log(a1) +
+                -d4 * np.log(d4) +
+                - 0.5 * (b2 + c3 - np.sqrt(b2 ** 2 + 4 * b3 * c2 - 2 * b2 * c3 + c3 ** 2)) * np.log(
+            (b2 + c3 - np.sqrt(b2 ** 2 + 4 * b3 * c2 - 2 * b2 * c3 + c3 ** 2))) +
+                - 0.5 * (b2 + c3 + np.sqrt(b2 ** 2 + 4 * b3 * c2 - 2 * b2 * c3 + c3 ** 2)) * np.log(
+            (b2 + c3 + np.sqrt(b2 ** 2 + 4 * b3 * c2 - 2 * b2 * c3 + c3 ** 2))) + 0.5*(b2 + c3) * np.log(4)
         )
 
     else:
@@ -171,15 +171,20 @@ def concurrence(dm: DensityMatrix) -> float:
 
     # TODO assert dm size
 
-    data: np.ndarray = dm.data.toarray()
+    a = dm.data[2, 1]
+    b = dm.data[0, 0]
+    c = dm.data[3, 3]
 
-    spin_flip_operator = sp.linalg.kron(σy, σy)
-    spin_flipped = spin_flip_operator @ data.conj() @ spin_flip_operator
-    vals, _ = sp.sparse.linalg.eig(data @ spin_flipped)
+    combined = 2*abs(a)-2*np.sqrt(b*c)
+    #data: np.ndarray = dm.data.toarray()
+    #spin_flip_operator = sp.linalg.kron(σy, σy)
+    #spin_flipped = data @ spin_flip_operator @ data.conj() @ spin_flip_operator
+    #vals, _ = sp.sparse.linalg.eigs(data @ spin_flipped)
 
-    sorted_sqrt_eig_vals = np.real(np.sort(np.sqrt(vals)))
-    combined = sorted_sqrt_eig_vals[3] - sorted_sqrt_eig_vals[2] - sorted_sqrt_eig_vals[1] - sorted_sqrt_eig_vals[0]
-    return max(combined, 0)
+    #sorted_sqrt_eig_vals = np.real(np.sort(np.sqrt(vals)))
+    #combined = sorted_sqrt_eig_vals[3] - sorted_sqrt_eig_vals[2] - sorted_sqrt_eig_vals[1] - sorted_sqrt_eig_vals[0]
+    return combined
+    #return max(combined, 0)
 
 
 def uncorrelated_thermal_concurrence(dm: DensityMatrix) -> float:
@@ -295,6 +300,12 @@ def mutual_information_of_every_pair_dict(dm_dict: dict):
     result = {}
     for qbit_pair in dm_dict:
         result[qbit_pair] = mutual_information(dm_dict[qbit_pair], [0], [1])
+    return result
+
+def concurrence_of_every_pair_dict(dm_dict: dict):
+    result = {}
+    for qbit_pair in dm_dict:
+        result[qbit_pair] = concurrence(dm_dict[qbit_pair])
     return result
 
 

@@ -86,6 +86,10 @@ def execute(file_name: str, connectivity, order_rule_name, unitary_energy_subspa
 
         # match evolution_generation_type: unitary, hamiltonian, hamiltonian_old
         match evolution_generation_type:
+
+            case "haar2Qunitary":
+                sub_unitary = random_unitary.haar_random_unitary(theta_divisor=1,phi_divisor=1,omega_divisor=1, seed=None)
+
             case "unitary":
                 sub_unitary = random_unitary.random_unitary_in_subspace(num_qbits=chunk_size,
                                                                         energy_subspace=unitary_energy_subspace,

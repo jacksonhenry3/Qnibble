@@ -16,7 +16,7 @@ def random(past_order, prev_pops, pops, two_qubit_dms_previous, two_qubit_dms_cu
     """
 
     num_qubits = len(pops)
-    chunk_size = 4
+    chunk_size = 2
 
     match connectivity:
         case 'c5':
@@ -46,7 +46,7 @@ def greedy(past_order, prev_pops, pops, two_qubit_dms_previous, two_qubit_dms_cu
     """
 
     num_qubits = len(pops)
-    chunk_size = 4
+    chunk_size = 2
 
     # this is inefficient, dont need to recalculate every time
     match connectivity:
@@ -62,7 +62,7 @@ def greedy(past_order, prev_pops, pops, two_qubit_dms_previous, two_qubit_dms_cu
     all_qubits = set([i for i in range(num_qubits)])
 
 
-    qpopth=0.25
+    qpopth=0.225
     score_board=[]
     for order in all_orders:
         dist=[]
