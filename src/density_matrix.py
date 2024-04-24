@@ -190,7 +190,7 @@ class DensityMatrix:
 
         # self.change_to_canonical_basis()
         basis_ints = tuple(map(lambda a: a.num, self.basis))
-        masks = _ptrace_mask(self.number_of_qbits, basis_ints, qbits)
+        masks = _ptrace_mask(self.number_of_qbits, basis_ints, tuple(qbits))
         size = 2 ** (self.number_of_qbits - len(qbits))
 
         # the below line is slow becouse it winds up calling ndarray.nonzero A LOT

@@ -59,6 +59,10 @@ def execute(file_name: str, connectivity, order_rule_name, unitary_energy_subspa
             order_rule = order_rules.random
         case 'greedy':
             order_rule = order_rules.greedy
+        case 'therm':
+            order_rule = order_rules.therm
+        case 'mimic':
+            order_rule = order_rules.mimic
         case _:
             raise ValueError(f"order_rule_name {order_rule_name} not recognized")
 
@@ -144,7 +148,7 @@ def execute(file_name: str, connectivity, order_rule_name, unitary_energy_subspa
     system.change_to_energy_basis()
     if __name__ == "__main__": print("running simulation")
 
-    pops, two_qubit_dms = sim.run(system,
+    pops, two_qubit_dms, three_qubit_dms = sim.run(system,
                                   num_iterations=num_steps,
                                   Unitaries=unitary,
                                   sub_unitary=sub_unitary,
@@ -154,12 +158,14 @@ def execute(file_name: str, connectivity, order_rule_name, unitary_energy_subspa
                                   connectivity=connectivity,
                                   )[0]
 
+    save_data(file_name=file_name, data=three_qubit_dms, connectivity=connectivity, unitary_energy_subspace=unitary_energy_subspace, unitary_seed=unitary_seed,
+              order_rule_name=order_rule_name,measurment="three_qubit_dms", num_qubits=num_qbits)
     save_data(file_name=file_name, data=two_qubit_dms, connectivity=connectivity, unitary_energy_subspace=unitary_energy_subspace, unitary_seed=unitary_seed, order_rule_name=order_rule_name,
               measurment="two_qubit_dms", num_qubits=num_qbits)
     save_data(file_name=file_name, data=pops, connectivity=connectivity, unitary_energy_subspace=unitary_energy_subspace, unitary_seed=unitary_seed, order_rule_name=order_rule_name,
               measurment="pops", num_qubits=num_qbits)
     if __name__ == "__main__": print("data saved, exiting")
-    return pops, two_qubit_dms
+    return pops, two_qubit_dms, three_qubit_dms
 
 
 def save_data(file_name: str, data, connectivity, unitary_energy_subspace, unitary_seed, order_rule_name, measurment, num_qubits):
