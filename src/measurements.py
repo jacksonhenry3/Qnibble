@@ -50,7 +50,10 @@ def average_temp(dm: DensityMatrix) -> float:
 
 
 def temp_from_pop(pop: float):
-    return 1 / (np.log((1 - pop) / pop))
+    if pop == 0 or pop == 1:
+        return float('inf')  # Return positive infinity or any other appropriate value
+    else:
+        return 1 / (np.log((1 - pop) / pop))
 
 
 def pop_from_temp(T: float):

@@ -50,6 +50,7 @@ def run(dm: DM.DensityMatrix, num_iterations: int, order_rule, first_order, sub_
         if i == 1:
             order = first_order
             previous_order = first_order
+            
 
         chunk_sizes = [len(chunk) for chunk in order]
         leftovers = dm.number_of_qbits % np.sum(chunk_sizes)

@@ -61,8 +61,8 @@ def execute(file_name: str, connectivity, order_rule_name, unitary_energy_subspa
             order_rule = order_rules.greedy
         case 'therm':
             order_rule = order_rules.therm
-        case 'mimic':
-            order_rule = order_rules.mimic
+        case 'weakest_maximizes':
+            order_rule = order_rules.weakest_maximizes
         case _:
             raise ValueError(f"order_rule_name {order_rule_name} not recognized")
 

@@ -140,7 +140,7 @@ def therm(past_order, prev_pops, pops, two_qubit_dms_previous, two_qubit_dms_cur
     return current_order
 
 
-def mimic(past_order, prev_pops, pops, two_qubit_dms_previous, two_qubit_dms_current, connectivity, sub_unitary, dm):
+def weakest_maximizes(past_order, prev_pops, pops, two_qubit_dms_previous, two_qubit_dms_current, connectivity, sub_unitary, dm):
     """
     Args:
         two_qubit_dms_current: the current two qubit density matrices
@@ -170,9 +170,17 @@ def mimic(past_order, prev_pops, pops, two_qubit_dms_previous, two_qubit_dms_cur
     all_qubits = set([i for i in range(num_qubits)])
 
     qpopth = 0.225
+    extractable_work_i0 = np.array(
+        measure.extractable_work_of_each_qubit_from_pops(prev_pops))
+    extractable_work_i1 = np.array(
+        measure.extractable_work_of_each_qubit_from_pops(pops))
+    change_in_ex_work = extractable_work_i1-extractable_work_i0
+    decider_Q_index = np.argmin(change_in_ex_work)
+
     score_board = []
     for order in all_orders:
-        dist = []
+        change_in_ex_work_decider_Q=0
+        #change_in_ex_work_decider_Q = []
         pops_of_updated_sub_dm = []
         chunked_dms = [dm.ptrace(tuple(all_qubits - set(chunk))) for chunk in order]
         for sub_dm in chunked_dms:
@@ -180,15 +188,23 @@ def mimic(past_order, prev_pops, pops, two_qubit_dms_previous, two_qubit_dms_cur
             updated_sub_dm = sub_unitary * sub_dm * sub_unitary.H
             pops_of_updated_sub_dm.append(measure.pops(updated_sub_dm))
         pops_of_updated_sub_dm = np.array(pops_of_updated_sub_dm).flatten()
-        for qpop in pops_of_updated_sub_dm:
-            dist.append(abs(qpop - qpopth))
-        score_card = [order, sum(dist)]
+        extractable_work_trial_0 = np.array(
+            measure.extractable_work_of_each_qubit_from_pops(pops))
+        extractable_work_trial_1 = np.array(
+            measure.extractable_work_of_each_qubit_from_pops(pops_of_updated_sub_dm))
+        change_in_ex_work = extractable_work_trial_1 - extractable_work_trial_0
+        change_in_ex_work_decider_Q=change_in_ex_work[decider_Q_index]
+        score_card = [order, change_in_ex_work_decider_Q]
         score_board.append(score_card)
 
-    current_max_score = 0
-    current_order = None
-    for order, score in score_board:
-        if score > current_max_score:
-            current_max_score = score
+    max_order = None
+    max_change = float('-inf')
+    current_order = past_order
+    # Iterate through each order and its associated change value
+    for order, change in score_board:
+        # Check if the current change value is greater than the maximum found so far
+        if change >= max_change:
+            # If it is, update the maximum change value and the corresponding order
+            max_change = change
             current_order = order
     return current_order
