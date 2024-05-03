@@ -63,6 +63,8 @@ def execute(file_name: str, connectivity, order_rule_name, unitary_energy_subspa
             order_rule = order_rules.therm
         case 'weakest_maximizes':
             order_rule = order_rules.weakest_maximizes
+        case 'landscape_maximizes':
+            order_rule = order_rules.landscape_maximizes
         case _:
             raise ValueError(f"order_rule_name {order_rule_name} not recognized")
 
@@ -157,7 +159,6 @@ def execute(file_name: str, connectivity, order_rule_name, unitary_energy_subspa
                                   first_order=first_order,
                                   connectivity=connectivity,
                                   )[0]
-
     save_data(file_name=file_name, data=three_qubit_dms, connectivity=connectivity, unitary_energy_subspace=unitary_energy_subspace, unitary_seed=unitary_seed,
               order_rule_name=order_rule_name,measurment="three_qubit_dms", num_qubits=num_qbits)
     save_data(file_name=file_name, data=two_qubit_dms, connectivity=connectivity, unitary_energy_subspace=unitary_energy_subspace, unitary_seed=unitary_seed, order_rule_name=order_rule_name,
