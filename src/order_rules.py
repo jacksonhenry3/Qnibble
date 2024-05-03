@@ -308,45 +308,77 @@ def mimic(past_order, prev_pops, pops, two_qubit_dms_previous, two_qubit_dms_cur
 
     all_qubits = set([i for i in range(num_qubits)])
 
-    qpopth = 0.225
+    #find all neighbours of a qubit
+    def find_shared_elements(list_of_lists_of_lists, target_element):
+        shared_elements = set()  # Use a set to store unique elements
+        for sublist in list_of_lists_of_lists:
+            for subsublist in sublist:
+                if target_element in subsublist:
+                    shared_elements.update([elem for elem in subsublist if elem != target_element])
+        return list(shared_elements)
+
+    #list of lists where each list is the set of neighbours of the qubit with that list index. ie the nth list is a list of neighbours of the nth qubit on landscape
+    neighbours_qubit_index = []
+    for id in range(num_qubits):
+        neighbours_qubit_index.append(find_shared_elements(all_orders,id))
+
     extractable_work_i0 = np.array(
         measure.extractable_work_of_each_qubit_from_pops(prev_pops))
     extractable_work_i1 = np.array(
         measure.extractable_work_of_each_qubit_from_pops(pops))
-    change_in_ex_work = extractable_work_i1-extractable_work_i0
-    decider_Q_index = np.argmin(change_in_ex_work)
+    change_in_ex_work_prev_step = extractable_work_i1-extractable_work_i0
 
-    score_board = []
-    for order in all_orders:
-        change_in_ex_work_decider_Q=0
-        #change_in_ex_work_decider_Q = []
-        pops_of_updated_sub_dm = []
-        chunked_dms = [dm.ptrace(tuple(all_qubits - set(chunk))) for chunk in order]
-        for sub_dm in chunked_dms:
-            sub_dm.change_to_energy_basis()
-            updated_sub_dm = sub_unitary * sub_dm * sub_unitary.H
-            pops_of_updated_sub_dm.append(measure.pops(updated_sub_dm))
-        pops_of_updated_sub_dm = np.array(pops_of_updated_sub_dm).flatten()
-        extractable_work_trial_0 = np.array(
-            measure.extractable_work_of_each_qubit_from_pops(pops))
-        extractable_work_trial_1 = np.array(
-            measure.extractable_work_of_each_qubit_from_pops(pops_of_updated_sub_dm))
-        change_in_ex_work = extractable_work_trial_1 - extractable_work_trial_0
-        change_in_ex_work_decider_Q=change_in_ex_work[decider_Q_index]
-        score_card = [order, change_in_ex_work_decider_Q]
-        score_board.append(score_card)
+    #code to find the qubit the target qubit was paired in the previous order
+    def paired_element(given_element):
+        for pair in prev_pops:
+            # Convert the NumPy array to a list
+            pair_list = pair.tolist()
+            if given_element in pair_list:
+                # Return the other element in the pair
+                return pair_list[1 - pair_list.index(given_element)]
+        # If the given element is not found in any pair, return None
+        return None
 
-    max_order = None
-    max_change = float('-inf')
-    current_order = past_order
-    # Iterate through each order and its associated change value
-    for order, change in score_board:
-        # Check if the current change value is greater than the maximum found so far
-        if change >= max_change:
-            # If it is, update the maximum change value and the corresponding order
-            max_change = change
-            current_order = order
+    #code to find the qubit indices with change in extractable work in ascending order. These will help find the decider qubits
+    def find_indices_in_ascending_order(values):
+        # Enumerate the values to get (index, value) pairs
+        indexed_values = list(enumerate(values))
+
+        # Sort the indexed values based on the values (the second element of each tuple)
+        sorted_indices = sorted(indexed_values, key=lambda x: x[1])
+
+        # Extract the indices from the sorted list of (index, value) pairs
+        indices_in_ascending_order = [index for index, _ in sorted_indices]
+
+        return indices_in_ascending_order
+
+    decider_Q_index = find_indices_in_ascending_order(change_in_ex_work_prev_step)
+
+    order = []
+    for qubit_id in decider_Q_index:
+        if qubit_id not in order:
+            sub_order = []
+            max_D_W_ex = float('-inf')
+            neighbours = neighbours_qubit_index[qubit_id]
+            neighbours = [x for x in neighbours if x not in np.array(order).flatten()]
+            for neighbour in neighbours:
+                max_D_W_ex <= change_in_ex_work_prev_step[neighbour]
+                max_D_W_ex=change_in_ex_work_prev_step[neighbour]
+                neighbour_to_mimic = neighbour
+            pop_diff_to_mimic = prev_pops[neighbour_to_mimic] - prev_pops[paired_element[neighbour_to_mimic]]
+            diff = float('inf')
+            for neighbour in neighbours_qubit_index[qubit_id]:
+                pop_diff = pops[qubit_id] - pops[neighbour]
+                diff_with_n=pop_diff - pop_diff_to_mimic
+                if diff_with_n  <= diff:
+                    diff= diff_with_n
+                    Q_pair = neighbour
+            Q_pair
+            sub_order = [qubit_id,Q_pair]
+            order.append(sub_order)
+    current_order = order
     return current_order
+
 
 
 def thermodynamic(past_order, prev_pops, pops, two_qubit_dms_previous, two_qubit_dms_current, connectivity, sub_unitary, dm):

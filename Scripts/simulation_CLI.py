@@ -65,6 +65,8 @@ def execute(file_name: str, connectivity, order_rule_name, unitary_energy_subspa
             order_rule = order_rules.weakest_maximizes
         case 'landscape_maximizes':
             order_rule = order_rules.landscape_maximizes
+        case 'mimic':
+            order_rule = order_rules.mimic
         case _:
             raise ValueError(f"order_rule_name {order_rule_name} not recognized")
 
