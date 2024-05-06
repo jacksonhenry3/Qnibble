@@ -330,7 +330,7 @@ def mimic(past_order, prev_pops, pops, two_qubit_dms_previous, two_qubit_dms_cur
 
     #code to find the qubit the target qubit was paired in the previous order
     def paired_element(given_element):
-        for pair in prev_pops:
+        for pair in past_order:
             # Convert the NumPy array to a list
             pair_list = pair.tolist()
             if given_element in pair_list:
@@ -365,7 +365,7 @@ def mimic(past_order, prev_pops, pops, two_qubit_dms_previous, two_qubit_dms_cur
                 max_D_W_ex <= change_in_ex_work_prev_step[neighbour]
                 max_D_W_ex=change_in_ex_work_prev_step[neighbour]
                 neighbour_to_mimic = neighbour
-            pop_diff_to_mimic = prev_pops[neighbour_to_mimic] - prev_pops[paired_element[neighbour_to_mimic]]
+            pop_diff_to_mimic = prev_pops[neighbour_to_mimic] - prev_pops[paired_element(neighbour_to_mimic)]
             diff = float('inf')
             for neighbour in neighbours_qubit_index[qubit_id]:
                 pop_diff = pops[qubit_id] - pops[neighbour]
