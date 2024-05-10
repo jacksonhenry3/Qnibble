@@ -279,6 +279,7 @@ def landscape_maximizes(past_order, prev_pops, pops, two_qubit_dms_previous, two
             current_order = order
     return current_order
 
+
 def mimic(past_order, prev_pops, pops, two_qubit_dms_previous, two_qubit_dms_current, connectivity, sub_unitary, dm):
     """
     Args:
@@ -291,7 +292,6 @@ def mimic(past_order, prev_pops, pops, two_qubit_dms_previous, two_qubit_dms_cur
         sub_unitary: the unitary that operates on a group
         dm: the current density matrix
     """
-
     num_qubits = len(pops)
     chunk_size = 2
 
@@ -308,7 +308,7 @@ def mimic(past_order, prev_pops, pops, two_qubit_dms_previous, two_qubit_dms_cur
 
     all_qubits = set([i for i in range(num_qubits)])
 
-    #find all neighbours of a qubit
+    # find all neighbours of a qubit WORKING
     def find_shared_elements(list_of_lists_of_lists, target_element):
         shared_elements = set()  # Use a set to store unique elements
         for sublist in list_of_lists_of_lists:
@@ -317,19 +317,21 @@ def mimic(past_order, prev_pops, pops, two_qubit_dms_previous, two_qubit_dms_cur
                     shared_elements.update([elem for elem in subsublist if elem != target_element])
         return list(shared_elements)
 
-    #list of lists where each list is the set of neighbours of the qubit with that list index. ie the nth list is a list of neighbours of the nth qubit on landscape
+    # WORKING: gives a list of lists of lists. Each list inside the list is the ordered according q index and corresponds to the lists of neighbours that qubit index has
+    # list of lists where each list is the set of neighbours of the qubit with that list index. ie the nth list is a list of neighbours of the nth qubit on landscape
     neighbours_qubit_index = []
     for id in range(num_qubits):
-        neighbours_qubit_index.append(find_shared_elements(all_orders,id))
+        neighbours_qubit_index.append(find_shared_elements(all_orders, id))
 
     extractable_work_i0 = np.array(
         measure.extractable_work_of_each_qubit_from_pops(prev_pops))
     extractable_work_i1 = np.array(
         measure.extractable_work_of_each_qubit_from_pops(pops))
-    change_in_ex_work_prev_step = extractable_work_i1-extractable_work_i0
+    change_in_ex_work_prev_step = extractable_work_i1 - extractable_work_i0
 
-    #code to find the qubit the target qubit was paired in the previous order
-    def paired_element(given_element):
+    # code to find the qubit the target qubit was paired in the previous order
+    # WORKING: returns a qubit index corresponding to the  past orders groupings
+    def paired_element(given_element, past_order):
         for pair in past_order:
             # Convert the NumPy array to a list
             pair_list = pair.tolist()
@@ -339,7 +341,8 @@ def mimic(past_order, prev_pops, pops, two_qubit_dms_previous, two_qubit_dms_cur
         # If the given element is not found in any pair, return None
         return None
 
-    #code to find the qubit indices with change in extractable work in ascending order. These will help find the decider qubits
+    # code to find the qubit indices with change in extractable work in ascending order. These will help find the decider qubits
+    # WORKING: returns a list of indices who have the corresponding value given in the argument in ascending order
     def find_indices_in_ascending_order(values):
         # Enumerate the values to get (index, value) pairs
         indexed_values = list(enumerate(values))
@@ -353,30 +356,79 @@ def mimic(past_order, prev_pops, pops, two_qubit_dms_previous, two_qubit_dms_cur
         return indices_in_ascending_order
 
     decider_Q_index = find_indices_in_ascending_order(change_in_ex_work_prev_step)
+    # print(decider_Q_index)
 
+    # code to find allowed neighbourhoods after some have been fixed
+
+    current_order = []
     order = []
+
+    def find_lists_with_sublist(list_of_lists_of_lists, sublist_of_lists_to_match):
+        matching_lists = []
+        scoreboard = []
+        for lists_of_lists in list_of_lists_of_lists:
+            score = 0
+            for pair in sublist_of_lists_to_match:
+                for ordered_pair in lists_of_lists:
+                    if np.array_equal(ordered_pair, [pair[0], pair[1]]) or np.array_equal(ordered_pair,
+                                                                                          [pair[1], pair[0]]):
+                        score = score + 1
+            list_score = [lists_of_lists, score]
+            scoreboard.append(list_score)
+        # return scoreboard
+        for lists, scores in scoreboard:
+            if scores == len(sublist_of_lists_to_match):
+                matching_lists.append(lists)
+        return matching_lists
+
     for qubit_id in decider_Q_index:
-        if qubit_id not in order:
+        # we start with the qubits in ascending order
+        # we check that the qubit in loop does not already exist in the pairings made previously; this would not matter for the first qubit but can hinder later on
+        fullorder = np.array(order).flatten()
+        # print(fullorder)
+        if qubit_id not in fullorder:
+            # we proceed only if the qubit id does not already exists in the ordering
+            # print(qubit_id)
             sub_order = []
             max_D_W_ex = float('-inf')
-            neighbours = neighbours_qubit_index[qubit_id]
-            neighbours = [x for x in neighbours if x not in np.array(order).flatten()]
-            for neighbour in neighbours:
-                max_D_W_ex <= change_in_ex_work_prev_step[neighbour]
-                max_D_W_ex=change_in_ex_work_prev_step[neighbour]
-                neighbour_to_mimic = neighbour
-            pop_diff_to_mimic = prev_pops[neighbour_to_mimic] - prev_pops[paired_element(neighbour_to_mimic)]
-            diff = float('inf')
-            for neighbour in neighbours_qubit_index[qubit_id]:
-                pop_diff = pops[qubit_id] - pops[neighbour]
-                diff_with_n=pop_diff - pop_diff_to_mimic
-                if diff_with_n  <= diff:
-                    diff= diff_with_n
-                    Q_pair = neighbour
-            Q_pair
-            sub_order = [qubit_id,Q_pair]
-            order.append(sub_order)
-    current_order = order
+            # to check the possible neighbours the qubit has, we need to make sure that we are looking wihin the subset of lists that obey the already found orders
+            if len(order) > 0:
+                order_array = np.array(order)
+                match = find_lists_with_sublist(all_orders, order_array)
+                # finds the subset of full network ordering for which the subset of pairs match
+                allowed_orders = match
+            else:
+                allowed_orders = all_orders
+            if len(allowed_orders) == 1:
+                current_order = allowed_orders[0]
+                # print("this happened")
+                # if only one ordering is allowed then no need to do further optimization. This is the order of choice set by other qubits and connectivity
+                return current_order
+            else:
+                for id in range(num_qubits):
+                    neighbours_qubit_index.append(find_shared_elements(allowed_orders, id))
+                neighbours = neighbours_qubit_index[qubit_id]
+                # neighbours = [x for x in neighbours if x not in np.array(order).flatten()]
+                # print(neighbours)
+                pop_diff_to_mimic = 0
+                for neighbour in neighbours:
+                    if max_D_W_ex <= change_in_ex_work_prev_step[neighbour]:
+                        max_D_W_ex = change_in_ex_work_prev_step[neighbour]
+                        neighbour_to_mimic = neighbour
+                        pop_diff_to_mimic = prev_pops[neighbour_to_mimic] - prev_pops[
+                            paired_element(neighbour_to_mimic, past_order)]
+                # print(neighbour_to_mimic)
+                diff = 0
+                min_diff = float('inf')
+                for neighbour in neighbours:
+                    pop_diff = pops[qubit_id] - pops[neighbour]
+                    diff_with_n = pop_diff - pop_diff_to_mimic
+                    if diff_with_n <= min_diff:
+                        Q_pair = neighbour
+                sub_order = [qubit_id, Q_pair]
+                order.append(sub_order)
+                # print(order)
+                current_order = order
     return current_order
 
 
