@@ -39,12 +39,26 @@ def all_c6_orders(num_qbits: int, chunk_size=4) -> list[np.ndarray]:
         orders.append(possible_order)
 
     if chunk_size == 2:
-        new_orders = []
-        for order in orders:
-            s = list(order.shape)
-            s[0] *= 2
-            s[1] //= 2
-            new_orders.append(order.reshape(s))
+        new_orders = [np.array ([[1, 7], [2, 4], [3, 5], [0, 6]]),
+             np.array ([[0, 2], [4, 6], [3, 5], [1, 7]]),
+             np.array ([[1, 2], [3, 4], [5, 7], [0, 6]]),
+             np.array ([[0, 2], [4, 6], [1, 3], [5, 7]]),
+             np.array ([[4, 6], [0, 7], [1, 2], [3, 5]]),
+             np.array ([[2, 4], [1, 3], [5, 7], [0, 6]]),
+             np.array ([[0, 1], [6, 7], [4, 5], [2, 3]]),
+             np.array ([[0, 2], [5, 6], [3, 4], [1, 7]]),
+             np.array ([[0, 7], [1, 2], [3, 4], [5, 6]]),
+             np.array ([[0, 7], [2, 4], [1, 3], [5, 6]]),
+             np.array ([[4, 5], [6, 7], [0, 2], [1, 3]]),
+             np.array ([[0, 1], [6, 7], [2, 4], [3, 5]]),
+             np.array ([[0, 1], [4, 6], [2, 3], [5, 7]]),
+             np.array ([[2, 3], [1, 7], [4, 5], [0, 6]])]
+        #new_orders = []
+        #for order in orders:
+            #s = list(order.shape)
+            #s[0] *= 2
+            #s[1] //= 2
+            #new_orders.append(order.reshape(s))
         orders = new_orders
 
     return orders
@@ -79,18 +93,77 @@ def all_c7_orders(num_qbits: int, chunk_size=4) -> list[np.ndarray]:
                   ]
     else:
         raise NotImplementedError("n must be 8, 12 or 16")
-    result = groups
+    orders = groups
 
     if chunk_size == 2:
-        new_result = []
-        for group in result:
-            s = list(group.shape)
-            s[0] *= 2
-            s[1] //= 2
-            new_result.append(group.reshape(s))
-        result = new_result
+        new_orders = [np.array([[2, 3], [0, 7], [5, 6], [1, 4]]),
+                         np.array([[0, 7], [1, 6], [2, 5], [3, 4]]),
+                         np.array([[1, 7], [2, 4], [3, 5], [0, 6]]),
+                         np.array([[0, 1], [5, 6], [3, 4], [2, 7]]),
+                         np.array([[4, 6], [0, 7], [1, 2], [3, 5]]),
+                         np.array([[2, 4], [1, 3], [5, 7], [0, 6]]),
+                         np.array([[0, 7], [1, 2], [3, 4], [5, 6]]),
+                         np.array([[0, 1], [4, 6], [3, 5], [2, 7]]),
+                         np.array([[4, 6], [0, 7], [2, 5], [1, 3]]),
+                         np.array([[4, 5], [0, 2], [1, 7], [3, 6]]),
+                         np.array([[1, 2], [4, 7], [0, 5], [3, 6]]),
+                         np.array([[3, 5], [2, 7], [1, 4], [0, 6]]),
+                         np.array([[4, 5], [6, 7], [0, 2], [1, 3]]),
+                         np.array([[1, 2], [4, 7], [3, 5], [0, 6]]),
+                         np.array([[0, 1], [4, 6], [2, 3], [5, 7]]),
+                         np.array([[2, 3], [5, 7], [1, 4], [0, 6]]),
+                         np.array([[2, 5], [1, 3], [4, 7], [0, 6]]),
+                         np.array([[2, 3], [1, 7], [4, 5], [0, 6]]),
+                         np.array([[1, 6], [2, 7], [0, 5], [3, 4]]),
+                         np.array([[6, 7], [0, 3], [2, 5], [1, 4]]),
+                         np.array([[0, 7], [2, 5], [1, 4], [3, 6]]),
+                         np.array([[0, 2], [4, 6], [3, 5], [1, 7]]),
+                         np.array([[1, 6], [2, 4], [0, 3], [5, 7]]),
+                         np.array([[0, 2], [4, 6], [1, 3], [5, 7]]),
+                         np.array([[0, 2], [5, 7], [1, 4], [3, 6]]),
+                         np.array([[1, 2], [3, 4], [5, 7], [0, 6]]),
+                         np.array([[1, 7], [0, 3], [2, 4], [5, 6]]),
+                         np.array([[0, 1], [6, 7], [2, 5], [3, 4]]),
+                         np.array([[0, 2], [5, 6], [1, 3], [4, 7]]),
+                         np.array([[0, 1], [6, 7], [2, 4], [3, 5]]),
+                         np.array([[0, 3], [2, 7], [1, 4], [5, 6]]),
+                         np.array([[0, 1], [2, 4], [5, 7], [3, 6]]),
+                         np.array([[1, 6], [4, 5], [0, 3], [2, 7]]),
+                         np.array([[1, 7], [2, 5], [3, 4], [0, 6]]),
+                         np.array([[2, 3], [0, 7], [1, 6], [4, 5]]),
+                         np.array([[4, 5], [1, 3], [2, 7], [0, 6]]),
+                         np.array([[2, 3], [1, 6], [4, 7], [0, 5]]),
+                         np.array([[0, 1], [5, 6], [2, 3], [4, 7]]),
+                         np.array([[4, 6], [1, 2], [0, 3], [5, 7]]),
+                         np.array([[6, 7], [0, 2], [3, 5], [1, 4]]),
+                         np.array([[1, 4], [2, 7], [0, 5], [3, 6]]),
+                         np.array([[4, 6], [1, 3], [2, 7], [0, 5]]),
+                         np.array([[1, 7], [2, 4], [0, 5], [3, 6]]),
+                         np.array([[6, 7], [2, 4], [1, 3], [0, 5]]),
+                         np.array([[1, 6], [0, 2], [4, 7], [3, 5]]),
+                         np.array([[1, 6], [0, 3], [2, 5], [4, 7]]),
+                         np.array([[0, 7], [1, 6], [2, 4], [3, 5]]),
+                         np.array([[1, 6], [0, 2], [3, 4], [5, 7]]),
+                         np.array([[0, 1], [2, 5], [4, 7], [3, 6]]),
+                         np.array([[4, 6], [1, 7], [0, 3], [2, 5]]),
+                         np.array([[2, 3], [1, 7], [4, 6], [0, 5]]),
+                         np.array([[0, 1], [6, 7], [4, 5], [2, 3]]),
+                         np.array([[0, 2], [5, 6], [3, 4], [1, 7]]),
+                         np.array([[1, 2], [0, 3], [4, 7], [5, 6]]),
+                         np.array([[0, 7], [4, 5], [1, 2], [3, 6]]),
+                         np.array([[0, 7], [2, 4], [1, 3], [5, 6]]),
+                         np.array([[4, 5], [6, 7], [1, 2], [0, 3]]),
+                         np.array([[0, 1], [4, 5], [2, 7], [3, 6]]),
+                         np.array([[6, 7], [1, 2], [3, 4], [0, 5]]),
+                         np.array([[2, 3], [6, 7], [1, 4], [0, 5]])]
+        #for group in result:
+            #s = list(group.shape)
+            #s[0] *= 2
+            #s[1] //= 2
+            #new_result.append(group.reshape(s))
+        orders = new_orders
 
-    return result
+    return orders
 
 
 def n_random_c5_orders(num_qbits: int, n: int, seed=None, chunk_size=4) -> list[np.ndarray]:

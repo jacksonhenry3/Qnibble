@@ -72,7 +72,7 @@ def D(dm1: DensityMatrix, dm2: DensityMatrix):
 
 def D_single_qbits(pop_1: float, pop_2: float):
     tr_1 = (1 - pop_1) * np.log(1 - pop_1) + (pop_1) * np.log(pop_1)
-    tr_2 = (1 - pop_2) * np.log(1 - pop_2) + (pop_2) * np.log(pop_2)
+    tr_2 = (1 - pop_1) * np.log(1 - pop_2) + (pop_1) * np.log(pop_2)
     return tr_1 - tr_2
 
 

@@ -61,7 +61,7 @@ def greedy(past_order, prev_pops, pops, two_qubit_dms_previous, two_qubit_dms_cu
 
     all_qubits = set([i for i in range(num_qubits)])
 
-    qpopth = 0.225
+    qpopth = (1/num_qubits)*sum(pops)
     score_board = []
     for order in all_orders:
         dist = []
@@ -281,155 +281,157 @@ def landscape_maximizes(past_order, prev_pops, pops, two_qubit_dms_previous, two
 
 
 def mimic(past_order, prev_pops, pops, two_qubit_dms_previous, two_qubit_dms_current, connectivity, sub_unitary, dm):
-    """
-    Args:
-        two_qubit_dms_current: the current two qubit density matrices
-        two_qubit_dms_previous: the previous two qubit density matrices
-        pops: the current one qubit populations
-        prev_pops: the previous one qubit populations
-        past_order: the previous order
-        connectivity: a string representing the connectivity of the qubits
-        sub_unitary: the unitary that operates on a group
-        dm: the current density matrix
-    """
-    num_qubits = len(pops)
-    chunk_size = 2
+        """
+        Args:
+            two_qubit_dms_current: the current two qubit density matrices
+            two_qubit_dms_previous: the previous two qubit density matrices
+            pops: the current one qubit populations
+            prev_pops: the previous one qubit populations
+            past_order: the previous order
+            connectivity: a string representing the connectivity of the qubits
+            sub_unitary: the unitary that operates on a group
+            dm: the current density matrix
+        """
+        num_qubits = len(pops)
+        chunk_size = 2
 
-    # this is inefficient, dont need to recalculate every time
-    match connectivity:
-        case 'c5':
-            all_orders = orders.all_c5_orders(num_qbits=num_qubits, chunk_size=chunk_size)
-        case 'c6':
-            all_orders = orders.all_c6_orders(num_qbits=num_qubits, chunk_size=chunk_size)
-        case 'c7':
-            all_orders = orders.all_c7_orders(num_qbits=num_qubits, chunk_size=chunk_size)
-        case _:
-            raise ValueError(f"connectivity {connectivity} not recognized")
+        # this is inefficient, dont need to recalculate every time
+        match connectivity:
+            case 'c5':
+                all_orders = orders.all_c5_orders(num_qbits=num_qubits, chunk_size=chunk_size)
+            case 'c6':
+                all_orders = orders.all_c6_orders(num_qbits=num_qubits, chunk_size=chunk_size)
+            case 'c7':
+                all_orders = orders.all_c7_orders(num_qbits=num_qubits, chunk_size=chunk_size)
+            case _:
+                raise ValueError(f"connectivity {connectivity} not recognized")
 
-    all_qubits = set([i for i in range(num_qubits)])
+        all_qubits = set([i for i in range(num_qubits)])
 
-    # find all neighbours of a qubit WORKING
-    def find_shared_elements(list_of_lists_of_lists, target_element):
-        shared_elements = set()  # Use a set to store unique elements
-        for sublist in list_of_lists_of_lists:
-            for subsublist in sublist:
-                if target_element in subsublist:
-                    shared_elements.update([elem for elem in subsublist if elem != target_element])
-        return list(shared_elements)
+        # find all neighbours of a qubit WORKING
+        def find_shared_elements(list_of_lists_of_lists, target_element):
+            shared_elements = set()  # Use a set to store unique elements
+            for sublist in list_of_lists_of_lists:
+                for subsublist in sublist:
+                    if target_element in subsublist:
+                        shared_elements.update([elem for elem in subsublist if elem != target_element])
+            return list(shared_elements)
 
-    # WORKING: gives a list of lists of lists. Each list inside the list is the ordered according q index and corresponds to the lists of neighbours that qubit index has
-    # list of lists where each list is the set of neighbours of the qubit with that list index. ie the nth list is a list of neighbours of the nth qubit on landscape
-    neighbours_qubit_index = []
-    for id in range(num_qubits):
-        neighbours_qubit_index.append(find_shared_elements(all_orders, id))
+        # WORKING: gives a list of lists of lists. Each list inside the list is the ordered according q index and corresponds to the lists of neighbours that qubit index has
+        # list of lists where each list is the set of neighbours of the qubit with that list index. ie the nth list is a list of neighbours of the nth qubit on landscape
+        neighbours_qubit_index = []
+        for id in range(num_qubits):
+            neighbours_qubit_index.append(find_shared_elements(all_orders, id))
 
-    extractable_work_i0 = np.array(
-        measure.extractable_work_of_each_qubit_from_pops(prev_pops))
-    extractable_work_i1 = np.array(
-        measure.extractable_work_of_each_qubit_from_pops(pops))
-    change_in_ex_work_prev_step = extractable_work_i1 - extractable_work_i0
+        extractable_work_i0 = np.array(
+            measure.extractable_work_of_each_qubit_from_pops(prev_pops))
+        extractable_work_i1 = np.array(
+            measure.extractable_work_of_each_qubit_from_pops(pops))
+        change_in_ex_work_prev_step = extractable_work_i1 - extractable_work_i0
 
-    # code to find the qubit the target qubit was paired in the previous order
-    # WORKING: returns a qubit index corresponding to the  past orders groupings
-    def paired_element(given_element, past_order):
-        for pair in past_order:
-            # Convert the NumPy array to a list
-            pair_list = pair.tolist()
-            if given_element in pair_list:
-                # Return the other element in the pair
-                return pair_list[1 - pair_list.index(given_element)]
-        # If the given element is not found in any pair, return None
-        return None
+        # code to find the qubit the target qubit was paired in the previous order
+        # WORKING: returns a qubit index corresponding to the  past orders groupings
+        def paired_element(given_element, past_order):
+            for pair in past_order:
+                # Convert the NumPy array to a list
+                pair_list = pair.tolist()
+                if given_element in pair_list:
+                    # Return the other element in the pair
+                    return pair_list[1 - pair_list.index(given_element)]
+            # If the given element is not found in any pair, return None
+            return None
 
-    # code to find the qubit indices with change in extractable work in ascending order. These will help find the decider qubits
-    # WORKING: returns a list of indices who have the corresponding value given in the argument in ascending order
-    def find_indices_in_ascending_order(values):
-        # Enumerate the values to get (index, value) pairs
-        indexed_values = list(enumerate(values))
+        # code to find the qubit indices with change in extractable work in ascending order. These will help find the decider qubits
+        # WORKING: returns a list of indices who have the corresponding value given in the argument in ascending order
+        def find_indices_in_ascending_order(values):
+            # Enumerate the values to get (index, value) pairs
+            indexed_values = list(enumerate(values))
 
-        # Sort the indexed values based on the values (the second element of each tuple)
-        sorted_indices = sorted(indexed_values, key=lambda x: x[1])
+            # Sort the indexed values based on the values (the second element of each tuple)
+            sorted_indices = sorted(indexed_values, key=lambda x: x[1])
 
-        # Extract the indices from the sorted list of (index, value) pairs
-        indices_in_ascending_order = [index for index, _ in sorted_indices]
+            # Extract the indices from the sorted list of (index, value) pairs
+            indices_in_ascending_order = [index for index, _ in sorted_indices]
 
-        return indices_in_ascending_order
+            return indices_in_ascending_order
 
-    decider_Q_index = find_indices_in_ascending_order(change_in_ex_work_prev_step)
-    # print(decider_Q_index)
+        decider_Q_index = find_indices_in_ascending_order(change_in_ex_work_prev_step)
+        # print(decider_Q_index)
 
-    # code to find allowed neighbourhoods after some have been fixed
+        # code to find allowed neighbourhoods after some have been fixed
 
-    current_order = []
-    order = []
+        current_order = []
+        order = []
 
-    def find_lists_with_sublist(list_of_lists_of_lists, sublist_of_lists_to_match):
-        matching_lists = []
-        scoreboard = []
-        for lists_of_lists in list_of_lists_of_lists:
-            score = 0
-            for pair in sublist_of_lists_to_match:
-                for ordered_pair in lists_of_lists:
-                    if np.array_equal(ordered_pair, [pair[0], pair[1]]) or np.array_equal(ordered_pair,
-                                                                                          [pair[1], pair[0]]):
-                        score = score + 1
-            list_score = [lists_of_lists, score]
-            scoreboard.append(list_score)
-        # return scoreboard
-        for lists, scores in scoreboard:
-            if scores == len(sublist_of_lists_to_match):
-                matching_lists.append(lists)
-        return matching_lists
+        def find_lists_with_sublist(list_of_lists_of_lists, sublist_of_lists_to_match):
+            matching_lists = []
+            scoreboard = []
+            for lists_of_lists in list_of_lists_of_lists:
+                score = 0
+                for pair in sublist_of_lists_to_match:
+                    for ordered_pair in lists_of_lists:
+                        if np.array_equal(ordered_pair, [pair[0], pair[1]]) or np.array_equal(ordered_pair,
+                                                                                              [pair[1], pair[0]]):
+                            score = score + 1
+                list_score = [lists_of_lists, score]
+                scoreboard.append(list_score)
+            # return scoreboard
+            for lists, scores in scoreboard:
+                if scores == len(sublist_of_lists_to_match):
+                    matching_lists.append(lists)
+            return matching_lists
 
-    for qubit_id in decider_Q_index:
-        # we start with the qubits in ascending order
-        # we check that the qubit in loop does not already exist in the pairings made previously; this would not matter for the first qubit but can hinder later on
-        fullorder = np.array(order).flatten()
-        # print(fullorder)
-        if qubit_id not in fullorder:
-            # we proceed only if the qubit id does not already exists in the ordering
-            # print(qubit_id)
-            sub_order = []
-            max_D_W_ex = float('-inf')
-            # to check the possible neighbours the qubit has, we need to make sure that we are looking wihin the subset of lists that obey the already found orders
-            if len(order) > 0:
-                order_array = np.array(order)
-                match = find_lists_with_sublist(all_orders, order_array)
-                # finds the subset of full network ordering for which the subset of pairs match
-                allowed_orders = match
-            else:
-                allowed_orders = all_orders
-            if len(allowed_orders) == 1:
-                current_order = allowed_orders[0]
-                # print("this happened")
-                # if only one ordering is allowed then no need to do further optimization. This is the order of choice set by other qubits and connectivity
-                return current_order
-            else:
-                for id in range(num_qubits):
-                    neighbours_qubit_index.append(find_shared_elements(allowed_orders, id))
-                neighbours = neighbours_qubit_index[qubit_id]
-                # neighbours = [x for x in neighbours if x not in np.array(order).flatten()]
-                # print(neighbours)
-                pop_diff_to_mimic = 0
-                for neighbour in neighbours:
-                    if max_D_W_ex <= change_in_ex_work_prev_step[neighbour]:
-                        max_D_W_ex = change_in_ex_work_prev_step[neighbour]
-                        neighbour_to_mimic = neighbour
-                        pop_diff_to_mimic = prev_pops[neighbour_to_mimic] - prev_pops[
-                            paired_element(neighbour_to_mimic, past_order)]
-                # print(neighbour_to_mimic)
-                diff = 0
-                min_diff = float('inf')
-                for neighbour in neighbours:
-                    pop_diff = pops[qubit_id] - pops[neighbour]
-                    diff_with_n = pop_diff - pop_diff_to_mimic
-                    if diff_with_n <= min_diff:
-                        Q_pair = neighbour
-                sub_order = [qubit_id, Q_pair]
-                order.append(sub_order)
-                # print(order)
-                current_order = order
-    return current_order
+        for qubit_id in decider_Q_index:
+            # we start with the qubits in ascending order
+            # we check that the qubit in loop does not already exist in the pairings made previously; this would not matter for the first qubit but can hinder later on
+            fullorder = np.array(order).flatten()
+            # print(fullorder)
+            if qubit_id not in fullorder:
+                # we proceed only if the qubit id does not already exists in the ordering
+                # print(qubit_id)
+                sub_order = []
+                max_D_W_ex = float('-inf')
+                # to check the possible neighbours the qubit has, we need to make sure that we are looking wihin the subset of lists that obey the already found orders
+                if len(order) > 0:
+                    order_array = np.array(order)
+                    match = find_lists_with_sublist(all_orders, order_array)
+                    # finds the subset of full network ordering for which the subset of pairs match
+                    # print(match)
+                    allowed_orders = match
+                else:
+                    allowed_orders = all_orders
+                if len(allowed_orders) == 1:
+                    current_order = allowed_orders[0]
+                    # print("this happened")
+                    # if only one ordering is allowed then no need to do further optimization. This is the order of choice set by other qubits and connectivity
+                    return current_order
+                else:
+                    # for id in range(num_qubits):
+                    # neighbours_qubit_index.append(find_shared_elements(allowed_orders, id))
+                    neighbours = find_shared_elements(allowed_orders, qubit_id)
+                    # neighbours = neighbours_qubit_index[qubit_id]
+                    # neighbours = [x for x in neighbours if x not in np.array(order).flatten()]
+                    # print(neighbours)
+                    pop_diff_to_mimic = 0
+                    for neighbour in neighbours:
+                        if max_D_W_ex <= change_in_ex_work_prev_step[neighbour]:
+                            max_D_W_ex = change_in_ex_work_prev_step[neighbour]
+                            neighbour_to_mimic = neighbour
+                            pop_diff_to_mimic = prev_pops[neighbour_to_mimic] - prev_pops[
+                                paired_element(neighbour_to_mimic, past_order)]
+                    # print(neighbour_to_mimic)
+                    diff = 0
+                    min_diff = float('inf')
+                    for neighbour in neighbours:
+                        pop_diff = pops[qubit_id] - pops[neighbour]
+                        diff_with_n = pop_diff - pop_diff_to_mimic
+                        if diff_with_n <= min_diff:
+                            Q_pair = neighbour
+                    sub_order = [qubit_id, Q_pair]
+                    order.append(sub_order)
+                    # print(order)
+                    current_order = order
+        return current_order
 
 
 
