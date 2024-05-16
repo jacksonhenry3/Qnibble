@@ -427,6 +427,7 @@ def mimic(past_order, prev_pops, pops, two_qubit_dms_previous, two_qubit_dms_cur
                         diff_with_n = pop_diff - pop_diff_to_mimic
                         if diff_with_n <= min_diff:
                             Q_pair = neighbour
+                            min_diff=diff_with_n
                     sub_order = [qubit_id, Q_pair]
                     order.append(sub_order)
                     # print(order)
