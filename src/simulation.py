@@ -78,7 +78,7 @@ def run(dm: DM.DensityMatrix, num_iterations: int, order_rule, first_order, sub_
         two_qubit_dms[i] = measure.two_qbit_dm_of_every_pair(dm)
 
         three_qubit_dms[i] = measure.three_qbit_dm_of_every_triplet(dm)
-
+        previous_order = order
         # the next
         # (past_order, prev_pops, pops, two_qubit_dms_previous, two_qubit_dms_current, connectivity, sub_unitary):
         order = order_rule(previous_order, pops_values[i - 1], pops_values[i], two_qubit_dms[i - 1], two_qubit_dms[i], connectivity, sub_unitary, dm)

@@ -73,8 +73,18 @@ def execute(file_name: str, connectivity, order_rule_name, unitary_energy_subspa
     if first_order is None:
         if __name__ == "__main__": print("generating first order")
         match connectivity:
+            case 'c2_2local':
+                first_order = orders.n_random_c2_2local_orders(num_qbits=num_qbits, chunk_size=chunk_size)
+            case 'c4_2local':
+                first_order = orders.n_random_c4_2local_orders(num_qbits=num_qbits, chunk_size=chunk_size)
             case 'c5':
                 first_order = orders.n_random_c5_orders(num_qbits=num_qbits, chunk_size=chunk_size, n=1, seed=unitary_rng)[0]
+            case 'c5_2local':
+                first_order = orders.n_random_c5_2local_orders(num_qbits=num_qbits, chunk_size=chunk_size)
+            case 'c6_2local':
+                first_order = orders.n_random_c6_2local_orders(num_qbits=num_qbits, chunk_size=chunk_size)
+            case 'c7_2local':
+                first_order = orders.n_random_c7_2local_orders(num_qbits=num_qbits, chunk_size=chunk_size)
             case 'c6':
                 first_order = orders.n_random_c6_orders(num_qbits=num_qbits, chunk_size=chunk_size, n=1, seed=unitary_rng)[0]
             case 'c7':
