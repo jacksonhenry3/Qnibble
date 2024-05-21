@@ -20,7 +20,7 @@ from src import (
 
 
 def execute(file_name: str, connectivity, order_rule_name, unitary_energy_subspace, unitary_seed, num_steps, initial_pops, chunk_size=4,
-            evolution_generation_type="unitary", verbosity=.1, first_order=None):
+            evolution_generation_type="unitary", verbosity=.1, first_10_order=None):
     """
     file_name: name of the file to save the data to (without the .hdf5 extension) example: "ZestyGodzilla"
     connectivity: the type of connectivity to use for the ordering. options: "gas", "c5", "c6", "c7"
@@ -70,21 +70,22 @@ def execute(file_name: str, connectivity, order_rule_name, unitary_energy_subspa
         case _:
             raise ValueError(f"order_rule_name {order_rule_name} not recognized")
 
-    if first_order is None:
+
+    if first_10_order is None:
         if __name__ == "__main__": print("generating first order")
         match connectivity:
             case 'c2_2local':
-                first_order = orders.n_random_c2_2local_orders(num_qbits=num_qbits, chunk_size=chunk_size)
+                first_10_order = orders.first_10_orders_C2_2local(num_qbits)
             case 'c4_2local':
-                first_order = orders.n_random_c4_2local_orders(num_qbits=num_qbits, chunk_size=chunk_size)
+                first_10_order = orders.first_10_orders_C4_2local(num_qbits)
             case 'c5':
                 first_order = orders.n_random_c5_orders(num_qbits=num_qbits, chunk_size=chunk_size, n=1, seed=unitary_rng)[0]
             case 'c5_2local':
-                first_order = orders.n_random_c5_2local_orders(num_qbits=num_qbits, chunk_size=chunk_size)
+                first_order = orders.first_10_orders_C5_2local(num_qbits)
             case 'c6_2local':
-                first_order = orders.n_random_c6_2local_orders(num_qbits=num_qbits, chunk_size=chunk_size)
-            case 'c7_2local':
-                first_order = orders.n_random_c7_2local_orders(num_qbits=num_qbits, chunk_size=chunk_size)
+                first_order = orders.first_10_orders_C6_2local(num_qbits)
+            case 'cN_2local':
+                first_order = orders.first_10_orders_CN_2local(num_qbits)
             case 'c6':
                 first_order = orders.n_random_c6_orders(num_qbits=num_qbits, chunk_size=chunk_size, n=1, seed=unitary_rng)[0]
             case 'c7':
@@ -161,24 +162,26 @@ def execute(file_name: str, connectivity, order_rule_name, unitary_energy_subspa
     system = DM.n_thermal_qbits(initial_pops)
     system.change_to_energy_basis()
     if __name__ == "__main__": print("running simulation")
+#three_qubit_dms
 
-    pops, two_qubit_dms, three_qubit_dms = sim.run(system,
+    pops, two_qubit_dms = sim.run(system,
                                   num_iterations=num_steps,
                                   Unitaries=unitary,
                                   sub_unitary=sub_unitary,
                                   verbose=verbosity,
                                   order_rule=order_rule,
-                                  first_order=first_order,
+                                  first_10_order=first_10_order,
                                   connectivity=connectivity,
                                   )[0]
-    save_data(file_name=file_name, data=three_qubit_dms, connectivity=connectivity, unitary_energy_subspace=unitary_energy_subspace, unitary_seed=unitary_seed,
-              order_rule_name=order_rule_name,measurment="three_qubit_dms", num_qubits=num_qbits)
+    #save_data(file_name=file_name, data=three_qubit_dms, connectivity=connectivity, unitary_energy_subspace=unitary_energy_subspace, unitary_seed=unitary_seed,
+             # order_rule_name=order_rule_name,measurment="three_qubit_dms", num_qubits=num_qbits)
     save_data(file_name=file_name, data=two_qubit_dms, connectivity=connectivity, unitary_energy_subspace=unitary_energy_subspace, unitary_seed=unitary_seed, order_rule_name=order_rule_name,
               measurment="two_qubit_dms", num_qubits=num_qbits)
     save_data(file_name=file_name, data=pops, connectivity=connectivity, unitary_energy_subspace=unitary_energy_subspace, unitary_seed=unitary_seed, order_rule_name=order_rule_name,
               measurment="pops", num_qubits=num_qbits)
     if __name__ == "__main__": print("data saved, exiting")
-    return pops, two_qubit_dms, three_qubit_dms
+    return pops, two_qubit_dms
+    #three_qubit_dms
 
 
 def save_data(file_name: str, data, connectivity, unitary_energy_subspace, unitary_seed, order_rule_name, measurment, num_qubits):

@@ -4,6 +4,7 @@ from functools import cache
 import random
 
 
+
 @cache
 def all_c2_2local_orders(num_qbits: int, chunk_size=2) -> list[np.array]:
     orders = []
@@ -36,7 +37,14 @@ def n_random_c2_2local_orders(num_qbits: int, chunk_size=2) -> list[np.array]:
         rand_order = random.choice([np.array([[9, 10], [13, 14], [1, 2], [3, 4], [11, 12], [0, 15], [5, 6], [7, 8]]),
                                     np.array([[0, 1], [10, 11], [12, 13], [2, 3], [6, 7], [4, 5], [8, 9], [14, 15]])])
     return rand_order
-
+@cache
+def first_10_orders_C2_2local(num_qbits):
+    first_10_orders = []
+    order=0
+    for n in range(10):
+        order = n_random_c2_2local_orders(num_qbits,2)
+        first_10_orders.append(order)
+    return first_10_orders
 
 @cache
 def all_c4_2local_orders(num_qbits: int, chunk_size=2) -> list[np.array]:
@@ -121,7 +129,7 @@ def all_c4_2local_orders(num_qbits: int, chunk_size=2) -> list[np.array]:
     return orders
 
 
-# @cache
+
 def n_random_c4_2local_orders(num_qbits: int, chunk_size=2) -> list[np.array]:
     rand_order = 0
     if num_qbits == 8:
@@ -202,6 +210,15 @@ def n_random_c4_2local_orders(num_qbits: int, chunk_size=2) -> list[np.array]:
     # if num_qbits ==16:
     # rand_order = random.choice()
     return rand_order
+
+@cache
+def first_10_orders_C4_2local(num_qbits):
+    first_10_orders = []
+    order=0
+    for n in range(10):
+        order = n_random_c4_2local_orders(num_qbits,2)
+        first_10_orders.append(order)
+    return first_10_orders
 
 
 @cache
@@ -422,7 +439,7 @@ def all_c5_2local_orders(num_qbits: int, chunk_size=2) -> list[np.array]:
     return orders
 
 
-# @cache
+
 def n_random_c5_2local_orders(num_qbits: int, chunk_size=2) -> list[np.array]:
     rand_order = 0
     if num_qbits == 8:
@@ -639,6 +656,16 @@ def n_random_c5_2local_orders(num_qbits: int, chunk_size=2) -> list[np.array]:
     # if num_qbits ==16:
     # rand_order = random.choice()
     return rand_order
+
+
+@cache
+def first_10_orders_C5_2local(num_qbits):
+    first_10_orders = []
+    order=0
+    for n in range(10):
+        order = n_random_c5_2local_orders(num_qbits,2)
+        first_10_orders.append(order)
+    return first_10_orders
 
 
 @cache
@@ -1071,6 +1098,15 @@ def n_random_c6_2local_orders(num_qbits: int, chunk_size=2) -> list[np.array]:
     # rand_order = random.choice()
     return rand_order
 
+
+@cache
+def first_10_orders_C6_2local(num_qbits):
+    first_10_orders = []
+    order=0
+    for n in range(10):
+        order = n_random_c6_2local_orders(num_qbits,2)
+        first_10_orders.append(order)
+    return first_10_orders
 
 @cache
 def all_cN_2local_orders(num_qbits: int, chunk_size=2) -> list[np.array]:
@@ -3192,6 +3228,15 @@ def n_random_cN_2local_orders(num_qbits: int, chunk_size=2) -> list[np.array]:
     # rand_order = random.choice()
     return rand_order
 
+
+@cache
+def first_10_orders_CN_2local(num_qbits):
+    first_10_orders = []
+    order=0
+    for n in range(10):
+        order = n_random_cN_2local_orders(num_qbits,2)
+        first_10_orders.append(order)
+    return first_10_orders
 
 @cache
 def all_c5_orders(num_qbits: int, chunk_size=4) -> list[np.ndarray]:
