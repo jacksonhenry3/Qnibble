@@ -237,6 +237,8 @@ if __name__ == "__main__":
     parser.add_argument('--chunk_size', '-cs', type=int, default=4, help='Chunk size')
     parser.add_argument('--num_steps', '-ns', type=int, help='Number of steps')
     parser.add_argument('--pops', '-p', help='Initial populations')
+    parser.add_argument('--evolution_generator_type', '-egt', help='Evolution Generator type',default = 'haar2Qunitary')
+
 
     args = parser.parse_args()
 
@@ -248,6 +250,7 @@ if __name__ == "__main__":
     unitary_seed = args.unitary_seed
     num_steps = args.num_steps
     chunk_size = args.chunk_size
+    evolution_generator_type = args.evolution_generator_type
     initial_pops = [float(p) for p in args.pops.split(",")]
 
     execute(file_name=file_name,
@@ -257,4 +260,5 @@ if __name__ == "__main__":
             unitary_seed=unitary_seed,
             num_steps=num_steps,
             chunk_size=chunk_size,
-            initial_pops=initial_pops)
+            initial_pops=initial_pops,
+            evolution_generator_type = evolution_generator_type)
