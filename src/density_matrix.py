@@ -309,7 +309,7 @@ def Identity(basis: Basis) -> DensityMatrix:
 
 
 def qbit(pop: float) -> DensityMatrix:
-    assert 0 <= pop <= .5, f"population must be between 0 and .5 but you chose {pop}"
+    assert 0 <= pop <= 1, f"population must be between 0 and 1 but you chose {pop}"
     return DensityMatrix(SPARSE_TYPE(xp.array([[1 - pop, 0], [0, pop]]), dtype=xp.complex64), energy_basis(1))
 
 
@@ -322,7 +322,7 @@ def n_thermal_qbits(pops: list) -> DensityMatrix:
         A density matrix for n thermal qbits with the specified populations
     """
     # assert pops to be between 0 and .5
-    assert all([0 <= pop <= .5 for pop in pops]), f"population must be between 0 and .5 but you chose {pops}"
+    assert all([0 <= pop <= 1 for pop in pops]), f"population must be between 0 and 1 but you chose {pops}"
     num_states = 2 ** len(pops)
     data = []
     for i in range(num_states):
