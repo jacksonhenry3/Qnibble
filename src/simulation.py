@@ -83,7 +83,8 @@ def run(dm: DM.DensityMatrix, num_iterations: int, order_rule, first_10_order, s
         # (past_order, prev_pops, pops, two_qubit_dms_previous, two_qubit_dms_current, connectivity, sub_unitary):
         order = order_rule(previous_order, pops_values[i - 1], pops_values[i], two_qubit_dms[i - 1], two_qubit_dms[i], connectivity, sub_unitary, dm)
     #three_qubit_dms
-        print(previous_order)
+        list_of_orders = previous_order.tolist()
+        print(list_of_orders)
     return (pops_values, two_qubit_dms), dm
 
 
