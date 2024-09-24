@@ -255,7 +255,7 @@ if __name__ == "__main__":
     num_steps = args.num_steps
     #chunk_size = args.chunk_size
     evolution_generator_type = args.evolution_generator_type
-    initial_pops = [float(p) for p in args.pops.split(",")]
+    initial_pops = [float(p) for p in args.initial_pops.split(",")]
 
     execute(file_name=file_name,
             connectivity=connectivity,
