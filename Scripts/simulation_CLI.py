@@ -247,7 +247,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # Access the parsed arguments
-    file_name = args.output_file_name
+    file_name = args.file_name
     ordering_type = args.ordering_type
     order_rule_name = args.order_rule_name
     unitary_energy_subspace = args.unitary_energy_subspace
