@@ -19,8 +19,8 @@ from src import (
     order_rules)
 
 
-def execute(file_name: str, connectivity, order_rule_name: str, unitary_energy_subspace, unitary_seed, num_steps, initial_pops, chunk_size=2,
-            evolution_generation_type="unitary", verbosity=.1, first_10_order=None):
+def execute(file_name: str, connectivity, order_rule_name: str, unitary_energy_subspace, unitary_seed, num_steps, initial_pops,
+            evolution_generation_type: str, chunk_size, verbosity=.1, first_10_order=None):
     """
     file_name: name of the file to save the data to (without the .hdf5 extension) example: "ZestyGodzilla"
     connectivity: the type of connectivity to use for the ordering. options: "gas", "c5", "c6", "c7"
@@ -263,6 +263,5 @@ if __name__ == "__main__":
             unitary_energy_subspace=unitary_energy_subspace,
             unitary_seed=unitary_seed,
             num_steps=num_steps,
-            chunk_size=2,
             initial_pops=initial_pops,
-            evolution_generator_type = evolution_generator_type)
+            evolution_generator_type = evolution_generator_type, chunk_size=2)
