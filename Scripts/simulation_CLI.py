@@ -20,7 +20,7 @@ from src import (
 
 
 def execute(file_name: str, connectivity, order_rule_name: str, unitary_energy_subspace, unitary_seed, num_steps, initial_pops,
-            evolution_generation_type: str, chunk_size, verbosity=.1, first_10_order=None):
+            evolution_generator_type: str, chunk_size, verbosity=.1, first_10_order=None):
     """
     file_name: name of the file to save the data to (without the .hdf5 extension) example: "ZestyGodzilla"
     connectivity: the type of connectivity to use for the ordering. options: "gas", "c5", "c6", "c7"
@@ -30,7 +30,7 @@ def execute(file_name: str, connectivity, order_rule_name: str, unitary_energy_s
     num_steps: the number of steps to take
     initial_pops: the initial populations of the qubits
     chunk_size: the size of the chunks to use for the unitary evolution
-    evolution_generation_type: the type of evolution to use. options: "unitary","unitary.05","hamiltonian", "hamiltonian_old", for both hamiltonians the dtheta is .1
+    evolution_generator_type: the type of evolution to use. options: "unitary","unitary.05","hamiltonian", "hamiltonian_old", for both hamiltonians the dtheta is .1
     verbosity: the verbosity of progress reports. .1 is every 10%, .01 is every 1%, etc.
     """
 
@@ -103,8 +103,8 @@ def execute(file_name: str, connectivity, order_rule_name: str, unitary_energy_s
 
         unitary_energy_subspace = int(unitary_energy_subspace)
 
-        # match evolution_generation_type: unitary, hamiltonian, hamiltonian_old
-        match evolution_generation_type:
+        # match evolution_generator_type: unitary, hamiltonian, hamiltonian_old
+        match evolution_generator_type:
 
             case "haar2Qunitary":
                 sub_unitary = random_unitary.haar_random_unitary(theta_divisor=1,phi_divisor=1,omega_divisor=1, seed=None)
@@ -129,14 +129,14 @@ def execute(file_name: str, connectivity, order_rule_name: str, unitary_energy_s
                 sub_unitary = DM.dm_exp(sub_hamiltonian * -1j * .1)
             case _:
                 # throw an explanatory error
-                raise ValueError(f"evolution_generation_type {evolution_generation_type} not recognized")
+                raise ValueError(f"evolution_generator_type {evolution_generator_type} not recognized")
 
         composite_unitaries = [DM.tensor([sub_unitary if i == j else identity for i in range(num_chunks)]) for j in
                                range(num_chunks)]
         unitary = np.prod(composite_unitaries)
     else:
-        # match evolution_generation_type: unitary, hamiltonian, hamiltonian_old
-        match evolution_generation_type:
+        # match evolution_generator_type: unitary, hamiltonian, hamiltonian_old
+        match evolution_generator_type:
             case "unitary":
                 sub_unitary = random_unitary.random_energy_preserving_unitary(num_qbits=chunk_size, seed=unitary_rng)
             case "unitary.05":
@@ -148,10 +148,10 @@ def execute(file_name: str, connectivity, order_rule_name: str, unitary_energy_s
             case "hamiltonian_old":
                 # throw an incompatible error
                 raise ValueError(
-                    f"evolution_generation_type {evolution_generation_type} not yet compatible with unitary_energy_subspace")
+                    f"evolution_generator_type {evolution_generator_type} not yet compatible with unitary_energy_subspace")
             case _:
                 # throw an explanatory error
-                raise ValueError(f"evolution_generation_type {evolution_generation_type} not recognized")
+                raise ValueError(f"evolution_generator_type {evolution_generator_type} not recognized")
 
         composite_unitaries = [DM.tensor([sub_unitary if i == j else identity for i in range(num_chunks)]) for j in
                                range(num_chunks)]
