@@ -19,7 +19,7 @@ from src import (
     order_rules)
 
 
-def execute(file_name: str, connectivity, order_rule_name, unitary_energy_subspace, unitary_seed, num_steps, initial_pops, chunk_size=2,
+def execute(file_name: str, connectivity, order_rule_name: str, unitary_energy_subspace, unitary_seed, num_steps, initial_pops, chunk_size=2,
             evolution_generation_type="unitary", verbosity=.1, first_10_order=None):
     """
     file_name: name of the file to save the data to (without the .hdf5 extension) example: "ZestyGodzilla"
