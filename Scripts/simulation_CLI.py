@@ -188,7 +188,7 @@ def execute(file_name: str, connectivity, order_rule_name: str, unitary_energy_s
     #three_qubit_dms
 
 
-def save_data(file_name: str, data, connectivity, unitary_energy_subspace, unitary_seed, order_rule_name, measurment, num_qubits):
+def save_data(file_name: str, data, connectivity, unitary_energy_subspace, unitary_seed, order_rule_name:str, measurment, num_qubits):
     path_to_data = os.path.relpath('data')
 
     while not os.path.isdir(path_to_data):
@@ -234,7 +234,7 @@ if __name__ == "__main__":
     # Add arguments based on your requirements
     parser.add_argument('--output_file_name', '-f', help='Name of the output file')
     parser.add_argument('--ordering_type', '-o', help='Type of ordering to use [gas,messenger,c5,c6,c7]', default='gas')
-    parser.add_argument('--order_rule_name', '-os', type=int, help='the seed for generating the ordering', default=None)
+    parser.add_argument('--order_rule_name', '-os', type=str, help='the rule generating the ordering', default=None)
     parser.add_argument('--unitary_energy_subspace', '-ues', type=int,
                         help='(optional) the energy subspace for the subunitary to be in', default=None)
     parser.add_argument('--unitary_seed', '-us', type=int, help='unitary seed', default=None)
