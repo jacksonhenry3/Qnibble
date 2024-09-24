@@ -248,7 +248,7 @@ if __name__ == "__main__":
 
     # Access the parsed arguments
     file_name = args.file_name
-    ordering_type = args.ordering_type
+    connectivity = args.connectivity
     order_rule_name = args.order_rule_name
     unitary_energy_subspace = args.unitary_energy_subspace
     unitary_seed = args.unitary_seed
@@ -258,7 +258,7 @@ if __name__ == "__main__":
     initial_pops = [float(p) for p in args.pops.split(",")]
 
     execute(file_name=file_name,
-            connectivity=ordering_type,
+            connectivity=connectivity,
             order_rule_name=order_rule_name,
             unitary_energy_subspace=unitary_energy_subspace,
             unitary_seed=unitary_seed,
