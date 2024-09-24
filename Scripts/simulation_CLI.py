@@ -232,15 +232,15 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='This is the CLI to run simulations')
 
     # Add arguments based on your requirements
-    parser.add_argument('--output_file_name', '-f', help='Name of the output file')
-    parser.add_argument('--ordering_type', '-o', help='Type of ordering to use [gas,messenger,c5,c6,c7]', default='gas')
+    parser.add_argument('--file_name', '-f', help='Name of the output file')
+    parser.add_argument('--connectivity', '-o', help='Type of ordering to use [gas,messenger,c5,c6,c7]', default='gas')
     parser.add_argument('--order_rule_name', '-os', type=str, help='the rule generating the ordering', default=None)
     parser.add_argument('--unitary_energy_subspace', '-ues', type=int,
                         help='(optional) the energy subspace for the subunitary to be in', default=None)
     parser.add_argument('--unitary_seed', '-us', type=int, help='unitary seed', default=None)
-   # parser.add_argument('--chunk_size', '-cs', type=int, default=2, help='Chunk size')
+    parser.add_argument('--chunk_size', '-cs', type=int, default=2, help='Chunk size')
     parser.add_argument('--num_steps', '-ns', type=int, help='Number of steps')
-    parser.add_argument('--pops', '-p', help='Initial populations')
+    parser.add_argument('--initial_pops', '-p', help='Initial populations')
     parser.add_argument('--evolution_generator_type', '-egt', help='Evolution Generator type',default = 'haar2Qunitary')
 
 
