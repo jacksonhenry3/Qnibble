@@ -163,8 +163,9 @@ def execute(file_name: str, connectivity, order_rule_name: str, unitary_energy_s
     system.change_to_energy_basis()
     if __name__ == "__main__": print("running simulation")
 #three_qubit_dms
+#two_qubit_dms
 
-    pops, two_qubit_dms = sim.run(system,
+    pops = sim.run(system,
                                   num_iterations=num_steps,
                                   Unitaries=unitary,
                                   sub_unitary=sub_unitary,
@@ -179,12 +180,13 @@ def execute(file_name: str, connectivity, order_rule_name: str, unitary_energy_s
              # unitary_energy_subspace=unitary_energy_subspace, unitary_seed=unitary_seed,
               #order_rule_name=order_rule_name,
               #measurment="previous_order", num_qubits=num_qbits)
-    save_data(file_name=file_name, data=two_qubit_dms, connectivity=connectivity, unitary_energy_subspace=unitary_energy_subspace, unitary_seed=unitary_seed, order_rule_name=order_rule_name,
-              measurment="two_qubit_dms", num_qubits=num_qbits)
+    #save_data(file_name=file_name, data=two_qubit_dms, connectivity=connectivity, unitary_energy_subspace=unitary_energy_subspace, unitary_seed=unitary_seed, order_rule_name=order_rule_name,
+             # measurment="two_qubit_dms", num_qubits=num_qbits)
     save_data(file_name=file_name, data=pops, connectivity=connectivity, unitary_energy_subspace=unitary_energy_subspace, unitary_seed=unitary_seed, order_rule_name=order_rule_name,
               measurment="pops", num_qubits=num_qbits)
     if __name__ == "__main__": print("data saved, exiting")
-    return pops, two_qubit_dms
+    return pops
+#, two_qubit_dms
     #three_qubit_dms
 
 
