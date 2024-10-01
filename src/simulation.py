@@ -31,6 +31,8 @@ def run(dm: DM.DensityMatrix, num_iterations: int, order_rule, first_10_order, s
 
     pops_values = {0: {index: pop for index, pop in enumerate(measure.pops(dm))}}
     two_qubit_dms = {0: measure.two_qbit_dm_of_every_pair(dm)}
+    orders_list = []  # Initialize the list to store previous orders
+    #orders_list.append([])
     #three_qubit_dms = {0: measure.three_qbit_dm_of_every_triplet(dm)}
 
     generate_random_unitary = False
@@ -76,17 +78,22 @@ def run(dm: DM.DensityMatrix, num_iterations: int, order_rule, first_10_order, s
         pops_values[i] = {index: pop for index, pop in enumerate(measure.pops(dm))}
 
         two_qubit_dms[i] = measure.two_qbit_dm_of_every_pair(dm)
+        orders_list.append(order)
+
 
         #three_qubit_dms[i] = measure.three_qbit_dm_of_every_triplet(dm)
         previous_order = order
+        #orders_list[i]=np.ndarray(order)
+
         # the next
         # (past_order, prev_pops, pops, two_qubit_dms_previous, two_qubit_dms_current, connectivity, sub_unitary):
         order = order_rule(previous_order, pops_values[i - 1], pops_values[i], two_qubit_dms[i - 1], two_qubit_dms[i], connectivity, sub_unitary, dm)
     #three_qubit_dms
-        list_of_orders = previous_order.tolist()
-        print(list_of_orders)
+
+
+        #print(list_of_orders)
         #, two_qubit_dms
-    return (pops_values), dm
+    return (pops_values,two_qubit_dms,orders_list), dm
 
 
 def step(dm: DM.DensityMatrix, order: list[np.ndarray], Unitary: DM.DensityMatrix,

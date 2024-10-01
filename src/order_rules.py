@@ -36,7 +36,7 @@ def random(past_order, prev_pops, pops, two_qubit_dms_previous, two_qubit_dms_cu
         case 'c4_2local':
             order = orders.n_random_c4_2local_orders(num_qbits=num_qbits, chunk_size=chunk_size)
         case 'c5':
-            order = orders.n_random_c5_orders(num_qbits=num_qbits, chunk_size=chunk_size, n=1, seed=unitary_rng)[0]
+            order = orders.n_random_c5_orders(num_qbits=num_qbits, chunk_size=chunk_size, n=1)[0]
         case 'c5_2local':
              order = orders.n_random_c5_2local_orders(num_qbits=num_qbits, chunk_size=chunk_size)
         case 'c6_2local':
@@ -44,9 +44,9 @@ def random(past_order, prev_pops, pops, two_qubit_dms_previous, two_qubit_dms_cu
         case 'cN_2local':
             order = orders.n_random_cN_2local_orders(num_qbits=num_qbits, chunk_size=chunk_size)
         case 'c6':
-            order = orders.n_random_c6_orders(num_qbits=num_qbits, chunk_size=chunk_size, n=1, seed=unitary_rng)[0]
+            order = orders.n_random_c6_orders(num_qbits=num_qbits, chunk_size=chunk_size, n=1)[0]
         case 'c7':
-            order = orders.n_random_c7_orders(num_qbits=num_qbits, chunk_size=chunk_size, n=1, seed=unitary_rng)[0]
+            order = orders.n_random_c7_orders(num_qbits=num_qbits, chunk_size=chunk_size, n=1)[0]
         case 'gas':
             order = orders.n_random_gas_orders(num_qbits=num_qbits, chunk_size=chunk_size, n=1, seed=unitary_rng)[0]
         case _:

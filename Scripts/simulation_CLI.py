@@ -165,7 +165,7 @@ def execute(file_name: str, connectivity, order_rule_name: str, unitary_energy_s
 #three_qubit_dms
 #two_qubit_dms
 
-    pops = sim.run(system,
+    pops, two_qubit_dms,orders_list = sim.run(system,
                                   num_iterations=num_steps,
                                   Unitaries=unitary,
                                   sub_unitary=sub_unitary,
@@ -176,21 +176,21 @@ def execute(file_name: str, connectivity, order_rule_name: str, unitary_energy_s
                                   )[0]
     #save_data(file_name=file_name, data=three_qubit_dms, connectivity=connectivity, unitary_energy_subspace=unitary_energy_subspace, unitary_seed=unitary_seed,
              # order_rule_name=order_rule_name,measurment="three_qubit_dms", num_qubits=num_qbits)
-    #save_data(file_name=file_name, data=previous_order, connectivity=connectivity,
-             # unitary_energy_subspace=unitary_energy_subspace, unitary_seed=unitary_seed,
-              #order_rule_name=order_rule_name,
-              #measurment="previous_order", num_qubits=num_qbits)
-    #save_data(file_name=file_name, data=two_qubit_dms, connectivity=connectivity, unitary_energy_subspace=unitary_energy_subspace, unitary_seed=unitary_seed, order_rule_name=order_rule_name,
-             # measurment="two_qubit_dms", num_qubits=num_qbits)
+    save_data(file_name=file_name, data=orders_list, connectivity=connectivity,
+              unitary_energy_subspace=unitary_energy_subspace, unitary_seed=unitary_seed,
+              order_rule_name=order_rule_name,
+              measurment="previous_order", num_qubits=num_qbits)
+    save_data(file_name=file_name, data=two_qubit_dms, connectivity=connectivity, unitary_energy_subspace=unitary_energy_subspace, unitary_seed=unitary_seed, order_rule_name=order_rule_name,
+              measurment="two_qubit_dms", num_qubits=num_qbits)
     save_data(file_name=file_name, data=pops, connectivity=connectivity, unitary_energy_subspace=unitary_energy_subspace, unitary_seed=unitary_seed, order_rule_name=order_rule_name,
               measurment="pops", num_qubits=num_qbits)
     if __name__ == "__main__": print("data saved, exiting")
-    return pops
+    return pops, two_qubit_dms,orders_list
 #, two_qubit_dms
     #three_qubit_dms
 
 
-def save_data(file_name: str, data, connectivity, unitary_energy_subspace, unitary_seed, order_rule_name:str, measurment, num_qubits):
+def save_data(file_name: str, data, connectivity, unitary_energy_subspace, unitary_seed, order_rule_name: str, measurment, num_qubits):
     path_to_data = os.path.relpath('data')
 
     while not os.path.isdir(path_to_data):
@@ -209,24 +209,41 @@ def save_data(file_name: str, data, connectivity, unitary_energy_subspace, unita
         file.create_group(group_name)
     group = file[group_name]
 
-    for time_index in data:
-        # check if the group already exists
-        group_name = f'{time_index}'
-        sub_index = 0
-        while group_name in group:
-            group_name = f'{time_index}({sub_index})'
-            sub_index += 1
+    # Handle saving the data
+    if isinstance(data, dict):
+        for time_index in data:
+            # check if the group already exists
+            group_name = f'{time_index}'
+            sub_index = 0
+            while group_name in group:
+                group_name = f'{time_index}({sub_index})'
+                sub_index += 1
 
-        time_slice = group.create_group(group_name)
-        for key, value in data[time_index].items():
+            time_slice = group.create_group(group_name)
 
-            # if the value is a scalar
-            if np.isscalar(value):
-                time_slice.create_dataset(str(key), data=value)
-            else:
-                time_slice.create_dataset(str(key), data=value.data.toarray())
+            for key, value in data[time_index].items():
+                if np.isscalar(value):
+                    time_slice.create_dataset(str(key), data=value)
+                else:
+                    time_slice.create_dataset(str(key), data=value.data.toarray())
+
+    elif isinstance(data, np.ndarray):
+        # Handle saving a NumPy array
+        data = np.array(data)  # Ensure data is a NumPy array
+        time_slice = group.create_group('array_data')  # Create a group for the array data
+        time_slice.create_dataset("data", data=data)
+
+    elif isinstance(data, list):
+        # Handle saving a list (or 1D array)
+        data = np.array(data)
+        time_slice = group.create_group('orders_list')
+        time_slice.create_dataset("data", data=data)
+
+    else:
+        raise TypeError(f"Unsupported data type: {type(data)}")
 
     file.close()
+
 
 
 if __name__ == "__main__":
