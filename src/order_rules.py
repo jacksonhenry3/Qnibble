@@ -291,7 +291,6 @@ def landscape_maximizes(past_order, prev_pops, pops, two_qubit_dms_previous, two
 
     all_qubits = set([i for i in range(num_qubits)])
 
-    qpopth = 0.225
     extractable_work_i0 = np.array(
         measure.extractable_work_of_each_qubit_from_pops(prev_pops))
     extractable_work_i1 = np.array(

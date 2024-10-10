@@ -72,29 +72,29 @@ def execute(file_name: str, connectivity, order_rule_name: str, unitary_energy_s
 
 
     if first_10_order is None:
-        if __name__ == "__main__": print("generating first order")
-        match connectivity:
-            case 'c2_2local':
-                first_10_order = orders.first_10_orders_C2_2local(num_qbits)
-            case 'c4_2local':
-                first_10_order = orders.first_10_orders_C4_2local(num_qbits)
-            case 'c5':
-                first_order = orders.n_random_c5_orders(num_qbits=num_qbits, chunk_size=chunk_size, n=1, seed=unitary_rng)[0]
-            case 'c5_2local':
-                first_10_order = orders.first_10_orders_C5_2local(num_qbits)
-            case 'c6_2local':
-                first_10_order = orders.first_10_orders_C6_2local(num_qbits)
-            case 'cN_2local':
+        #if __name__ == "__main__": print("generating first order")
+        #match connectivity:
+            #case 'c2_2local':
+             #   first_10_order = orders.first_10_orders_C2_2local(num_qbits)
+            #case 'c4_2local':
+             #   first_10_order = orders.first_10_orders_C4_2local(num_qbits)
+            #case 'c5':
+            #    first_order = orders.n_random_c5_orders(num_qbits=num_qbits, chunk_size=chunk_size, n=1, seed=unitary_rng)[0]
+            #case 'c5_2local':
+            #    first_10_order = orders.first_10_orders_C5_2local(num_qbits)
+            #case 'c6_2local':
+            #    first_10_order = orders.first_10_orders_C6_2local(num_qbits)
+            #case 'cN_2local':
                 first_10_order = orders.first_10_orders_CN_2local(num_qbits)
-            case 'c6':
-                first_order = orders.n_random_c6_orders(num_qbits=num_qbits, chunk_size=chunk_size, n=1, seed=unitary_rng)[0]
-            case 'c7':
-                first_order = orders.n_random_c7_orders(num_qbits=num_qbits, chunk_size=chunk_size, n=1, seed=unitary_rng)[0]
-            case 'gas':
-                first_order = orders.n_random_gas_orders(num_qbits=num_qbits, chunk_size=chunk_size, n=1, seed=unitary_rng)[0]
-            case _:
+            #case 'c6':
+                #first_order = orders.n_random_c6_orders(num_qbits=num_qbits, chunk_size=chunk_size, n=1, seed=unitary_rng)[0]
+            #case 'c7':
+                #first_order = orders.n_random_c7_orders(num_qbits=num_qbits, chunk_size=chunk_size, n=1, seed=unitary_rng)[0]
+            #case 'gas':
+                #first_order = orders.n_random_gas_orders(num_qbits=num_qbits, chunk_size=chunk_size, n=1, seed=unitary_rng)[0]
+            #case _:
                 # throw an explanatory error
-                raise ValueError(f"connectivity {connectivity} not recognized")
+               # raise ValueError(f"connectivity {connectivity} not recognized")
 
     basis = DM.energy_basis(chunk_size)
     identity = DM.Identity(basis)
