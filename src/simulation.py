@@ -52,8 +52,6 @@ def run(dm: DM.DensityMatrix, num_iterations: int, order_rule, first_10_order, s
         if i in range (10):
             order = first_10_order[i]
             previous_order = first_10_order[i]
-            
-
         chunk_sizes = [len(chunk) for chunk in order]
         leftovers = dm.number_of_qbits % np.sum(chunk_sizes)
         if leftovers:
@@ -76,8 +74,12 @@ def run(dm: DM.DensityMatrix, num_iterations: int, order_rule, first_10_order, s
         dm = step(dm, order, U, not generate_random_unitary)
         # Does one qubit measurements on the entire qubit density matrix at each step
         pops_values[i] = {index: pop for index, pop in enumerate(measure.pops(dm))}
+        #two_qubit_dms[i] = measure.two_qbit_dm_of_every_pair(dm)
 
-        two_qubit_dms[i] = measure.two_qbit_dm_of_every_pair(dm)
+        if num_iterations%10 ==0 or num_iterations==499:
+            two_qubit_dms[i] = measure.two_qbit_dm_of_every_pair(dm)
+        else:
+            two_qubit_dms[i]=two_qubit_dms[i-1]
         orders_list.append(order)
 
 

@@ -16,7 +16,7 @@ def random(past_order, prev_pops, pops, two_qubit_dms_previous, two_qubit_dms_cu
     """
 
     num_qbits = len(pops)
-    chunk_size = 2
+    chunk_size = 4
 
     #match connectivity:
         #case 'c5':
