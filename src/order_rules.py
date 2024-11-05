@@ -98,7 +98,9 @@ def greedy(past_order, prev_pops, pops, two_qubit_dms_previous, two_qubit_dms_cu
     for order in all_orders:
         dist = []
         pops_of_updated_sub_dm = []
-        chunked_dms = [dm.ptrace(tuple(all_qubits - set(chunk))) for chunk in order.tolist()]
+        order=order.tolist()
+        chunked_dms = [dm.ptrace(tuple(all_qubits - set(chunk))) for chunk in order]
+        order=np.array(order)
         for sub_dm in chunked_dms:
             sub_dm.change_to_energy_basis()
             updated_sub_dm = sub_unitary * sub_dm * sub_unitary.H
@@ -115,6 +117,8 @@ def greedy(past_order, prev_pops, pops, two_qubit_dms_previous, two_qubit_dms_cu
         if score > current_max_score:
             current_max_score = score
             current_order = order
+    if current_order is None:
+        raise ValueError("score_board was empty; no order selected")
     return current_order
 
 
@@ -265,10 +269,13 @@ def landscape_maximizes(past_order, prev_pops, pops, two_qubit_dms_previous, two
         dm: the current density matrix
     """
 
-    num_qubits = len(pops)
-    chunk_size = 2
 
-    # this is inefficient, dont need to recalculate every time
+    chunk_size = 2
+    #convert pops into a list. They way its stored, pops is a dicitonary!!
+    num_qubits = len(pops)
+    pops =list(pops.values())
+    #print(f"Length of pops: {pops}")
+
     match connectivity:
         case'c2_2local':
             all_orders = orders.all_c2_2local_orders(num_qbits=num_qubits, chunk_size=chunk_size)
@@ -291,37 +298,58 @@ def landscape_maximizes(past_order, prev_pops, pops, two_qubit_dms_previous, two
 
     all_qubits = set([i for i in range(num_qubits)])
 
-    extractable_work_i0 = np.array(
-        measure.extractable_work_of_each_qubit_from_pops(prev_pops))
-    extractable_work_i1 = np.array(
-        measure.extractable_work_of_each_qubit_from_pops(pops))
-    change_in_ex_work = extractable_work_i1-extractable_work_i0
+    #extractable_work_i0 = np.array(
+     #   measure.extractable_work_of_each_qubit_from_pops(prev_pops))
+    #extractable_work_i1 = np.array(
+     #   measure.extractable_work_of_each_qubit_from_pops(pops))
+    #change_in_ex_work = extractable_work_i1-extractable_work_i0
     #decider_Q_index = np.argmin(change_in_ex_work)
-
+    print(f"all_orders: {all_orders}")  # Check if all_orders is populated
     score_board = []
     for order in all_orders:
+        print(f"Processing order: {order}")
+        # Rest of the code for processing orders...
         pops_of_updated_sub_dm = []
+        total_change_in_ex_work = []
         order=order.tolist()
         chunked_dms = [dm.ptrace(tuple(all_qubits - set(chunk))) for chunk in order]
-        order=np.array(order)
+        order = np.array(order)
         for sub_dm in chunked_dms:
             sub_dm.change_to_energy_basis()
             updated_sub_dm = sub_unitary * sub_dm * sub_unitary.H
             pops_of_updated_sub_dm.append(measure.pops(updated_sub_dm))
         pops_of_updated_sub_dm = np.array(pops_of_updated_sub_dm).flatten()
         pops_of_updated_sub_dm = pops_of_updated_sub_dm.tolist()
+        print(f"Current populations: {pops}")
+        print(f"Updated populations: {pops_of_updated_sub_dm}")
+        if np.any(np.isnan(pops_of_updated_sub_dm)):
+            print("NaN values found in updated populations.")
+            continue
+
         extractable_work_trial_0 = np.array(
             measure.extractable_work_of_each_qubit_from_pops(pops))
         extractable_work_trial_1 = np.array(
             measure.extractable_work_of_each_qubit_from_pops(pops_of_updated_sub_dm))
-        change_in_ex_work = extractable_work_trial_1 - extractable_work_trial_0
-        total_change_in_ex_work = sum(change_in_ex_work)
-        score_card = [order, total_change_in_ex_work]
-        score_board.append(score_card)
 
-    max_order = None
+        print(f"Extractable work trial 0: {extractable_work_trial_0}")
+        print(f"Extractable work trial 1: {extractable_work_trial_1}")
+
+        change_in_ex_work = extractable_work_trial_1 - extractable_work_trial_0
+
+        print(f"Change in extractable work: {change_in_ex_work}")
+
+        total_change_in_ex_work = sum(change_in_ex_work)
+
+        print(f"Total change in extractable work: {total_change_in_ex_work}")
+
+        score_card = [order, total_change_in_ex_work]
+        print(f"Adding score_card: {score_card}")
+
+        score_board.append(score_card)
+        print(f"Final score_board: {score_board}")
+
     max_change = float('-inf')
-    current_order = past_order
+    current_order = None
     # Iterate through each order and its associated change value
     for order, change in score_board:
         # Check if the current change value is greater than the maximum found so far
@@ -329,6 +357,10 @@ def landscape_maximizes(past_order, prev_pops, pops, two_qubit_dms_previous, two
             # If it is, update the maximum change value and the corresponding order
             max_change = change
             current_order = order
+    print(f"Final Order: {current_order}")
+
+    if current_order is None:
+        raise ValueError("score_board was empty; no order selected")
     return current_order
 
 

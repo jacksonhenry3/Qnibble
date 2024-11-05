@@ -86,16 +86,15 @@ def run(dm: DM.DensityMatrix, num_iterations: int, order_rule, first_10_order, s
         #three_qubit_dms[i] = measure.three_qbit_dm_of_every_triplet(dm)
         previous_order = order
         #orders_list[i]=np.ndarray(order)
-
-        # the next
-        # (past_order, prev_pops, pops, two_qubit_dms_previous, two_qubit_dms_current, connectivity, sub_unitary):
-        order = order_rule(previous_order, pops_values[i - 1], pops_values[i], two_qubit_dms[i - 1], two_qubit_dms[i], connectivity, sub_unitary, dm)
+        if i in range(10, num_iterations):
+        # the next order
+            order = order_rule(previous_order, pops_values[i - 1], pops_values[i], two_qubit_dms[i - 1], two_qubit_dms[i], connectivity, sub_unitary, dm)
     #three_qubit_dms
 
 
         #print(list_of_orders)
         #, two_qubit_dms
-    return (pops_values,two_qubit_dms,orders_list), dm
+    return (pops_values, two_qubit_dms, orders_list), dm
 
 
 def step(dm: DM.DensityMatrix, order: list[np.ndarray], Unitary: DM.DensityMatrix,
