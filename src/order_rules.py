@@ -98,7 +98,7 @@ def greedy(past_order, prev_pops, pops, two_qubit_dms_previous, two_qubit_dms_cu
     for order in all_orders:
         dist = []
         pops_of_updated_sub_dm = []
-        chunked_dms = [dm.ptrace(tuple(all_qubits - set(chunk))) for chunk in order]
+        chunked_dms = [dm.ptrace(tuple(all_qubits - set(chunk))) for chunk in order.tolist()]
         for sub_dm in chunked_dms:
             sub_dm.change_to_energy_basis()
             updated_sub_dm = sub_unitary * sub_dm * sub_unitary.H
@@ -296,25 +296,26 @@ def landscape_maximizes(past_order, prev_pops, pops, two_qubit_dms_previous, two
     extractable_work_i1 = np.array(
         measure.extractable_work_of_each_qubit_from_pops(pops))
     change_in_ex_work = extractable_work_i1-extractable_work_i0
-    decider_Q_index = np.argmin(change_in_ex_work)
+    #decider_Q_index = np.argmin(change_in_ex_work)
 
     score_board = []
     for order in all_orders:
-        change_in_ex_work_decider_Q=0
-        #change_in_ex_work_decider_Q = []
         pops_of_updated_sub_dm = []
+        order=order.tolist()
         chunked_dms = [dm.ptrace(tuple(all_qubits - set(chunk))) for chunk in order]
+        order=np.array(order)
         for sub_dm in chunked_dms:
             sub_dm.change_to_energy_basis()
             updated_sub_dm = sub_unitary * sub_dm * sub_unitary.H
             pops_of_updated_sub_dm.append(measure.pops(updated_sub_dm))
         pops_of_updated_sub_dm = np.array(pops_of_updated_sub_dm).flatten()
+        pops_of_updated_sub_dm = pops_of_updated_sub_dm.tolist()
         extractable_work_trial_0 = np.array(
             measure.extractable_work_of_each_qubit_from_pops(pops))
         extractable_work_trial_1 = np.array(
             measure.extractable_work_of_each_qubit_from_pops(pops_of_updated_sub_dm))
         change_in_ex_work = extractable_work_trial_1 - extractable_work_trial_0
-        total_change_in_ex_work=sum(change_in_ex_work)
+        total_change_in_ex_work = sum(change_in_ex_work)
         score_card = [order, total_change_in_ex_work]
         score_board.append(score_card)
 
