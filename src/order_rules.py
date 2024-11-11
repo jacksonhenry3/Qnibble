@@ -289,6 +289,8 @@ def landscape_maximizes(past_order, prev_pops, pops, two_qubit_dms_previous, two
     chunk_size = 2
     #convert pops into a list. They way its stored, pops is a dicitonary!!
     pops = list(pops.values())
+    pops = [max(pop, 0) for pop in pops]
+
     num_qubits = len(pops)
     #print(f"Length of pops: {pops}")
 

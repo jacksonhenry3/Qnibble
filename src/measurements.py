@@ -57,6 +57,10 @@ def temp_from_pop(pop: float):
 
 
 def pop_from_temp(T: float):
+    #epsilon = 1e-16
+    #if T == 0:
+    #    pop = 1 / (1 + np.exp(1 / epsilon))
+    #else:
     pop = 1 / (1 + np.exp(1 / T))
     # assert 0 <= pop <= 1, "pop must be between 0 and 1"
     return pop
@@ -71,6 +75,43 @@ def D(dm1: DensityMatrix, dm2: DensityMatrix):
 
 
 def D_single_qbits(pop_1: float, pop_2: float):
+    #epsilon = 1e-16
+    #handle especial cases of pure states by hand
+    #if pop_1 == 1:
+     #   tr_1 = 0
+      #  if pop_2 == 0:
+       #     tr_2 = np.log(epsilon)
+        #elif pop_2 == 1:
+         #   tr_2 = 0
+        #else:
+         #   tr_2 =np.log(pop_2)
+    #elif pop_1 ==0:
+     #   tr_1 = 0
+      #  if pop_2 == 0:
+       #     tr_2 = 0
+        #elif pop_2 == 1:
+         #   tr_2 = np.log(epsilon)
+        #else:
+         #   tr_2 = (1) * np.log(1 - pop_2)
+    #elif pop_2 == 1:
+        #pop_2 = 1+epsilon
+     #   tr_2 = (1 - pop_1) * np.log(epsilon)
+      #  if pop_1 == 0:
+       #     tr_1 = 0
+        #elif pop_1 == 1:
+         #   tr_1 =0
+        #else:
+         #   tr_1 = (1 - pop_1) * np.log(1 - pop_1) + (pop_1) * np.log(pop_1)
+    #elif pop_2 == 0:
+        #pop_2 = epsilon
+     #   tr_2 = (pop_1) * np.log(epsilon)
+      #  if pop_1 == 0:
+       #     tr_1 = 0
+        #elif pop_1 == 1:
+         #   tr_1 = 0
+        #else:
+            #tr_1 = (1 - pop_1) * np.log(1 - pop_1) + (pop_1) * np.log(pop_1)
+    #else:
     tr_1 = (1 - pop_1) * np.log(1 - pop_1) + (pop_1) * np.log(pop_1)
     tr_2 = (1 - pop_1) * np.log(1 - pop_2) + (pop_1) * np.log(pop_2)
     return tr_1 - tr_2
