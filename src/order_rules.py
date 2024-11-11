@@ -289,7 +289,7 @@ def landscape_maximizes(past_order, prev_pops, pops, two_qubit_dms_previous, two
     chunk_size = 2
     #convert pops into a list. They way its stored, pops is a dicitonary!!
     pops = list(pops.values())
-    pops = [max(pop, 0) for pop in pops]
+    pops = [max(pop, 1e-8) for pop in pops]
 
     num_qubits = len(pops)
     #print(f"Length of pops: {pops}")
@@ -338,16 +338,25 @@ def landscape_maximizes(past_order, prev_pops, pops, two_qubit_dms_previous, two
             pops_of_updated_sub_dm.append(measure.pops(updated_sub_dm))
         pops_of_updated_sub_dm = np.array(pops_of_updated_sub_dm).flatten()
         pops_of_updated_sub_dm = pops_of_updated_sub_dm.tolist()
+        pops_of_updated_sub_dm = [max(pop, 1e-8) for pop in pops_of_updated_sub_dm]
+        total_pops = sum(pops)
+        total_updated_pops = sum(pops_of_updated_sub_dm)
         #print(f"Current populations: {pops}")
         #print(f"Updated populations: {pops_of_updated_sub_dm}")
+        #print(f"Total populations: {total_pops}")
+        #print(f" Total updated populations: {total_updated_pops}")
         if np.any(np.isnan(pops_of_updated_sub_dm)):
             #print("NaN values found in updated populations.")
             continue
 
         extractable_work_trial_0 = np.array(
             measure.extractable_work_of_each_qubit_from_pops(pops))
+        extractable_work_trial_0 = np.array([max(ext, 1e-8) for ext in extractable_work_trial_0])
+
         extractable_work_trial_1 = np.array(
             measure.extractable_work_of_each_qubit_from_pops(pops_of_updated_sub_dm))
+        extractable_work_trial_1 = np.array([max(ext, 1e-8) for ext in extractable_work_trial_1])
+
 
         #print(f"Extractable work trial 0: {extractable_work_trial_0}")
         #print(f"Extractable work trial 1: {extractable_work_trial_1}")
