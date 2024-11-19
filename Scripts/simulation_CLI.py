@@ -14,6 +14,7 @@ sys.path.insert(0, '..')
 from src import (
     density_matrix as DM,
     simulation as sim,
+    disordered_networks,
     orders,
     random_unitary,
     order_rules)
@@ -59,14 +60,22 @@ def execute(file_name: str, connectivity, order_rule_name: str, unitary_energy_s
             order_rule = order_rules.random
         case 'greedy':
             order_rule = order_rules.greedy
-        case 'therm':
-            order_rule = order_rules.therm
-        case 'weakest_maximizes':
-            order_rule = order_rules.weakest_maximizes
+        case 'strongest_maximizes':
+            order_rule = order_rules.strongest_maximizes
         case 'landscape_maximizes':
             order_rule = order_rules.landscape_maximizes
         case 'mimic':
             order_rule = order_rules.mimic
+        case 'disorder_random':
+            order_rule = disordered_networks.disorder_random
+        case 'disorder_greedy':
+            order_rule = disordered_networks.disorder_greedy
+        case 'disorder_mimic':
+            order_rule = disordered_networks.disorder_mimic
+        case 'disorder_landscape_maximizes':
+            order_rule = disordered_networks.disorder_landscape_maximizes
+        case'disorder_landscape_maximizes':
+            order_rule = disordered_networks.disorder_strongest_maximizes
         case _:
             raise ValueError(f"order_rule_name {order_rule_name} not recognized")
 

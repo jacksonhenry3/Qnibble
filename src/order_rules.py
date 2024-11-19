@@ -191,7 +191,7 @@ def therm(past_order, prev_pops, pops, two_qubit_dms_previous, two_qubit_dms_cur
     return current_order
 
 
-def weakest_maximizes(past_order, prev_pops, pops, two_qubit_dms_previous, two_qubit_dms_current, connectivity, sub_unitary, dm):
+def strongest_maximizes(past_order, prev_pops, pops, two_qubit_dms_previous, two_qubit_dms_current, connectivity, sub_unitary, dm):
     """
     Args:
         two_qubit_dms_current: the current two qubit density matrices
@@ -204,6 +204,9 @@ def weakest_maximizes(past_order, prev_pops, pops, two_qubit_dms_previous, two_q
         dm: the current density matrix
     """
 
+    #convert pops to a list otherwise it is a dictionary
+    pops = list(pops.values())
+    pops = [max(pop, 1e-8) for pop in pops]
     num_qubits = len(pops)
     chunk_size = 2
 
@@ -229,38 +232,69 @@ def weakest_maximizes(past_order, prev_pops, pops, two_qubit_dms_previous, two_q
             raise ValueError(f"connectivity {connectivity} not recognized")
 
     all_qubits = set([i for i in range(num_qubits)])
+    #print(f"all_orders: {all_orders}")  # Check if all_orders is populated
 
-    qpopth = 0.225
     extractable_work_i0 = np.array(
         measure.extractable_work_of_each_qubit_from_pops(prev_pops))
     extractable_work_i1 = np.array(
         measure.extractable_work_of_each_qubit_from_pops(pops))
     change_in_ex_work = extractable_work_i1-extractable_work_i0
-    decider_Q_index = np.argmin(change_in_ex_work)
+    decider_Q_index = np.argmax(change_in_ex_work)
 
     score_board = []
     for order in all_orders:
-        change_in_ex_work_decider_Q=0
-        #change_in_ex_work_decider_Q = []
+        #print(f"Processing order: {order}")
+        change_in_ex_work_decider_Q= []
         pops_of_updated_sub_dm = []
+        order=order.tolist()
         chunked_dms = [dm.ptrace(tuple(all_qubits - set(chunk))) for chunk in order]
+        order = np.array(order)
         for sub_dm in chunked_dms:
             sub_dm.change_to_energy_basis()
             updated_sub_dm = sub_unitary * sub_dm * sub_unitary.H
             pops_of_updated_sub_dm.append(measure.pops(updated_sub_dm))
         pops_of_updated_sub_dm = np.array(pops_of_updated_sub_dm).flatten()
+        pops_of_updated_sub_dm = pops_of_updated_sub_dm.tolist()
+        pops_of_updated_sub_dm = [max(pop, 1e-8) for pop in pops_of_updated_sub_dm]
+        #total_pops = sum(pops)
+        #total_updated_pops = sum(pops_of_updated_sub_dm)
+        #print(f"Current populations: {pops}")
+        #print(f"Updated populations: {pops_of_updated_sub_dm}")
+        #print(f"Total populations: {total_pops}")
+        #print(f" Total updated populations: {total_updated_pops}")
+        if np.any(np.isnan(pops_of_updated_sub_dm)):
+            #print("NaN values found in updated populations.")
+            continue
+
         extractable_work_trial_0 = np.array(
             measure.extractable_work_of_each_qubit_from_pops(pops))
+        extractable_work_trial_0 = np.array([max(ext, 1e-8) for ext in extractable_work_trial_0])
+
         extractable_work_trial_1 = np.array(
             measure.extractable_work_of_each_qubit_from_pops(pops_of_updated_sub_dm))
+        extractable_work_trial_1 = np.array([max(ext, 1e-8) for ext in extractable_work_trial_1])
+
+
+        #print(f"Extractable work trial 0: {extractable_work_trial_0}")
+        #print(f"Extractable work trial 1: {extractable_work_trial_1}")
+
         change_in_ex_work = extractable_work_trial_1 - extractable_work_trial_0
+
+        #print(f"Change in extractable work: {change_in_ex_work}")
+
         change_in_ex_work_decider_Q=change_in_ex_work[decider_Q_index]
+
+        #print(f"Total change in extractable work of decider Q: {change_in_ex_work_decider_Q}")
+
         score_card = [order, change_in_ex_work_decider_Q]
+        #print(f"Adding score_card: {score_card}")
+
         score_board.append(score_card)
 
-    max_order = None
+    #print(f"Final score_board: {score_board}")
+
     max_change = float('-inf')
-    current_order = past_order
+    current_order = None
     # Iterate through each order and its associated change value
     for order, change in score_board:
         # Check if the current change value is greater than the maximum found so far
@@ -268,8 +302,11 @@ def weakest_maximizes(past_order, prev_pops, pops, two_qubit_dms_previous, two_q
             # If it is, update the maximum change value and the corresponding order
             max_change = change
             current_order = order
-    return current_order
+    #print(f"Final Order: {current_order}")
 
+    if current_order is None:
+        raise ValueError("score_board was empty; no order selected")
+    return current_order
 
 def landscape_maximizes(past_order, prev_pops, pops, two_qubit_dms_previous, two_qubit_dms_current, connectivity, sub_unitary, dm):
     """
