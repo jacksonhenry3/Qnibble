@@ -74,7 +74,7 @@ def execute(file_name: str, connectivity, order_rule_name: str, unitary_energy_s
             order_rule = disordered_networks.disorder_mimic
         case 'disorder_landscape_maximizes':
             order_rule = disordered_networks.disorder_landscape_maximizes
-        case'disorder_landscape_maximizes':
+        case'disorder_strongest_maximizes':
             order_rule = disordered_networks.disorder_strongest_maximizes
         case _:
             raise ValueError(f"order_rule_name {order_rule_name} not recognized")
