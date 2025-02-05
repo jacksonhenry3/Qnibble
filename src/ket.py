@@ -48,15 +48,13 @@ import functools
 #     def reorder(self, order):
 #         return Ket(self.data[order])
 #
-
 class Ket:
-    def __init__(self, num:int, num_qbit:int):
+    def __init__(self, num: int, num_qbit: int):
         self.num = num
         self.num_qbit = num_qbit
 
     def __repr__(self) -> str:
         return f"|{self.num},{self.energy}:" + f"{''.join([['↓', '↑'][int(e)] for i, e in enumerate(self.data())])}⟩"
-
 
     def data(self) -> list:
         return [*bin(self.num)[2:].zfill(self.num_qbit)]
@@ -66,14 +64,48 @@ class Ket:
         return bin(self.num).count("1")
 
     def reorder(self, order):
+        """
+        Reorders the qubit according to the specified order.
+        Moves column/row `base_order[a]` to location `new_order[a]`.
+        """
+        #new_state = ''.join(state[new_order.index(i + 1)] for i in range(n))
+
+        binA = bin(self.num)[2:].zfill(self.num_qbit)
+        reordered_bits = ''.join(binA[order.index(i )] for i in range(self.num_qbit))
+        return Ket(int(reordered_bits, 2), self.num_qbit)
+
+    #def relabel_basis(self, new_order):
+
+     #   new_data = []
+      #  for i in range(self.num_qbit):
+       #     # Apply the new order to the binary data
+        #    new_data.append(self.data()[new_order.index(i)])
+        #return Ket(int(''.join(new_data), 2), self.num_qbit)
+#class Ket:
+    #def __init__(self, num:int, num_qbit:int):
+        #self.num = num
+        #self.num_qbit = num_qbit
+
+    #def __repr__(self) -> str:
+       # return f"|{self.num},{self.energy}:" + f"{''.join([['↓', '↑'][int(e)] for i, e in enumerate(self.data())])}⟩"
+
+
+    #def data(self) -> list:
+        #return [*bin(self.num)[2:].zfill(self.num_qbit)]
+
+    #@property
+    #def energy(self):
+       # return bin(self.num).count("1")
+
+    #def reorder(self, order):
         # temp = 0
         # for i, ip in enumerate(order):
         #     temp += bool(self.num & 2 ** i) * (2 ** ip)
         # self.num = temp
 
 
-        binA = bin(self.num)[2:].zfill(self.num_qbit)
-        return Ket(int(''.join(binA[i] for i in order), 2), self.num_qbit)
+        #binA = bin(self.num)[2:].zfill(self.num_qbit)
+        #return Ket(int(''.join(binA[i] for i in order), 2), self.num_qbit)
 
     def __lt__(self, other):
         assert isinstance(other, Ket)

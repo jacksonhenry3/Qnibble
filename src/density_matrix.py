@@ -229,7 +229,8 @@ class DensityMatrix:
     @property
     def H(self):
         """Return the conjugate transpose of self"""
-        return DensityMatrix(self._data.H, self._basis)
+        return DensityMatrix(self._data.transpose().conj(), self._basis)
+
 
     # @property
     # def data_dense(self):
@@ -251,13 +252,24 @@ class DensityMatrix:
         self._data = permute_sparse_matrix(self._data, idx)
         self._basis = self.basis.reorder(idx)
 
-    def relabel_basis(self, new_order):
+    #def relabel_basis(self, new_order):
         """
         changes basis by changing which is the "first" qbit.
 
         """
+    #    new_basis = []
+     #   for e in self.basis:
+     #       new_basis.append(e.reorder(new_order))
+      #  self._basis = Basis(new_basis)
+
+    def relabel_basis(self, new_order):
+        """
+        Relabel the basis by changing the row/column index of the qubits based on the new order.
+        This function doesn't modify the state but only changes the way qubits are identified.
+        """
         new_basis = []
         for e in self.basis:
+            # Apply the new order to the binary data
             new_basis.append(e.reorder(new_order))
         self._basis = Basis(new_basis)
 

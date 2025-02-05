@@ -18,18 +18,6 @@ def random(past_order, prev_pops, pops, two_qubit_dms_previous, two_qubit_dms_cu
     num_qbits = len(pops)
     chunk_size = 4
 
-    #match connectivity:
-        #case 'c5':
-         #   order = orders.n_random_c5_orders(num_qbits=num_qubits, chunk_size=chunk_size, n=1)[0]
-        #case 'c6':
-         #   order = orders.n_random_c6_orders(num_qbits=num_qubits, chunk_size=chunk_size, n=1)[0]
-        #case 'c7':
-         #   order = orders.n_random_c7_orders(num_qbits=num_qubits, chunk_size=chunk_size, n=1)[0]
-        #case 'gas':
-         #   order = orders.n_random_gas_orders(num_qbits=num_qubits, chunk_size=chunk_size, n=1)[0]
-        #case _:
-         #   raise ValueError(f"connectivity {connectivity} not recognized")
-    #return order
     match connectivity:
         case 'c2_2local':
             order = orders.n_random_c2_2local_orders(num_qbits=num_qbits, chunk_size=chunk_size)
@@ -47,8 +35,8 @@ def random(past_order, prev_pops, pops, two_qubit_dms_previous, two_qubit_dms_cu
             order = orders.n_random_c6_orders(num_qbits=num_qbits, chunk_size=chunk_size, n=1)[0]
         case 'c7':
             order = orders.n_random_c7_orders(num_qbits=num_qbits, chunk_size=chunk_size, n=1)[0]
-        case 'gas':
-            order = orders.n_random_gas_orders(num_qbits=num_qbits, chunk_size=chunk_size, n=1, seed=unitary_rng)[0]
+        #case 'gas':
+            #order = orders.n_random_gas_orders(num_qbits=num_qbits, chunk_size=chunk_size, n=1, seed=unitary_rng)[0]
         case _:
                 # throw an explanatory error
             raise ValueError(f"connectivity {connectivity} not recognized")
