@@ -242,7 +242,7 @@ def mutual_information_with_environment(dm: DensityMatrix, sub_system_qbits: lis
     environment_qbits = list(set(range(dm.basis.num_qubits)) - set(sub_system_qbits))
     sub_system = dm.ptrace(environment_qbits)
     environment = dm.ptrace(sub_system_qbits)
-    return entropy(sub_system) + entropy(environment) - entropy(dm)
+    return 0.5*(entropy(sub_system) + entropy(environment) - entropy(dm))
 
 
 def mutual_information(dm: DensityMatrix, sub_system_qbits_a: list[int], sub_system_qbits_b: list[int]) -> float:
@@ -255,7 +255,7 @@ def mutual_information(dm: DensityMatrix, sub_system_qbits_a: list[int], sub_sys
     sub_system_qbits_ab = sub_system_qbits_a + sub_system_qbits_b
     everything_thats_not_system_ab = tuple(set(range(dm.basis.num_qubits)) - set(sub_system_qbits_ab))
     sub_system_ab = dm.ptrace(everything_thats_not_system_ab)
-    return entropy(sub_system_a) + entropy(sub_system_b) - entropy(sub_system_ab)
+    return 0.5*(entropy(sub_system_a) + entropy(sub_system_b) - entropy(sub_system_ab))
 
 
 def mutual_information_of_every_pair(dm: DensityMatrix):
