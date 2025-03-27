@@ -111,9 +111,6 @@ def plot_matrix_with_labels(matrix, new_labels):
 
     plt.show()
 
-
-
-
 num_chunks =2
 chunk_size=2
 basis = DensityMatrix.energy_basis(chunk_size)
@@ -133,13 +130,6 @@ new_labels = relabel_matrix_entries(matrix, N, new_order)
 
 # Plot the matrix with new labels (structure of the matrix stays the same)
 plot_matrix_with_labels(matrix, new_labels)
-
-
-
-
-
-
-
 
 #print("Original Matrix:")
 #print(matrix)

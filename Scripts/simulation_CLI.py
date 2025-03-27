@@ -68,10 +68,14 @@ def execute(file_name: str, connectivity, order_rule_name: str, unitary_energy_s
             order_rule = order_rules.mimic
         case 'disorder_random':
             order_rule = disordered_networks.disorder_random
-        case 'disorder_greedy':
-            order_rule = disordered_networks.disorder_greedy
-        case 'disorder_mimic':
-            order_rule = disordered_networks.disorder_mimic
+        case 'disorder_greedy_therm':
+            order_rule = disordered_networks.disorder_greedy_therm
+        case 'disorder_mimic_therm':
+            order_rule = disordered_networks.disorder_mimic_therm
+        case 'disorder_greedy_v1':
+            order_rule = disordered_networks.disorder_greedy_v1
+        case 'disorder_mimic_v1':
+            order_rule = disordered_networks.disorder_mimic_v1
         case 'disorder_landscape_maximizes':
             order_rule = disordered_networks.disorder_landscape_maximizes
         case'disorder_strongest_maximizes':
